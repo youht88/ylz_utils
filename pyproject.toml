@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "ylz-utils"
+version = "0.1.0"
+description = "ylz 工具类"
+authors = ["youht88"]
+readme = "README.md"
+
+[[tool.poetry.packages]]
+include = "ylz_utils"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+langchain = "^0.2.11"
+langchain-community = "^0.2.10"
+langchain-openai = "^0.1.17"
+langchain-together = "^0.1.4"
+langchain-google-genai = "^1.0.8"
+pyyaml = "^6.0.1"
+langgraph = "^0.1.11"
+langserve = "^0.2.2"
+duckduckgo-search = "^6.2.1"
+sqlite4 = "^0.1.1"
+faiss-cpu = "^1.8.0.post1"
+playwright = "^1.45.1"
+argparse = "^1.4.0"
+qianfan = "^0.4.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[[tool.poetry.source]]
+name = "tsinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
