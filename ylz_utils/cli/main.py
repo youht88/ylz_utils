@@ -8,9 +8,9 @@ from ylz_utils.cli.start import start
 from ylz_utils.cli.serve import serve
 
 def run():
-    asyncio.run(main())
+    main()
 
-async def main():
+def main():
     parser = argparse.ArgumentParser(description = "测试工具")
     parser.add_argument("--log_level",type=str,default="INFO",choices=["INFO","DEBUG"],help="日志级别,默认:INFO")
     parser.add_argument("--log",type=str,default="task.log",help="日志文件名称")
@@ -30,18 +30,18 @@ async def main():
     # start_parser.add_argument("-c","--clear_error",action="store_true",help="清除task.json文件中的错误信息,默认:False")
 
     serve_parser = subparsers.add_parser("serve", help="启动langserve")
-    serve_parser.add_argument("--host",type=str,default="localhost",help="主机地址,默认:localhost")
-    serve_parser.add_argument("--port",type=int,default=8000,help="主机端口,默认:8000")
-    serve_parser.add_argument("--path",type=str,default="/test",help="chain的端点,默认: /test")
+    serve_parser.add_argument("--host",type=str,default="0.0.0.0",help="bind host,default:0.0.0.0")
+    serve_parser.add_argument("--port",type=int,default=8000,help="listen port,default::8000")
+    serve_parser.add_argument("--path",type=str,default="/test",help="path,default:: /test")
     
     args = parser.parse_args()
 
     init(args)
 
     if args.command == "start":
-        await start(args)
+        asyncio.run(start(args))
     elif args.command == "serve":
-        await serve(args)
+        serve(args)
     else:
         print("未知的命令")
 # python3 ../../fix.py --mode json fixDict --dict_hash b614b4 --new_text="一条消息由消息头和消息体组成。以下部分专注于消息体结构。有关消息头结 构，请参阅："
@@ -51,4 +51,4 @@ async def main():
 # python3 ../../fix.py --mode json fixDict --old_text "<.+>(.*0s.*?)</.+>" --new_text "" --issubtext -l
 
 if __name__ == "__main__":
-    asyncio.run(main())
+   main()
