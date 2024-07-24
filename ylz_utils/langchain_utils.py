@@ -4,10 +4,10 @@ import json
 from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_community.llms import QianfanLLMEndpoint
+from langchain_community.chat_models import QianfanChatEndpoint
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-from langchain_community.llms import Ollama
+from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage,HumanMessage
 
 from langchain.memory import ConversationBufferMemory
@@ -65,20 +65,25 @@ class LangchainLib():
     default_llm_key = "LLM.DEEPSEEK"
     def __init__(self):
         self.config = Config.get()
+        if self.config.get("LLM.DEFAULT"):
+            default_llm_key = self.config.get("LLM.DEFAULT")
+            self.set_default_llm_key(default_llm_key)
+        else:
+            self.clear_default_llm_key()
         #self.add_plugins()
         self.regist_llm()
         self.regist_embedding()
         # 创建一个对话历史管理器
         self.memory = ConversationBufferMemory()
-    def set_default_llmkey(self,key):
+    def set_default_llm_key(self,key):
         llms = [item for item in self.llms if item['type']==key]
         if llms:
             self.default_llm_key = key
         else:
-            self.clear_default_llmkey()
-    def get_default_llmkey(self):
+            self.clear_default_llm_key()
+    def get_default_llm_key(self):
         return self.default_llm_key
-    def clear_default_llmkey(self):
+    def clear_default_llm_key(self):
         self.default_llm_key=None
     def add_plugins(self,debug=False):
         plugins = [{"class":ChatOpenAI,"func":ChatOpenAI.invoke},
@@ -158,12 +163,19 @@ class LangchainLib():
                         elif llm_type == 'LLM.QIANFAN':
                             try:
                                 StringLib.logging_in_box(f"qianfan_api_key={llm.get('api_key')},qianfan_sec_key={llm.get('sec_key')},model={llm.get('model')}")
-                                llm['llm'] = QianfanLLMEndpoint(
+                                llm['llm'] = QianfanChatEndpoint(
                                     qianfan_ak= llm.get('api_key'),
                                     qianfan_sk= llm.get('sec_key'),
                                     model= llm.get('model'))
                             except:
                                 raise Exception(f"请确保{llm_type}_API_KEYS和{llm_type}_SEC_KEYS环境变量被正确设置")
+                        elif llm_type == 'LLM.OLLAMA':
+                            try:
+                                StringLib.logging_in_box(f"ollama_api_key={llm.get('api_key')},model={llm.get('model')}")
+                                llm['llm'] = ChatOllama(model= llm.get('model'))
+                            except:
+                                raise Exception(f"请确保{llm_type}_API_KEYS和{llm_type}_SEC_KEYS环境变量被正确设置")
+                            
                         else:
                             try:
                                 llm['llm'] = ChatOpenAI(
@@ -189,13 +201,15 @@ class LangchainLib():
                    "LLM.SILICONFLOW":
                       {"model":"alibaba/Qwen1.5-110B-Chat","temperature":0},
                    "LLM.GROQ":
-                      {"model":"llama3-70b-8192","temperature":0},
+                      {"model":"llama3-70b-8192-tool-use-preview","temperature":0},
                    "LLM.GEMINI":
                       {"model":"gemini-pro","temperature":0},
                     "LLM.DEEPSEEK":
                       {"model":"deepseek-chat","temperature":1},
                     "LLM.QIANFAN":
-                      {"model":"Yi-34B-Chat","temperature":0.7}
+                      {"model":"Yi-34B-Chat","temperature":0.7},
+                    "LLM.OLLAMA":
+                      {"model":"llama3.1","temperature":0.7}
                   }
         for key in defaults:
             default = defaults[key]
@@ -583,242 +597,4 @@ class LangchainLib():
     
     def search_faiss(self,query,vectorstore: FAISS,k=10):
         return vectorstore.similarity_search(query,k=k)
-
-def __llm_test(langchainLib:LangchainLib):
-    for _ in range(3):
-        llm = langchainLib.get_llm("LLM.DEEPSEEK")
-        res = llm.invoke("hello")
-        print("res:",res)
-    print("llms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.llms])
-
-def __outputParser_test(langchainLib:LangchainLib):
-    class Food(BaseModel):
-        name: str = Field(description="name of the food")
-        place: str = Field(defualt="未指定",description="where to eat food?",examples=["家","公司","体育馆"])
-        calories: float|None = Field(title="卡路里(千卡)",description="食物热量")
-        amount: tuple[float,str] = Field(description="tuple of the value and unit of the food amount")
-        time: str = Field(default = "未指定",description="the time of eating food,确保每个食物都有对应的时间，如果没有指定则为空字符串")
-        health: Literal["健康","不健康","未知"]|None = Field(description="根据常识判断食物是否为健康食品",examples=["健康","不健康","未知"])
-    class Foods(BaseModel):
-        foods: List[Food]
-
-    # Set up a parser + inject instructions into the prompt template.
-    parser = langchainLib.get_outputParser(Foods)
-
-    prompt1 = PromptTemplate(
-        template="用中文分析句子的内容。如果没有指定食物热量则根据食物的名称和数量进行估计。判断食物是否为健康\n{format_instructions}\n{command}\n",
-        input_variables=["command"],
-        partial_variables={"format_instructions": parser.get_format_instructions()},
-    )
-
-
-    # And a query intended to prompt a language model to populate the data structure.
-    fixed_parser = OutputFixingParser.from_llm(parser=parser, llm=langchainLib.get_llm('LLM.GROQ'))
-    # retry_parser = RetryOutputParser.from_llm(parser=parser, llm=langchainLib.get_llm())
-
-    prompt2 = langchainLib.get_prompt(
-            system_prompt = "用中文分析句子的内容。如果没有指定食物热量则根据食物的名称和数量进行估计。同时判断食物是否为健康",
-            human_keys={"command":"输入的语句"},
-            outputParser = parser,
-            is_chat = False
-        )
-
-    #chain = prompt2 | langchainLib.get_llm() | fixed_parser
-    
-    chain = prompt2 | langchainLib.get_llm('LLM.GROQ') | parser
-    
-    # retry_chain = RunnableParallel(
-    #     completion=chain, prompt_value=prompt1,
-    #     ) | RunnableLambda(lambda x:retry_parser.parse_with_prompt(**x))
-
-    #output = chain.invoke({"command": "我今天在家吃了3个麦当劳炸鸡和一个焦糖布丁，昨天8点在电影院吃了一盘20千卡的西红柿炒蛋"})
-    output = chain.invoke({"command": "两个小时前吃了一根雪糕，还喝了一杯咖啡"})
-    #retry_parser.parse_with_prompt(output['completion'], output['prompt_value'])
-    #retry_parser.parse_with_prompt(output['completion'],output['prompt_value'])
-    print("\noutput parser:",output)
-
-    print("\nllms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.llms])
-
-
-def __runnalble_test(langchainLib:LangchainLib):
-    runnable1 = RunnableParallel(
-    passed=RunnablePassthrough(),
-    modified=lambda x: x["num"] + 1,
-    other = RunnableParallel(
-        passed=RunnablePassthrough(),
-        modified=lambda x: x["num"] * 2,
-        )
-    )
-    #runnable1.invoke({"num":1})
-    def f(x):
-        return x['modified']*100
-
-    runnable2 = runnable1 | RunnableParallel(
-        {"origin": RunnablePassthrough(),
-        "new1": lambda x: x["other"]["passed"],
-        "new2": RunnableLambda(f)}
-        )
-
-    #for trunck in runnable2.stream({"num": 1}):
-    #  print(trunck)
-    res = runnable2.invoke({"num": 1})
-    print("\nrunnalbe:",res)
-
-async def __prompt_test(langchainLib:LangchainLib):
-
-    prompt = langchainLib.get_prompt(f"你对日历时间非常精通",human_keys={"context":"关联的上下文","question":"问题是"},is_chat = True)
-    prompt.partial(context="我的名字叫小美")   # 这个为什么不起作用?
-    llm = langchainLib.get_llm("LLM.TOGETHER")
-    outputParser = langchainLib.get_outputParser()
-    chain = prompt | llm | outputParser
-
-    res = await chain.ainvoke({"question":"我叫什么名字，今天礼拜几","context":"我是海涛"})
-    print(res)
-    res = chain.stream({"question":"用我的名字写一周诗歌","context":"我的名字叫小美"})
-    for chunk in res:
-        print(chunk,end="")
-    
-    prompt = PromptTemplate.from_template("用中文回答：{topic} 的{what}是多少")
-    chain = prompt | langchainLib.get_llm("LLM.GROQ") | outputParser
-    promise = chain.batch([{"topic":"中国","what":"人口"},{"topic":"美国","what":"国土面积"},{"topic":"新加坡","what":"大学"}])
-    print(promise)
-    print("\n\nllms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.llms])
-
-def __rag_test(langchainLib:LangchainLib):
-    ###### create vectorestore
-    # docs = [Document("I am a student"),Document("who to go to china"),Document("this is a table")]
-    # vectorestore = langchainLib.create_faiss_from_docs(docs)
-    # langchainLib.save_faiss("faiss.db",vectorestore)
-    
-    vectorestore = langchainLib.load_faiss("faiss.db")
-    print("v--->",langchainLib.search_faiss("I want to buy a table?",vectorestore,k=1))
-    
-    ###### have bug when poetry add sentence_transformers   
-    #v1 = langchainLib.get_huggingface_embedding()
-    #print("huggingface BGE:",v1)
-
-    ###### tet google embdeeding
-    # embed = langchainLib.get_embedding("EMBEDDING.GEMINI")
-    # docs = [Document("I am a student"),Document("who to go to china"),Document("this is a table")]
-    # vectorestore = langchainLib.create_faiss_from_docs(docs,embedding=embed)
-    # langchainLib.save_faiss("faiss.db",vectorestore,index_name="gemini")
-
-async def __loader_test(langchainLib:LangchainLib):
-    result = langchainLib.load_html_split_markdown(url = "https://python.langchain.com/v0.2/docs")
-    print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks'])} for doc in result])
-    blocks = []
-    for item in result:
-        blocks.extend(item['blocks'])
-    print(len(blocks))
-    vectorestore = langchainLib.create_faiss_from_docs(blocks)
-    langchainLib.save_faiss("faiss.db",vectorestore,index_name="langchain_doc")
-
-def __tools_test(langchainLib:LangchainLib):
-    # tool: TavilySearchResults = langchainLib.get_search_tool("TAVILY")
-    # prompt = langchainLib.get_prompt(is_chat=False,human_keys={"context":"关联的上下文是:","question":"问题是:"})
-    # res = tool.invoke("易联众现在股价是多少？")
-    # print(res)
-    # llm = langchainLib.get_llm("LLM.DEEPSEEK")
-    # chain = RunnableParallel({
-    #     "question": RunnablePassthrough(),
-    #     "context": tool
-    # }) | prompt | llm 
-    # res = chain.invoke("易联众现在股价是多少？")
-    # print(res)
-
-    # print("#"*50)
-    class Output(BaseModel):
-        name:str = Field(description= "姓名")
-        age:int = Field(description= "年龄")
-
-    langchainLib.add_plugins()
-    langchainLib.set_default_llmkey("LLM.DEEPSEEK")
-    llm = langchainLib.get_llm()
-    print("\n\nllms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.llms],"\n")
-
-    outputParser = langchainLib.get_outputParser(Output,fix=True,llm = llm,retry=3)
-    prompt = langchainLib.get_prompt(human_keys = {"ask":"问题"},is_chat=False)
-    search = langchainLib.get_search_tool("TAVILY")
-    tools = [search]
-    #chain  = prompt | (lambda x: x.messages[-1].content) | search | (lambda x:'```json\n{"name":中国,"age":"20"}') | outputParser
-    #chain  = prompt | llm | outputParser
-    chain = prompt | RunnableLambda(lambda x:x.text,name="抽取text") | search 
-    #print("chain to_json = ",chain.to_json())
-    #print("chain name=",chain.get_name())
-    print("chain graph=",chain.get_graph(),"\n")
-    res = chain.invoke({"ask": "北京人口多少"})
-    print(type(res),res)
-    FileLib.writeFile("graph1.png",chain.get_graph().draw_mermaid_png(),mode="wb")
-
-    # llm = langchainLib.get_llm("LLM.DEEPSEEK")
-    # print("llm",llm.to_json())
-    #res = llm.invoke("你不擅长计算问题，遇到计算问题交给tool来完成")
-    #print(res)
-def __graph_test(langchainLib:LangchainLib):
-    def multiply(one: int, two:int):
-        """Multiply two numbers"""
-        return one * two
-    llm = langchainLib.get_llm()
-    llm_with_tools = llm.bind_tools([multiply])
-    graph = MessageGraph()
-    graph.add_node("oracle",llm_with_tools)
-    tool_node = ToolNode([multiply])
-    graph.add_node("multiply",tool_node)
-    graph.add_edge(START,"oracle")
-    graph.add_edge("multiply",END)
-    def router(state)-> Literal["multiply","__end__"]:
-        tool_calls = state[-1].additional_kwargs.get("tool_nodes",[])
-        if len(tool_calls):
-            return "multiply"
-        else:
-            return END
-    graph.add_conditional_edges("oracle",router)
-    chain = graph.compile()
-    FileLib.writeFile("graph.png",chain.get_graph(xray=True).draw_mermaid_png(),mode="wb")
-
-    res = chain.invoke("202*308是多少")
-    print(res)
-async def main():
-    langchainLib = LangchainLib()
-    # StringLib.logging_in_box(f"\n{Color.YELLOW} 测试llm {Color.RESET}")
-    # __llm_test(langchainLib)
-
-    # StringLib.logging_in_box(f"\n{Color.YELLOW} 测试prompt {Color.RESET}")
-    # await __prompt_test(langchainLib)    
-    
-    #StringLib.logging_in_box(f"\n{Color.YELLOW} 测试loader {Color.RESET}")
-    #await __loader_test(langchainLib)    
-
-    # StringLib.logging_in_box(f"\n{Color.YELLOW} 测试runnable {Color.RESET}")
-    # __runnalble_test(langchainLib)
-    
-    #StringLib.logging_in_box(f"{Color.YELLOW} 测试outputParser {Color.RESET}")
-    #__outputParser_test(langchainLib)
-    
-    # StringLib.logging_in_box(f"\n{Color.YELLOW} 测试rag {Color.RESET}")
-    # __rag_test(langchainLib)
-
-    StringLib.logging_in_box(f"\n{Color.YELLOW} 测试tools {Color.RESET}")
-    __tools_test(langchainLib)
-
-    # StringLib.logging_in_box(f"\n{Color.YELLOW} 测试graph {Color.RESET}")
-    # __graph_test(langchainLib)
-
-if __name__ == "__main__":
-    main()
-    
-    # markdown_text = readFile("./output1/605aeaf6963a5f13db36dd27533f9ebd.md")
-    # split_result = split_text_with_protected_blocks(markdown_text)
-    # for index,part in enumerate(split_result):
-    #     writeFile(f"test-{index}.md",part)
-    
-    # 测试hf opengpt4o
-    # langchainLib = LangchainLib()
-    # client = langchainLib.get_opengpt4o_client("api_key")
-    # prompt = """识别图片的类型，返回JSON格式：
-    #             {type:图片类型(流程图、架构图、界面图、其他}
-    #         """
-    # result = langchainLib.opengpt4o_predict(client,
-    #                         prompt=textwrap.dedent(prompt),imageUrl=None)
-    # print(result)
 

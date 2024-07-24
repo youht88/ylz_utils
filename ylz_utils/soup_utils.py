@@ -8,7 +8,6 @@ from .file_utils import *
 import time
 import requests
 from lxml import etree
-from logger import logger
 import uuid
 class SoupLib():
     @classmethod
@@ -215,7 +214,7 @@ class SoupLib():
         for idx,element in enumerate(soup.find_all(lambda tag: _hasattrs(tag))):
             value_hash = element.attrs[value_key]
             new_text = dictionary.get(value_hash,{}).get("target_text")
-            logger.debug(f"mask_html_with_dictionary---> idx={idx},value_hash={value_hash},bool(new_text)={bool(new_text)}")
+            logging.debug(f"mask_html_with_dictionary---> idx={idx},value_hash={value_hash},bool(new_text)={bool(new_text)}")
             if new_text:
                 element.string = f"{key}={value_hash}"
     @classmethod

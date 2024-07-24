@@ -1,4 +1,4 @@
-from logger import logger
+import logging
 import json
 import os
 import shutil
@@ -14,7 +14,7 @@ class FileLib():
             with open(filename,"r",encoding=encoding) as f:
                 data = json.load(f)
         except Exception as e:
-            logger.info(f"{filename} error.{e}")
+            logging.info(f"{filename} error.{e}")
             data = {}
         return data
     @classmethod
@@ -22,10 +22,10 @@ class FileLib():
         try:
             with open(filename,"w",encoding='utf8') as f:
                 json.dump(data,f,ensure_ascii=False,indent=4,sort_keys=True)
-            logger.info(f"dump json {filename} success")
+            logging.info(f"dump json {filename} success")
             return True
         except Exception as e:
-            logger.info(f"dump json {filename} error.{e}")
+            logging.info(f"dump json {filename} error.{e}")
             return False
     @classmethod
     def writeFile(cls,filename,text,mode = "w") -> bool:
@@ -37,10 +37,10 @@ class FileLib():
             else:
                 with open(filename, mode,encoding="utf8") as f:
                     f.write(text)        
-            logger.info(f"File saved to {filename}")
+            logging.info(f"File saved to {filename}")
             return True
         except Exception as e:
-            logger.info(f"save {filename} error.{e}")
+            logging.info(f"save {filename} error.{e}")
             return False
     @classmethod
     def readFile(cls,filename,mode = "r"):
@@ -54,13 +54,13 @@ class FileLib():
     def rmFile(cls,filename) -> bool:
         try:
             if not os.path.exists(filename):
-                logger.info(f"文件 {filename} 不存在.")
+                logging.info(f"文件 {filename} 不存在.")
                 return True
             os.remove(filename)
-            logger.info(f"文件 {filename} 已被删除.")
+            logging.info(f"文件 {filename} 已被删除.")
             return True
         except Exception as e:
-            logger.info(f"删除文件 {filename} 失败.") 
+            logging.info(f"删除文件 {filename} 失败.") 
             return False   
     @classmethod
     def mkdir(cls,path):
@@ -69,13 +69,13 @@ class FileLib():
     def rmdir(cls,path) -> bool:
         try:
             if not os.path.exists(path):
-                logger.info(f"目录 {path} 不存在.")
+                logging.info(f"目录 {path} 不存在.")
                 return    
             shutil.rmtree(path,ignore_errors=True)
-            logger.info(f"目录 {path} 已被删除.")
+            logging.info(f"目录 {path} 已被删除.")
             return True
         except Exception as e:
-            logger.info(f"删除目录 {path} 失败.{e}")
+            logging.info(f"删除目录 {path} 失败.{e}")
             return False 
     @classmethod
     def readFiles(cls,dir,files_glob):

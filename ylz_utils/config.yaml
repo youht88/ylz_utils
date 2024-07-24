@@ -1,0 +1,40 @@
+
+LLM:
+    DEFAULT: "LLM.GROQ"
+    SILICONFLOW:
+        API_KEYS: ${SILICONFLOW_API_KEYS}
+        BASE_URL: https://api.siliconflow.cn/v1
+        MODEL: ${SILICONFLOW_LLM_MODEL}
+    TOGETHER: 
+        API_KEYS: ${TOGETHER_API_KEYS}
+        BASE_URL: https://api.together.xyz/v1
+        MODEL: ${TOGETHER_LLM_MODEL}
+    GROQ:
+        API_KEYS: ${GROQ_API_KEYS}
+        BASE_URL: https://api.groq.com/openai/v1
+        MODEL: ${GROQ_LLM_MODEL}
+    GEMINI:
+        API_KEYS: ${GEMINI_API_KEYS}
+        MODEL: ${GEMINI_LLM_MODEL}
+    DEEPSEEK:
+        API_KEYS: ${DEEPSEEK_API_KEYS}
+        BASE_URL: https://api.deepseek.com/v1
+        MODEL: ${DEEPSEEK_LLM_MODEL}
+    QIANFAN:
+        API_KEYS: ${QIANFAN_API_KEYS}
+        SEC_KEYS: ${QIANFAN_SEC_KEYS}
+        MODEL: ${QIANFAN_LLM_MODEL}
+    OLLAMA:
+        API_KEYS: ${OLLAMA_API_KEYS}
+        MODEL: ${OLLAMA_LLM_MODEL}
+        
+EMBEDDING:
+    TOGETHER: 
+        API_KEYS: ${TOGETHER_API_KEYS}
+        MODEL: ${TOGETHER_EMBEDDING_MODEL}
+    GEMINI:
+        API_KEYS: ${GEMINI_API_KEYS}
+        MODEL: ${GEMINI_EMBEDDING_MODEL}
+SEARCH_TOOLS:
+    TAVILY:
+        API_KEYS: ${TAVILY_API_KEYS}

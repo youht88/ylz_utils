@@ -62,4 +62,4 @@ class Config:
         return cls.__config
     else:
         value = cls.__config.get(key, default)
-        print("get:",type(value),key,value)
+        return value

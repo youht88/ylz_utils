@@ -3,7 +3,7 @@ import imghdr
 from PIL import Image
 import base64
 import requests
-from logger import logger
+import logging
 
 import xml.etree.ElementTree as ET
 
@@ -28,10 +28,10 @@ def get_url_image(url):
                 if content_type.index("svg") > -1:
                     return (response.content, "svg")
                 else:
-                    logger.debug(f"无法识别图片类型：{image_type}")
+                    logging.debug(f"无法识别图片类型：{image_type}")
                     return (None, None)
     else:
-        logger.debug(f"无法下载图片，状态码：{response.status_code}") 
+        logging.debug(f"无法下载图片，状态码：{response.status_code}") 
         return (None, None)
 
 def convert_to_base64(pil_image):

@@ -1,12 +1,15 @@
 [tool.poetry]
 name = "ylz-utils"
-version = "0.1.0"
+version = "0.1.2"
 description = "ylz 工具类"
 authors = ["youht88"]
 readme = "README.md"
 
 [[tool.poetry.packages]]
 include = "ylz_utils"
+
+[tool.poetry.scripts]
+ylz_translate = "ylz_translate.cli.main:run"
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -24,6 +27,18 @@ faiss-cpu = "^1.8.0.post1"
 playwright = "^1.45.1"
 argparse = "^1.4.0"
 qianfan = "^0.4.2"
+gradio-client = "^1.1.1"
+typing-extensions = "^4.12.2"
+annotated-types = "^0.7.0"
+pydantic-core = "^2.20.1"
+h11 = "^0.14.0"
+langchain-core = "^0.2.23"
+distro = "^1.9.0"
+huggingface-hub = "^0.24.1"
+websockets = "^12.0"
+fastapi = "^0.111.1"
+langchain-ollama = "^0.1.0"
+sse-starlette = "^2.1.2"
 
 
 [build-system]
@@ -34,4 +49,4 @@ build-backend = "poetry.core.masonry.api"
 [[tool.poetry.source]]
 name = "tsinghua"
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
-default = true
+priority = "default"

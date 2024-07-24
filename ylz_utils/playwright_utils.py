@@ -2,7 +2,6 @@ import asyncio
 from pydoc import writedoc
 from playwright.async_api import async_playwright, Browser, Page
 import time
-from logger import logger
 import shlex
 from .langchain_utils import *
 from .soup_utils import SoupLib
@@ -25,22 +24,22 @@ class PlaywrightLib:
         await self.browser.close()
         await self.playwright.stop()
     async def goto(self, url,timeout=60000,wait_until="load",start_log="",end_log=""):
-        bool(start_log) and logger.info(start_log)
+        bool(start_log) and logging.info(start_log)
         await self.page.goto(url,timeout=timeout,wait_until=wait_until)
-        bool(end_log) and logger.info(end_log)
+        bool(end_log) and logging.info(end_log)
 
     async def click(self, selector,start_log="",end_log=""):
-        bool(start_log) and logger.info(start_log)
+        bool(start_log) and logging.info(start_log)
         await self.page.click(selector)
-        bool(end_log) and logger.info(end_log)
+        bool(end_log) and logging.info(end_log)
 
     async def fill(self, selector, text,start_log="",end_log=""):
-        bool(start_log) and logger.info(start_log)
+        bool(start_log) and logging.info(start_log)
         await self.page.fill(selector, text)
-        bool(end_log) and logger.info(end_log)
+        bool(end_log) and logging.info(end_log)
 
     async def get_html(self, selector=None, start_log="",end_log=""):
-        bool(start_log) and logger.info(start_log)
+        bool(start_log) and logging.info(start_log)
         if bool(selector):
             elements = await self.page.query_selector_all(f"xpath={selector}")
             content = content = await asyncio.gather(
@@ -48,10 +47,10 @@ class PlaywrightLib:
             )
         else:
             content = [await self.page.content()]
-        bool(end_log) and logger.info(end_log)
+        bool(end_log) and logging.info(end_log)
         return content
     async def replace_html(self, selector=None, innerHTML='<div>HELLO...</div>',start_log="",end_log=""):
-        bool(start_log) and logger.info(start_log)
+        bool(start_log) and logging.info(start_log)
         if bool(selector):
             elements = await self.page.query_selector_all(f"xpath={selector}")
             await asyncio.gather(
@@ -76,46 +75,46 @@ class PlaywrightLib:
             # element[0].inner_html = '<div> hello </div>' 
         else:
             await self.page.set_content(innerHTML)
-        bool(end_log) and logger.info(end_log)
+        bool(end_log) and logging.info(end_log)
     async def selector_exists(self, selector) -> bool:
         element = self.page.locator(selector)
         return await element.count() > 0
     async def wait_for_selector(self, selector, timeout=5000,start_log="",end_log=""):
-        bool(start_log) and logger.info(start_log)
+        bool(start_log) and logging.info(start_log)
         await self.page.wait_for_selector(selector, timeout=timeout)
-        bool(end_log) and logger.info(end_log)
+        bool(end_log) and logging.info(end_log)
 
     async def wait_for_load_state(self, state,start_log="",end_log=""):
-        bool(start_log) and logger.info(start_log)
+        bool(start_log) and logging.info(start_log)
         await self.page.wait_for_load_state(state)
-        bool(end_log) and logger.info(end_log)
+        bool(end_log) and logging.info(end_log)
     
     async def text_content(self, selector, start_log="",end_log=""):
-        bool(start_log) and logger.info(start_log)
+        bool(start_log) and logging.info(start_log)
         text = await self.page.text_content(selector)
-        bool(end_log) and logger.info(end_log)
+        bool(end_log) and logging.info(end_log)
         return text
     async def alltext_content(self, selector, start_log="",end_log=""):
-        bool(start_log) and logger.info(start_log)
+        bool(start_log) and logging.info(start_log)
         elements = await self.page.query_selector_all(f"xpath={selector}")
         textes = list(map(lambda element:element.text_content(), elements))
-        bool(end_log) and logger.info(end_log)
+        bool(end_log) and logging.info(end_log)
         return textes
     
     async def screenshot(self, path="screenshot.png"):
         await self.page.screenshot(path=path)
 
     def wait(self, milliseconds,start_log="",end_log=""):
-        bool(start_log) and logger.info(start_log)
+        bool(start_log) and logging.info(start_log)
         time.sleep(milliseconds / 1000)  # 将毫秒转换为秒
-        bool(end_log) and logger.info(end_log)
+        bool(end_log) and logging.info(end_log)
     
     async def close(self):
         await self.browser.close()
         await self.playwright.stop()
 
     async def get_attributes(self, selector, attribute_names, start_log="",end_log=""):
-        bool(start_log) and logger.info(start_log)
+        bool(start_log) and logging.info(start_log)
         if type(attribute_names)!=list and type(attribute_names)!=tuple:
             attribute_names = [attribute_names]
         attribute_values = await self.page.evaluate(
@@ -135,7 +134,7 @@ class PlaywrightLib:
             (selector,attribute_names),
             
         )
-        bool(end_log) and logger.info(end_log)
+        bool(end_log) and logging.info(end_log)
         return attribute_values
     async def get_html_between_xpaths(self, xpath1, xpath2,include_start=True,include_end=False):
         """获取两个 XPath 之间的 HTML 片段。
