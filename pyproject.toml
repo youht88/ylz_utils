@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ylz-utils"
-version = "0.1.4"
+version = "0.1.5"
 description = "ylz 工具类"
 authors = ["youht88"]
 readme = "README.md"
@@ -9,7 +9,7 @@ readme = "README.md"
 include = "ylz_utils"
 
 [tool.poetry.scripts]
-ylz_translate = "ylz_translate.cli.main:run"
+ylz_utils = "ylz_utils.cli.main:run"
 
 [tool.poetry.dependencies]
 python = "^3.10"
