@@ -24,7 +24,8 @@ def main():
                               choices=["llm","prompt","loader","runnable","tools","rag","outputParser","graph","other"],
                               help="测试内容")
     start_parser.add_argument("--llm",type=str,help="语言模型标识，例如：LLM.DEEPSEEK")
-    start_parser.add_argument("--input",type=str,default="hello",help="input message")
+    start_parser.add_argument("--model",type=str,help="model")
+    start_parser.add_argument("--message",type=str,default="hello",help="input message")
     # start_parser.add_argument("--only_download",type=bool,default=False,help="仅下载网页html,不进行翻译。默认:False (json模式该参数不起作用)")
     # start_parser.add_argument("-s","--size",type=int,default=1500,help="切分文件的字节大小,默认:1500")
     # start_parser.add_argument("-c","--clear_error",action="store_true",help="清除task.json文件中的错误信息,默认:False")
@@ -42,13 +43,6 @@ def main():
         asyncio.run(start(args))
     elif args.command == "serve":
         serve(args)
-    else:
-        print("未知的命令")
-# python3 ../../fix.py --mode json fixDict --dict_hash b614b4 --new_text="一条消息由消息头和消息体组成。以下部分专注于消息体结构。有关消息头结 构，请参阅："
-# python3 ../../fix.py --mode json fixDict --old_text "abcde" --new_text="ABCDE"
-# python3 ../../fix.py --mode json clearTask --url_id d2a41fe3fc36fe7e998e88623d2889a8 --blocks 1 3 5
-# python3 ../../fix.py --mode json fixDict --old_text "<.+>(.*消息由.*?)</.+>" --new_text "报文由报文头和报文正文组成。以下部 分专注于报文正文结构。报文头结构请参阅" --issubtext
-# python3 ../../fix.py --mode json fixDict --old_text "<.+>(.*0s.*?)</.+>" --new_text "" --issubtext -l
 
 if __name__ == "__main__":
    main()

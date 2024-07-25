@@ -16,19 +16,22 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 
 def __other(langchainLib:LangchainLib,args):
     llm_key = args.llm
-    input = args.input
-    llm = langchainLib.get_llm(llm_key)
-    chain = RunnableParallel({"output_message": llm})
-    history = RunnableWithMessageHistory(
-        chain,
-        langchainLib.get_session_history,
-        output_messages_key="output_message",
-    )
-    chat = langchainLib.get_prompt() | history | langchainLib.get_outputParser()
-    chat = langchainLib.get_prompt() | llm | langchainLib.get_outputParser()
-    res = chat.stream({"input": input}, {'configurable': {'session_id': '1'}} )
+    input = args.message
+    model = args.model
+    llm = langchainLib.get_llm(llm_key,model=model)
+    #### chat 模式
+    prompt = langchainLib.get_prompt(use_chat=True)
+    chat = langchainLib.get_chat(llm,prompt)
+    chain = chat | langchainLib.get_outputParser()
+    res = chain.stream({"input":input}, {'configurable': {'user_id': 'youht','conversation_id':'1'}} )
+    #### llm 模式
+    # prompt = langchainLib.get_prompt()
+    # chain = prompt | llm | langchainLib.get_outputParser()
+    # res = chain.stream({"input":input} )
+    
     for chunk in res:
         print(chunk,end="")
+
 def __llm_test(langchainLib:LangchainLib,args):
     llm_key = args.llm
     for _ in range(3):
@@ -37,7 +40,9 @@ def __llm_test(langchainLib:LangchainLib,args):
         print("res:",res)
     print("llms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.llms])
 
-def __outputParser_test(langchainLib:LangchainLib):
+def __outputParser_test(langchainLib:LangchainLib,args):
+    message = args.message
+    llm_key = args.llm
     class Food(BaseModel):
         name: str = Field(description="name of the food")
         place: str = Field(defualt="未指定",description="where to eat food?",examples=["家","公司","体育馆"])
@@ -59,26 +64,26 @@ def __outputParser_test(langchainLib:LangchainLib):
 
 
     # And a query intended to prompt a language model to populate the data structure.
-    fixed_parser = OutputFixingParser.from_llm(parser=parser, llm=langchainLib.get_llm('LLM.GROQ'))
+    fixed_parser = OutputFixingParser.from_llm(parser=parser, llm=langchainLib.get_llm(llm_key))
     # retry_parser = RetryOutputParser.from_llm(parser=parser, llm=langchainLib.get_llm())
 
     prompt2 = langchainLib.get_prompt(
             system_prompt = "用中文分析句子的内容。如果没有指定食物热量则根据食物的名称和数量进行估计。同时判断食物是否为健康",
             human_keys={"command":"输入的语句"},
             outputParser = parser,
-            is_chat = False
+            use_chat = False
         )
 
     #chain = prompt2 | langchainLib.get_llm() | fixed_parser
     
-    chain = prompt2 | langchainLib.get_llm('LLM.GROQ') | parser
+    chain = prompt2 | langchainLib.get_llm(llm_key) | parser
     
     # retry_chain = RunnableParallel(
     #     completion=chain, prompt_value=prompt1,
     #     ) | RunnableLambda(lambda x:retry_parser.parse_with_prompt(**x))
 
     #output = chain.invoke({"command": "我今天在家吃了3个麦当劳炸鸡和一个焦糖布丁，昨天8点在电影院吃了一盘20千卡的西红柿炒蛋"})
-    output = chain.invoke({"command": "两个小时前吃了一根雪糕，还喝了一杯咖啡"})
+    output = chain.invoke({"command": message})
     #retry_parser.parse_with_prompt(output['completion'], output['prompt_value'])
     #retry_parser.parse_with_prompt(output['completion'],output['prompt_value'])
     print("\noutput parser:",output)
@@ -241,7 +246,7 @@ async def start(args):
         __runnalble_test(langchainLib)
     elif args.mode == 'outputParser':    
         StringLib.logging_in_box(f"{Color.YELLOW} 测试outputParser {Color.RESET}")
-        __outputParser_test(langchainLib)
+        __outputParser_test(langchainLib,args)
     elif args.mode == 'rag':    
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试rag {Color.RESET}")
         __rag_test(langchainLib)

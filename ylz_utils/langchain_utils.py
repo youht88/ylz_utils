@@ -133,10 +133,35 @@ class LangchainLib():
             cls = item["class"]
             setattr(cls,func_name,get_wrapper(func))
 
-    def get_session_history(self, user_id: str, conversation_id: str="ok"):
+    def get_user_session_history(self, user_id: str, conversation_id: str):
         return SQLChatMessageHistory(f"{user_id}--{conversation_id}", "sqlite:///memory.db")
 
-    def get_llm(self,key=None, full=False,delay=10)->ChatOpenAI:
+    def get_chat(self,llm,prompt,history_messages_key = "history"):
+        return RunnableWithMessageHistory(
+            prompt | llm,
+            self.get_user_session_history,
+            history_messages_key= history_messages_key,
+            history_factory_config=[
+                    ConfigurableFieldSpec(
+                        id="user_id",
+                        annotation=str,
+                        name="User ID",
+                        description="Unique identifier for the user.",
+                        default="",
+                        is_shared=True,
+                    ),
+                    ConfigurableFieldSpec(
+                        id="conversation_id",
+                        annotation=str,
+                        name="Conversation ID",
+                        description="Unique identifier for the conversation.",
+                        default="",
+                        is_shared=True,
+                    ),
+                ]
+        )
+
+    def get_llm(self,key=None, model=None, full=False, delay=10)->ChatOpenAI:
         if self.llms:
             if not key:
                 if self.default_llm_key:
@@ -156,6 +181,11 @@ class LangchainLib():
                     over_delay = (time.time() - llm.get('last_used',0)) > delay # 3秒内不重复使用
                     if not over_delay:
                         continue
+                    if not model and llm['llm']==None:
+                        llm['model'] = llm['default_model']
+                    elif model and model != llm.get('model'):
+                        llm['model'] = model
+                        llm['llm'] = None 
                     if not llm.get('llm'):
                         llm_type = llm.get('type')
                         if llm_type == 'LLM.GEMINI':
@@ -240,30 +270,22 @@ class LangchainLib():
             temperature = language.get("TEMPERATURE") if language.get("TEMPERATURE") else default['temperature']
             for idx, api_key in enumerate(api_keys):
                 if key == "LLM.QIANFAN" and len(api_keys) == len(sec_keys):
-                    self.llms.append({
-                        "llm": None,
-                        "type": key,
-                        "base_url":base_url,
-                        "api_key":api_key,
-                        "sec_key":sec_keys[idx],
-                        "model":model,
-                        "temperature":temperature,
-                        "used":0,
-                        "last_used": 0 
-                    })
+                    sec_key = sec_keys[idx]
                 else:
-                    self.llms.append({
-                        "llm": None,
-                        "type": key,
-                        "base_url":base_url,
-                        "api_key":api_key,
-                        "sec_key":"",
-                        "model":model,
-                        "temperature":temperature,
-                        "used":0,
-                        "last_used": 0 
-                    })
-        
+                    sec_key = ""
+                self.llms.append({
+                    "llm": None,
+                    "type": key,
+                    "base_url":base_url,
+                    "api_key":api_key,
+                    "sec_key": sec_key,
+                    "default_model": model,
+                    "model":model,
+                    "temperature":temperature,
+                    "used":0,
+                    "last_used": 0 
+                })
+                
     def get_embedding(self,key="EMBEDDING.TOGETHER",full=False) :
         if self.embeddings:
             if not key:
@@ -313,12 +335,12 @@ class LangchainLib():
                     "used":0,
                     "last_used": 0 
                 })
-    def get_prompt(self,system_prompt=None,placeholder_key=None,human_keys={"input":""},outputParser=None,is_chat = True,use_chinese=True) -> ChatPromptTemplate:
+    def get_prompt(self,system_prompt=None,human_keys={"input":""},outputParser=None,history_messages_key="history",use_chat = False,use_chinese=True) -> ChatPromptTemplate:
         if not system_prompt:
             system_prompt=""
         if use_chinese:
             system_prompt = f"所有问题请用中文回答\n{system_prompt}"
-        if not is_chat:
+        if not use_chat:
             human_input_keys = []
             if human_keys:
                 human_prompt = ""
@@ -348,8 +370,8 @@ class LangchainLib():
             elif system_prompt:
                 messages.append(("system",system_prompt))
 
-            if placeholder_key:
-                messages.append(("placeholder", f"{{{placeholder_key}}}"))
+            messages.append(("placeholder", f"{{{history_messages_key}}}"))
+            
             if human_keys:
                 human_prompt = ""
                 for key in human_keys:
