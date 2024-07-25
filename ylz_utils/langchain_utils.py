@@ -251,6 +251,8 @@ class LangchainLib():
         for key in defaults:
             default = defaults[key]
             language = self.config.get(key)
+            if not language:
+                continue
             base_url = language.get("BASE_URL")
             api_keys = language.get("API_KEYS")
             if api_keys:

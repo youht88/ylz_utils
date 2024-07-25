@@ -12,7 +12,8 @@ def serve(args):
     host = args.host
     port = args.port
     llm_key = args.llm
+    model = args.model
     app = FastAPI(title="Langserve")
-    chain = langchainLib.get_prompt(human_keys={"input":"问题"}) | langchainLib.get_llm(llm_key) | langchainLib.get_outputParser()
+    chain = langchainLib.get_prompt(human_keys={"input":"问题"}) | langchainLib.get_llm(llm_key,model) | langchainLib.get_outputParser()
     add_routes(app,runnable=chain,path=path)
     uvicorn.run(app, host = host, port = port)

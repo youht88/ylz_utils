@@ -35,6 +35,7 @@ def main():
     serve_parser.add_argument("--port",type=int,default=8000,help="listen port,default::8000")
     serve_parser.add_argument("--path",type=str,default="/test",help="path,default:: /test")
     serve_parser.add_argument("--llm",type=str,help="llm,example: LLM.DEEPSEEK")    
+    serve_parser.add_argument("--model",type=str,help="model,example: deepseek-chat")    
     args = parser.parse_args()
 
     init(args)
