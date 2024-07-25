@@ -12,10 +12,23 @@ from langchain_core.runnables import RunnablePassthrough,RunnableLambda,Runnable
 from langgraph.graph import START,END,MessageGraph
 from langgraph.prebuilt import ToolNode
 
+from langchain_core.runnables.history import RunnableWithMessageHistory
+
 def __other(langchainLib:LangchainLib,args):
     llm_key = args.llm
-    print(langchainLib.get_llm(llm_key))
-
+    input = args.input
+    llm = langchainLib.get_llm(llm_key)
+    chain = RunnableParallel({"output_message": llm})
+    history = RunnableWithMessageHistory(
+        chain,
+        langchainLib.get_session_history,
+        output_messages_key="output_message",
+    )
+    chat = langchainLib.get_prompt() | history | langchainLib.get_outputParser()
+    chat = langchainLib.get_prompt() | llm | langchainLib.get_outputParser()
+    res = chat.stream({"input": input}, {'configurable': {'session_id': '1'}} )
+    for chunk in res:
+        print(chunk,end="")
 def __llm_test(langchainLib:LangchainLib,args):
     llm_key = args.llm
     for _ in range(3):

@@ -47,6 +47,10 @@ from langchain_community.tools import DuckDuckGoSearchResults
 from langgraph.graph import START,END,MessageGraph,StateGraph
 from langgraph.prebuilt import ToolNode
 
+from langchain_community.chat_message_histories import SQLChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.runnables import ConfigurableFieldSpec
+
 from gradio_client import Client,file
 import re
 
@@ -129,6 +133,9 @@ class LangchainLib():
             cls = item["class"]
             setattr(cls,func_name,get_wrapper(func))
 
+    def get_session_history(self, user_id: str, conversation_id: str="ok"):
+        return SQLChatMessageHistory(f"{user_id}--{conversation_id}", "sqlite:///memory.db")
+
     def get_llm(self,key=None, full=False,delay=10)->ChatOpenAI:
         if self.llms:
             if not key:
@@ -201,7 +208,7 @@ class LangchainLib():
                    "LLM.SILICONFLOW":
                       {"model":"alibaba/Qwen1.5-110B-Chat","temperature":0},
                    "LLM.GROQ":
-                      {"model":"llama3-70b-8192-tool-use-preview","temperature":0},
+                      {"model":"llama3-groq-70b-8192-tool-use-preview","temperature":0},
                    "LLM.GEMINI":
                       {"model":"gemini-pro","temperature":0},
                     "LLM.DEEPSEEK":
