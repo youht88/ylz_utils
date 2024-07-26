@@ -1,6 +1,6 @@
 import os
 
-from .file_utils import FileLib
+from ylz_utils import FileLib
 
 class ConfigObject:
     def __init__(self, data):

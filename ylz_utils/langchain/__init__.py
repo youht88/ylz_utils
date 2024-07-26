@@ -54,9 +54,9 @@ from langchain_core.runnables import ConfigurableFieldSpec
 from gradio_client import Client,file
 import re
 
-from .config_utils import Config
-from .file_utils import FileLib
-from .data_utils import Color, StringLib
+from ..file import FileLib
+from ..config import Config
+from ..data import StringLib,Color
 
 import textwrap
 import random
@@ -450,7 +450,7 @@ class LangchainLib():
             #snippet,title,link: 
             pattern = "snippet: (.*?) title: (.*?) link: (.*?) snippet:"
             def __toDocument(text):
-                pattern = "\[snippet: (.*?) title: (.*?) link: (.*?)\]"
+                pattern = r"\[snippet: (.*?) title: (.*?) link: (.*?)\]"
                 matchs = re.findall(pattern,text)
                 docs = [Document(match[0],metadata={"title":match[1],"link":match[2]}) for match in matchs]
                 return docs

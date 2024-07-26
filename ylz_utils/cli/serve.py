@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from langserve import add_routes
 import uvicorn
 
-from ylz_utils.langchain_utils import LangchainLib
+from ylz_utils.langchain import LangchainLib
 
 def serve(args):
     print("args:",args)

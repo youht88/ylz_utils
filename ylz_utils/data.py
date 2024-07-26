@@ -137,8 +137,8 @@ class JsonLib:
                     if isinstance(path,int):
                         if key=="[]":
                             continue
-                        elif re.match("\[(\d+)\]",key):
-                            num = int(re.findall("\[(\d*)\]",key)[0])
+                        elif re.match(r"\[(\d+)\]",key):
+                            num = int(re.findall(r"\[(\d*)\]",key)[0])
                             if num != path:
                                 use = False
                                 break
@@ -178,13 +178,13 @@ class JsonLib:
         """
 
         keys = target_key_path.split(".")
-        old_keys = "/".join(map(lambda key:'@[]@' if re.match('\[.*\]',key) else f"@{key}@",keys))
+        old_keys = "/".join(map(lambda key:'@[]@' if re.match(r'\[.*\]',key) else f"@{key}@",keys))
         results: List[Dict[str, Any]] = []
 
         def _process_keys(data, keys, current_path: List):
             if not keys:
                 new_path = current_path.copy()
-                new_keys = "/".join(map(lambda key:'@[]@' if re.match('^\d+$',str(key)) else f"@{str(key)}@",new_path))
+                new_keys = "/".join(map(lambda key:'@[]@' if re.match(r'^\d+$',str(key)) else f"@{str(key)}@",new_path))
                 if (not isinstance(data, list)) and (not isinstance(data, dict)):
                     if new_keys.endswith(old_keys):
                         #results.append({"value":data,"path": new_path,"o1":old_keys,"n1":new_keys})
@@ -205,8 +205,8 @@ class JsonLib:
                         current_path.append(i)
                         _process_keys(item, keys[1:], current_path)
                         current_path.pop()
-            elif re.match("\[(\d+)\]",key):
-                num = int(re.findall("\[(\d+)\]",key)[0])
+            elif re.match(r"\[(\d+)\]",key):
+                num = int(re.findall(r"\[(\d+)\]",key)[0])
                 if isinstance(data, list):
                     if num < len(data):
                         current_path.append(num)
@@ -230,7 +230,7 @@ class JsonLib:
                         current_path.pop()
                 else:
                     new_path = current_path.copy()
-                    new_keys = "/".join(map(lambda key:'@[]@' if re.match('^\d+$',str(key)) else f'@{str(key)}@',new_path))
+                    new_keys = "/".join(map(lambda key:'@[]@' if re.match(r'^\d+$',str(key)) else f'@{str(key)}@',new_path))
                     if new_keys.endswith(old_keys):
                         #results.append({"value":data,"path": new_path,"o3":old_keys,"n3":new_keys})
                         results.append({"value":data,"path": new_path})

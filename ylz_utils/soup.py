@@ -3,8 +3,8 @@ import json
 from typing import List
 from bs4 import BeautifulSoup
 from bs4.element import Tag, Comment,Doctype,Script,Stylesheet
-from .crypto_utils import HashLib
-from .file_utils import *    
+from .crypto import HashLib
+from .file import *    
 import time
 import requests
 from lxml import etree
