@@ -14,16 +14,18 @@ from langgraph.prebuilt import ToolNode
 
 from langchain_core.runnables.history import RunnableWithMessageHistory
 
-def __other(langchainLib:LangchainLib,args):
+def __chat(langchainLib:LangchainLib,args):
     llm_key = args.llm
     input = args.message
     model = args.model
-    llm = langchainLib.get_llm(llm_key,model=model)
+    user_id = args.user if args.user else 'default'
+    conversation_id = args.conversation if args.conversation else 'default'
+    llm = langchainLib.get_llm(key=llm_key,model=model)
     #### chat 模式
     prompt = langchainLib.get_prompt(use_chat=True)
     chat = langchainLib.get_chat(llm,prompt)
     chain = chat | langchainLib.get_outputParser()
-    res = chain.stream({"input":input}, {'configurable': {'user_id': 'youht','conversation_id':'1'}} )
+    res = chain.stream({"input":input}, {'configurable': {'user_id': user_id,'conversation_id': conversation_id}} )
     #### llm 模式
     # prompt = langchainLib.get_prompt()
     # chain = prompt | llm | langchainLib.get_outputParser()
@@ -31,6 +33,7 @@ def __other(langchainLib:LangchainLib,args):
     
     for chunk in res:
         print(chunk,end="")
+    print("\n",langchainLib.get_llm(full=True))
 
 def __llm_test(langchainLib:LangchainLib,args):
     llm_key = args.llm
@@ -232,6 +235,7 @@ def __graph_test(langchainLib:LangchainLib):
 
 async def start(args):
     langchainLib = LangchainLib()
+    langchainLib.add_plugins()
     if args.mode == "llm":
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试llm {Color.RESET}")
         __llm_test(langchainLib,args)
@@ -256,6 +260,7 @@ async def start(args):
     elif args.mode == 'graph':
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试graph {Color.RESET}")
         __graph_test(langchainLib)
+    elif args.mode == 'chat':
+        __chat(langchainLib,args)
     else:
-        __other(langchainLib,args)
-    
+        print("args=",args)
