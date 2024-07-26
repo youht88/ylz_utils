@@ -41,7 +41,7 @@ def __llm_test(langchainLib:LangchainLib,args):
         llm = langchainLib.get_llm(llm_key)
         res = llm.invoke("hello")
         print("res:",res)
-    print("llms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.llms])
+    print("llms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.get_llm(full=True)])
 
 def __outputParser_test(langchainLib:LangchainLib,args):
     message = args.message
@@ -91,7 +91,7 @@ def __outputParser_test(langchainLib:LangchainLib,args):
     #retry_parser.parse_with_prompt(output['completion'],output['prompt_value'])
     print("\noutput parser:",output)
 
-    print("\nllms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.llms])
+    print("llms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.get_llm(full=True)])
 
 
 def __runnalble_test(langchainLib:LangchainLib):
@@ -136,7 +136,7 @@ async def __prompt_test(langchainLib:LangchainLib):
     chain = prompt | langchainLib.get_llm("LLM.GROQ") | outputParser
     promise = chain.batch([{"topic":"中国","what":"人口"},{"topic":"美国","what":"国土面积"},{"topic":"新加坡","what":"大学"}])
     print(promise)
-    print("\n\nllms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.llms])
+    print("llms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.get_llm(full=True)])
 
 def __rag_test(langchainLib:LangchainLib):
     ###### create vectorestore
@@ -188,7 +188,7 @@ def __tools_test(langchainLib:LangchainLib,args):
     langchainLib.add_plugins()
     llm_key = args.llm
     llm = langchainLib.get_llm(llm_key)
-    print("\n\nllms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.llms],"\n")
+    print("llms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.get_llm(full=True)])
 
     outputParser = langchainLib.get_outputParser(Output,fix=True,llm = llm,retry=3)
     prompt = langchainLib.get_prompt(human_keys = {"ask":"问题"},is_chat=False)
