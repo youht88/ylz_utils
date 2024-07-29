@@ -12,6 +12,26 @@ from langchain_core.runnables import RunnablePassthrough,RunnableLambda,Runnable
 from langgraph.graph import START,END,MessageGraph
 from langgraph.prebuilt import ToolNode
 
+def __agent(langchainLib:LangchainLib,args):
+    llm_key = args.llm
+    llm_model = args.model
+    message = args.message if args.message else "厦门今天天气怎么样?"
+    llm = langchainLib.get_llm(llm_key,llm_model)
+    prompt = langchainLib.get_prompt()
+    tools = []
+    tavily_tool = langchainLib.toolLib.web_search.get_tool()
+    tools.append(tavily_tool)
+    # langchain_docs_vectorestore = langchainLib.vectorstoreLib.faiss.load("langchain_docs.db")
+    # langchain_docs_retriever = langchain_docs_vectorestore.as_retriever()
+    # rag_tool = langchainLib.toolLib.rag_search.get_tool(langchain_docs_retriever,"langchain docs","langchain的文档")
+    # tools.append(rag_tool)
+    
+    agent =  langchainLib.get_agent(llm,tools)
+    res = agent.stream({"messages":[("user",message)]})
+    for chunk in res:
+        print(chunk , end="")
+    print("\n",langchainLib.get_llm(full=True),"\n")
+
 def __chat(langchainLib:LangchainLib,args):
     llm_key = args.llm
     input = args.message
@@ -143,12 +163,15 @@ async def __prompt_test(langchainLib:LangchainLib,args):
 
 def __rag_test(langchainLib:LangchainLib):
     ###### create vectorestore
+    docs=langchainLib.load_html_split_markdown("https://python.langchain.com/v0.2/docs/concepts/#tools",max_depth=1)
+    vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(docs[0]["blocks"])
+    langchainLib.save_faiss("langchain_docs.db",vectorestore)
     # docs = [Document("I am a student"),Document("who to go to china"),Document("this is a table")]
     # vectorestore = langchainLib.create_faiss_from_docs(docs)
     # langchainLib.save_faiss("faiss.db",vectorestore)
     
-    vectorestore = langchainLib.load_faiss("faiss.db")
-    print("v--->",langchainLib.search_faiss("I want to buy a table?",vectorestore,k=1))
+    #vectorestore = langchainLib.load_faiss("faiss.db")
+    #print("v--->",langchainLib.search_faiss("I want to buy a table?",vectorestore,k=1))
     
     ###### have bug when poetry add sentence_transformers   
     #v1 = langchainLib.get_huggingface_embedding()
@@ -195,7 +218,7 @@ def __tools_test(langchainLib:LangchainLib,args):
     print("llms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.get_llm(full=True)])
 
     outputParser = langchainLib.get_outputParser(Output,fix=True,llm = llm,retry=3)
-    prompt = langchainLib.get_prompt(human_keys = {"ask":"问题"},is_chat=False)
+    prompt = langchainLib.get_prompt(human_keys = {"ask":"问题"},use_chat=False)
     search = langchainLib.get_search_tool("TAVILY")
     tools = [search]
     #chain  = prompt | (lambda x: x.messages[-1].content) | search | (lambda x:'```json\n{"name":中国,"age":"20"}') | outputParser
@@ -203,20 +226,23 @@ def __tools_test(langchainLib:LangchainLib,args):
     chain = prompt | RunnableLambda(lambda x:x.text,name="抽取text") | search 
     #print("chain to_json = ",chain.to_json())
     #print("chain name=",chain.get_name())
-    print("chain graph=",chain.get_graph(),"\n")
+    print("\nchain graph=",chain.get_graph(),"\n")
     res = chain.invoke({"ask": "北京人口多少"})
     print(type(res),res)
-    FileLib.writeFile("graph1.png",chain.get_graph().draw_mermaid_png(),mode="wb")
+    #FileLib.writeFile("graph1.png",chain.get_graph().draw_mermaid_png(),mode="wb")
 
     # llm = langchainLib.get_llm("LLM.DEEPSEEK")
     # print("llm",llm.to_json())
-    #res = llm.invoke("你不擅长计算问题，遇到计算问题交给tool来完成")
-    #print(res)
-def __graph_test(langchainLib:LangchainLib):
+    llm.bind_tools(tools)
+    res = llm.invoke({"ask":"北京2024年人口多少"})
+    print(res)
+def __graph_test(langchainLib:LangchainLib,args):
+    llm_key = args.llm
+    llm_model = args.model
     def multiply(one: int, two:int):
         """Multiply two numbers"""
         return one * two
-    llm = langchainLib.get_llm()
+    llm = langchainLib.get_llm(llm_key,llm_model)
     llm_with_tools = llm.bind_tools([multiply])
     graph = MessageGraph()
     graph.add_node("oracle",llm_with_tools)
@@ -225,8 +251,10 @@ def __graph_test(langchainLib:LangchainLib):
     graph.add_edge(START,"oracle")
     graph.add_edge("multiply",END)
     def router(state)-> Literal["multiply","__end__"]:
+        StringLib.logging_in_box(str(state))
         tool_calls = state[-1].additional_kwargs.get("tool_nodes",[])
         if len(tool_calls):
+            print("okokok"*10)
             return "multiply"
         else:
             return END
@@ -263,8 +291,11 @@ async def start(args):
         __tools_test(langchainLib,args)
     elif args.mode == 'graph':
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试graph {Color.RESET}")
-        __graph_test(langchainLib)
+        __graph_test(langchainLib,args)
     elif args.mode == 'chat':
         __chat(langchainLib,args)
+    elif args.mode == 'agent':
+        __agent(langchainLib,args)
     else:
         print("args=",args)
+        print("llms:",[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_llm(full=True)])

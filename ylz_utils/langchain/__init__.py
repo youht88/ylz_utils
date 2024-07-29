@@ -25,6 +25,7 @@ from operator import itemgetter
 from langgraph.graph import START,END,MessageGraph,StateGraph
 from langgraph.prebuilt import ToolNode
 
+from ylz_utils.langchain.agents import AgentLib
 from ylz_utils.langchain.llms import LLMLib
 from ylz_utils.langchain.embeddings import EmbeddingLib
 from ylz_utils.langchain.loaders import LoaderLib
@@ -47,8 +48,9 @@ class LangchainLib():
         self.loaderLib = LoaderLib()
         self.spliterLib = SpliterLib()
         self.outputParserLib = OutputParserLib()
-        self.toolLib = ToolLib()
         self.vectorstoreLib = VectorstoreLib(self)
+        self.toolLib = ToolLib(self)
+        self.agentLib = AgentLib(self)
         #self.add_plugins()
         # 创建一个对话历史管理器
         self.memory = ConversationBufferMemory()
@@ -58,10 +60,12 @@ class LangchainLib():
         self.get_embedding = self.embeddingLib.get_embedding
         self.get_prompt = self.promptLib.get_prompt
         self.get_outputParser = self.outputParserLib.get_outputParser
-        self.get_search_tool = self.toolLib.search.get_search_tool
+        self.get_websearch_tool = self.toolLib.web_search.get_tool
+        self.get_ragsearch_tool = self.toolLib.rag_search.get_tool
         self.get_textsplitter = self.spliterLib.get_textsplitter
         self.split_markdown_docs = self.spliterLib.split_markdown_docs
-
+        self.get_agent = self.agentLib.get_agent
+        
     def add_plugins(self,debug=False):
         plugins = [{"class":ChatOpenAI,"func":ChatOpenAI.invoke},
                    {"class":ChatOpenAI,"func":ChatOpenAI.ainvoke},

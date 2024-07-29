@@ -1,4 +1,6 @@
 from langchain_community.vectorstores import FAISS
+from langchain_core.documents import Document
+import tqdm
 
 class FaissLib():
     def __init__(self,langchainLib):
@@ -7,7 +9,10 @@ class FaissLib():
     def create_from_docs(self,docs,embedding=None) -> FAISS:
         if not embedding:
             embedding = self.langchainLib.get_embedding()
-        vectorstore = FAISS.from_documents(docs,embedding=embedding)
+        #vectorstore = FAISS.from_documents(docs,embedding=embedding)
+        vectorstore = FAISS.from_documents([Document("")],embedding)    
+        for doc in tqdm(docs):
+            vectorstore.add_documents([doc],embedding=embedding)
         return vectorstore
     def create_from_textes(self,textes,embedding=None) -> FAISS:
         if not embedding:

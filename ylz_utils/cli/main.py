@@ -26,7 +26,7 @@ def main():
     start_parser = subparsers.add_parser("start", help="启动测试")
     start_parser.add_argument("--mode",type=str,
                               required=True,
-                              choices=["llm","chat","prompt","loader","runnable","tools","rag","outputParser","graph","other"],
+                              choices=["llm","chat","prompt","loader","runnable","tools","rag","outputParser","graph","agent"],
                               help="测试内容")
     start_parser.add_argument("--llm",type=str,help="语言模型标识，例如：LLM.DEEPSEEK")
     start_parser.add_argument("--model",type=str,help="model")

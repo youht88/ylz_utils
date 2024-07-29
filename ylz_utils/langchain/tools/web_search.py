@@ -9,8 +9,11 @@ from langchain_community.tools import DuckDuckGoSearchResults
 from langchain.docstore.document import Document
 from langchain_core.runnables import RunnableLambda
 
-class SearchTool():
-    def get_search_tool(self,key="TAVILY",rows=4):
+class WebSearchTool():
+    def __init__(self,langchainLib):
+        self.langchainLib = langchainLib
+        self.config = langchainLib.config
+    def get_tool(self,key="TAVILY",rows=4):
         key = key.upper()
         if key == "DUCKDUCKGO":
             search = DuckDuckGoSearchAPIWrapper()
@@ -44,6 +47,9 @@ class SearchTool():
                     search = TavilySearchAPIWrapper(tavily_api_key=api_key)
                     tool = TavilySearchResults(api_wrapper=search,max_results=rows)
                     tool_doc = tool | RunnableLambda(__toDocument, name="Tavily2Document")
-                    return tool_doc
+                    #return tool_doc
+                    return tool
                 except:
                     raise Exception("请先设置TAVILY_API_KEYS环境变量") 
+        else:
+            raise Exception(f"不支持{key}的搜索") 

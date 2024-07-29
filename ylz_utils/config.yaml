@@ -29,7 +29,7 @@ LLM:
         MODEL: ${OLLAMA_LLM_MODEL}
     MOONSHOT:
         API_KEYS: ${MOONSHOT_API_KEYS}
-        BASE_URL: https://api.moonshot.com/v1
+        BASE_URL: https://api.moonshot.cn/v1
         MODEL: ${MOONSHOT_LLM_MODEL}    
 EMBEDDING:
     TOGETHER: 

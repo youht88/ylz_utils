@@ -42,10 +42,11 @@ class LLMLib():
     def get_user_session_history(self, user_id: str, conversation_id: str):
         return SQLChatMessageHistory(f"{user_id}--{conversation_id}", "sqlite:///memory.db")
 
-    def get_chat(self,llm,prompt,history_messages_key = "history"):
+    def get_chat(self,llm,prompt,history_messages_key = "history",input_key = "input"):
         return RunnableWithMessageHistory(
             prompt | llm,
             self.get_user_session_history,
+            input_messages_key = input_key,
             history_messages_key= history_messages_key,
             history_factory_config=[
                     ConfigurableFieldSpec(
