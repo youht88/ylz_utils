@@ -18,17 +18,16 @@ from gradio_client import Client,file
 
 class LLMLib():
     llms:list = [] 
-    default_llm_key = "LLM.DEEPSEEK"
-
+    default_llm_key = None
     def __init__(self):
         self.config = Config.get()
+        self.regist_llm()
         if self.config.get("LLM.DEFAULT"):
             default_llm_key = self.config.get("LLM.DEFAULT")
             self.set_default_llm_key(default_llm_key)
         else:
             self.clear_default_llm_key()
         #self.add_plugins()
-        self.regist_llm()
     def set_default_llm_key(self,key):
         llms = [item for item in self.llms if item['type']==key]
         if llms:
@@ -152,7 +151,9 @@ class LLMLib():
                     "LLM.QIANFAN":
                       {"model":"Yi-34B-Chat","temperature":0.7},
                     "LLM.OLLAMA":
-                      {"model":"llama3.1","temperature":0.7}
+                      {"model":"llama3.1","temperature":0.7},
+                    "LLM.MOONSHOT":
+                      {"model":"moonshot-v1-8k","temperature":0.3}
                   }
         for key in defaults:
             default = defaults[key]

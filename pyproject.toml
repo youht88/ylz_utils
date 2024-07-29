@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ylz-utils"
-version = "0.1.10"
+version = "0.1.11"
 description = "ylz 工具类"
 authors = ["youht88"]
 readme = "README.md"
@@ -43,6 +43,7 @@ pdfminer = "^20191125"
 docx2txt = "^0.8"
 websockets = "11.0"
 python-pptx = "^0.6.23"
+markdownify = "^0.13.1"
 
 [build-system]
 requires = ["poetry-core"]

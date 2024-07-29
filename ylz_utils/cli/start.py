@@ -12,8 +12,6 @@ from langchain_core.runnables import RunnablePassthrough,RunnableLambda,Runnable
 from langgraph.graph import START,END,MessageGraph
 from langgraph.prebuilt import ToolNode
 
-from langchain_core.runnables.history import RunnableWithMessageHistory
-
 def __chat(langchainLib:LangchainLib,args):
     llm_key = args.llm
     input = args.message
@@ -118,22 +116,27 @@ def __runnalble_test(langchainLib:LangchainLib):
     res = runnable2.invoke({"num": 1})
     print("\nrunnalbe:",res)
 
-async def __prompt_test(langchainLib:LangchainLib):
-
-    prompt = langchainLib.get_prompt(f"你对日历时间非常精通",human_keys={"context":"关联的上下文","question":"问题是"},is_chat = True)
+async def __prompt_test(langchainLib:LangchainLib,args):
+    llm_key = args.llm
+    llm_model = args.model
+    prompt = langchainLib.get_prompt(f"你对日历时间非常精通",human_keys={"context":"关联的上下文","question":"问题是"},use_chat = False)
     prompt.partial(context="我的名字叫小美")   # 这个为什么不起作用?
-    llm = langchainLib.get_llm("LLM.TOGETHER")
+    print("!!!!",langchainLib.llmLib.default_llm_key,llm_key)
+    llm = langchainLib.get_llm(llm_key,llm_model)
+    print(llm)
     outputParser = langchainLib.get_outputParser()
     chain = prompt | llm | outputParser
 
     res = await chain.ainvoke({"question":"我叫什么名字，今天礼拜几","context":"我是海涛"})
     print(res)
-    res = chain.stream({"question":"用我的名字写一周诗歌","context":"我的名字叫小美"})
+    res = chain.stream({"question":"用我的名字写一首诗歌","context":"我的名字叫小美"})
     for chunk in res:
         print(chunk,end="")
     
     prompt = PromptTemplate.from_template("用中文回答：{topic} 的{what}是多少")
-    chain = prompt | langchainLib.get_llm("LLM.GROQ") | outputParser
+    llm = langchainLib.get_llm("LLM.GROQ")
+    print(llm)
+    chain = prompt | llm | outputParser
     promise = chain.batch([{"topic":"中国","what":"人口"},{"topic":"美国","what":"国土面积"},{"topic":"新加坡","what":"大学"}])
     print(promise)
     print("llms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.get_llm(full=True)])
@@ -164,8 +167,9 @@ async def __loader_test(langchainLib:LangchainLib):
     for item in result:
         blocks.extend(item['blocks'])
     print(len(blocks))
-    vectorestore = langchainLib.create_faiss_from_docs(blocks)
-    langchainLib.save_faiss("faiss.db",vectorestore,index_name="langchain_doc")
+    faiss = langchainLib.vectorstoreLib.faiss
+    vectorestore = faiss.create_from_docs(blocks)
+    faiss.save("faiss.db",vectorestore,index_name="langchain_doc")
 
 def __tools_test(langchainLib:LangchainLib,args):
     # tool: TavilySearchResults = langchainLib.get_search_tool("TAVILY")
@@ -241,7 +245,7 @@ async def start(args):
         __llm_test(langchainLib,args)
     elif args.mode == "prompt":
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试prompt {Color.RESET}")
-        await __prompt_test(langchainLib)    
+        await __prompt_test(langchainLib,args)    
     elif args.mode == 'loader':    
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试loader {Color.RESET}")
         await __loader_test(langchainLib)    
