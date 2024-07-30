@@ -19,7 +19,7 @@ class PptxLoader():
         self.text = text
         return self
     def load(self):
-        return Document(self.text)
+        return [Document(self.text)]
     def load_and_split(self, docx_file, chunk_size=1000,chunk_overlap=0):
         loader = self.loader(docx_file)
         docs = loader.load()

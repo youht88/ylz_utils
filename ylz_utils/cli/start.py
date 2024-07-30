@@ -167,7 +167,7 @@ def __rag_test(langchainLib:LangchainLib,args):
     url = args.url
     depth = args.depth
     message = args.message
-
+    chunk_size = args.size or 512
     if (not url) and  (not message):
         print(f"1、指定url:系统将下载该地址下的文档并切片后向量化到{faiss_dbname}数据库\n2、指定message:系统将从{faiss_dbname}数据库中搜索相关的两条记录。\n您需要至少指定url和message中的一个参数.")
         return
@@ -179,7 +179,7 @@ def __rag_test(langchainLib:LangchainLib,args):
         ##### create vectorestore
         # url = "https://python.langchain.com/v0.2/docs/concepts/#tools"
         # faiss_dbname = "langchain_docs.faiss"
-        docs=langchainLib.load_url_and_split_markdown(url,max_depth=depth)
+        docs=langchainLib.load_url_and_split_markdown(url,max_depth=depth,chunk_size=chunk_size)
         print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks'])} for doc in docs])
         for doc in docs:
             blocks = doc['blocks']
@@ -208,18 +208,19 @@ async def __loader_test(langchainLib:LangchainLib,args):
     depth = args.depth
     docx_file = args.docx
     pptx_file = args.pptx
+    chunk_size = args.size or 512
     only_one = list(filter(lambda x: x,[url,docx_file,pptx_file]))
     if len(only_one) != 1:
         print(f"请指定url,docx,pptx其中的一个")
         return 
     if url:
-        result = langchainLib.load_url_and_split_markdown(url = url,max_depth = depth)
+        result = langchainLib.load_url_and_split_markdown(url = url,max_depth = depth, chunk_size=chunk_size)
         print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks']),"metadata":doc['metadata']} for doc in result])
     elif docx_file:
-        result = langchainLib.loaderLib.docx.load_and_split(docx_file)
+        result = langchainLib.loaderLib.docx.load_and_split(docx_file,chunk_size=chunk_size)
         print(result)
     elif pptx_file:
-        result = langchainLib.loaderLib.pptx.load_and_split(pptx_file)
+        result = langchainLib.loaderLib.pptx.load_and_split(pptx_file,chunk_size=chunk_size)
         print(result)
 
 def __tools_test(langchainLib:LangchainLib,args):
