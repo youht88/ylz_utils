@@ -216,11 +216,11 @@ async def __loader_test(langchainLib:LangchainLib,args):
         result = langchainLib.load_url_and_split_markdown(url = url,max_depth = depth)
         print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks']),"metadata":doc['metadata']} for doc in result])
     elif docx_file:
-        result = langchainLib.loaderLib.docx.loader(docx_file)
-        print(result.load())
+        result = langchainLib.loaderLib.docx.load_and_split(docx_file)
+        print(result)
     elif pptx_file:
-        result = langchainLib.loaderLib.pptx.loader(pptx_file)
-        print(result.load())
+        result = langchainLib.loaderLib.pptx.load_and_split(pptx_file)
+        print(result)
 
 def __tools_test(langchainLib:LangchainLib,args):
     # tool: TavilySearchResults = langchainLib.get_search_tool("TAVILY")

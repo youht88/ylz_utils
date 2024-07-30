@@ -29,7 +29,7 @@ from ylz_utils.langchain.embeddings import EmbeddingLib
 from ylz_utils.langchain.loaders import LoaderLib
 from ylz_utils.langchain.prompts import PromptLib
 from ylz_utils.langchain.output_parsers import OutputParserLib
-from ylz_utils.langchain.spliters import SpliterLib
+from ylz_utils.langchain.splitters import SplitterLib
 from ylz_utils.langchain.tools import ToolLib
 from ylz_utils.langchain.vectorstores import VectorstoreLib
 
@@ -44,7 +44,7 @@ class LangchainLib():
         self.embeddingLib = EmbeddingLib()
         self.promptLib = PromptLib()
         self.loaderLib = LoaderLib(self)
-        self.spliterLib = SpliterLib()
+        self.splitterLib = SplitterLib()
         self.outputParserLib = OutputParserLib()
         self.vectorstoreLib = VectorstoreLib(self)
         self.toolLib = ToolLib(self)
@@ -60,8 +60,8 @@ class LangchainLib():
         self.get_outputParser = self.outputParserLib.get_outputParser
         self.get_websearch_tool = self.toolLib.web_search.get_tool
         self.get_ragsearch_tool = self.toolLib.rag_search.get_tool
-        self.get_textsplitter = self.spliterLib.get_textsplitter
-        self.split_markdown_docs = self.spliterLib.split_markdown_docs
+        self.get_textsplitter = self.splitterLib.get_textsplitter
+        self.split_markdown_docs = self.splitterLib.split_markdown_docs
         self.load_url_and_split_markdown = self.loaderLib.url.load_and_split_markdown
         self.get_agent = self.agentLib.get_agent
         
