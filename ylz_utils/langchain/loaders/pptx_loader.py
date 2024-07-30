@@ -4,6 +4,8 @@ from pptx import Presentation
 
 class PptxLoader():
     text = ""
+    def __init__(self,langchainLib):
+        self.langchainLib = langchainLib
     def loader(self, filename: str):
         #"./example_data/fake-power-point.pptx"
         ppt = Presentation(filename)

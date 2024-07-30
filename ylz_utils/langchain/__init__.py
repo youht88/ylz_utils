@@ -11,8 +11,6 @@ from langchain_core.messages import SystemMessage,HumanMessage
 from langchain.memory import ConversationBufferMemory
 
 from langchain.docstore.document import Document
-from langchain_community.document_loaders import RecursiveUrlLoader
-from langchain_community.document_transformers import MarkdownifyTransformer
 
 from langchain_community.tools.tavily_search.tool import TavilySearchResults
 
@@ -45,7 +43,7 @@ class LangchainLib():
         self.llmLib = LLMLib()
         self.embeddingLib = EmbeddingLib()
         self.promptLib = PromptLib()
-        self.loaderLib = LoaderLib()
+        self.loaderLib = LoaderLib(self)
         self.spliterLib = SpliterLib()
         self.outputParserLib = OutputParserLib()
         self.vectorstoreLib = VectorstoreLib(self)
@@ -64,6 +62,7 @@ class LangchainLib():
         self.get_ragsearch_tool = self.toolLib.rag_search.get_tool
         self.get_textsplitter = self.spliterLib.get_textsplitter
         self.split_markdown_docs = self.spliterLib.split_markdown_docs
+        self.load_url_and_split_markdown = self.loaderLib.url.load_and_split_markdown
         self.get_agent = self.agentLib.get_agent
         
     def add_plugins(self,debug=False):
@@ -110,12 +109,3 @@ class LangchainLib():
             cls = item["class"]
             setattr(cls,func_name,get_wrapper(func))
     
-    def load_html_split_markdown(self, url, max_depth=2, extractor=None, metadata_extractor=None, chunk_size=1000,chunk_overlap=0):
-        docs = self.loaderLib.url.loader(url,max_depth=max_depth,extractor=extractor,metadata_extractor=metadata_extractor)
-        transformer = MarkdownifyTransformer()
-        converted_docs = transformer.transform_documents(docs)
-        result = []
-        for doc in converted_docs:
-            splited_docs = self.split_markdown_docs(doc.page_content,chunk_size=chunk_size,chunk_overlap=chunk_overlap)
-            result.append({"doc":doc,"blocks":splited_docs,"metadata":doc.metadata})
-        return result

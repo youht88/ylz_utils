@@ -179,7 +179,7 @@ def __rag_test(langchainLib:LangchainLib,args):
         ##### create vectorestore
         # url = "https://python.langchain.com/v0.2/docs/concepts/#tools"
         # faiss_dbname = "langchain_docs.faiss"
-        docs=langchainLib.load_html_split_markdown(url,max_depth=depth)
+        docs=langchainLib.load_url_and_split_markdown(url,max_depth=depth)
         print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks'])} for doc in docs])
         for doc in docs:
             blocks = doc['blocks']
@@ -213,7 +213,7 @@ async def __loader_test(langchainLib:LangchainLib,args):
         print(f"请指定url,docx,pptx其中的一个")
         return 
     if url:
-        result = langchainLib.load_html_split_markdown(url = url,max_depth = depth)
+        result = langchainLib.load_url_and_split_markdown(url = url,max_depth = depth)
         print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks']),"metadata":doc['metadata']} for doc in result])
     elif docx_file:
         result = langchainLib.loaderLib.docx.loader(docx_file)

@@ -1,6 +1,9 @@
 from langchain_community.document_loaders import RecursiveUrlLoader
+from langchain_community.document_transformers import MarkdownifyTransformer
 
 class UrlLoader():
+    def __init__(self,langchainLib):
+        self.langchainLib = langchainLib
     def loader(self, url, max_depth=2, extractor=None, metadata_extractor=None):
         #"./example_data/fake.docx"
         loader = RecursiveUrlLoader(
@@ -16,4 +19,15 @@ class UrlLoader():
             # prevent_outside=True,
             # base_url=None,
         )
-        return loader.load()
+        return loader
+    
+    def load_and_split_markdown(self, url, max_depth=2, extractor=None, metadata_extractor=None, chunk_size=1000,chunk_overlap=0):
+        loader = self.loader(url,max_depth=max_depth,extractor=extractor,metadata_extractor=metadata_extractor)
+        docs = loader.load()
+        transformer = MarkdownifyTransformer()
+        converted_docs = transformer.transform_documents(docs)
+        result = []
+        for doc in converted_docs:
+            splited_docs = self.langchainLib.spliterLib.split_markdown_docs(doc.page_content,chunk_size=chunk_size,chunk_overlap=chunk_overlap)
+            result.append({"doc":doc,"blocks":splited_docs,"metadata":doc.metadata})
+        return result

@@ -5,8 +5,8 @@ from ylz_utils.langchain.loaders.url_loader import UrlLoader
 
 
 class LoaderLib():
-   def __init__(self):
-      self.url = UrlLoader()
-      self.docx = DocxLoader()
-      self.pptx = PptxLoader()
-      self.image = ImageLoader()
+   def __init__(self,langchainLib):
+      self.url = UrlLoader(langchainLib)
+      self.docx = DocxLoader(langchainLib)
+      self.pptx = PptxLoader(langchainLib)
+      self.image = ImageLoader(langchainLib)
