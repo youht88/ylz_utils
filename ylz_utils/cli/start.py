@@ -136,7 +136,7 @@ def __runnalble_test(langchainLib:LangchainLib):
     res = runnable2.invoke({"num": 1})
     print("\nrunnalbe:",res)
 
-async def __prompt_test(langchainLib:LangchainLib,args):
+def __prompt_test(langchainLib:LangchainLib,args):
     llm_key = args.llm
     llm_model = args.model
     prompt = langchainLib.get_prompt(f"你对日历时间非常精通",human_keys={"context":"关联的上下文","question":"问题是"},use_chat = False)
@@ -147,7 +147,7 @@ async def __prompt_test(langchainLib:LangchainLib,args):
     outputParser = langchainLib.get_outputParser()
     chain = prompt | llm | outputParser
 
-    res = await chain.ainvoke({"question":"我叫什么名字，今天礼拜几","context":"我是海涛"})
+    res = chain.invoke({"question":"我叫什么名字，今天礼拜几","context":"我是海涛"})
     print(res)
     res = chain.stream({"question":"用我的名字写一首诗歌","context":"我的名字叫小美"})
     for chunk in res:
@@ -203,7 +203,7 @@ def __rag_test(langchainLib:LangchainLib,args):
     # vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(docs,embedding=embed)
     # langchainLib.vectorstoreLib.faiss.save("test.faiss",vectorestore,index_name="gemini")
 
-async def __loader_test(langchainLib:LangchainLib,args):
+def __loader_test(langchainLib:LangchainLib,args):
     url = args.url
     depth = args.depth
     docx_file = args.docx
@@ -224,6 +224,16 @@ async def __loader_test(langchainLib:LangchainLib,args):
         print(result)
 
 def __tools_test(langchainLib:LangchainLib,args):
+    tool = langchainLib.toolLib.python_repl.get_tool()
+    res = tool.invoke(
+"""
+print(3+2)
+""")
+    print("python repl=",res)
+    tool = langchainLib.toolLib.wolfram_alpha.get_tool()
+    res = tool.run("what is the square root of 25?")
+    print(res)
+    return 
     # tool: TavilySearchResults = langchainLib.get_search_tool("TAVILY")
     # prompt = langchainLib.get_prompt(is_chat=False,human_keys={"context":"关联的上下文是:","question":"问题是:"})
     # res = tool.invoke("易联众现在股价是多少？")
@@ -294,7 +304,7 @@ def __graph_test(langchainLib:LangchainLib,args):
     res = chain.invoke("202*308是多少")
     print(res)
 
-async def start(args):
+def start(args):
     langchainLib = LangchainLib()
     langchainLib.add_plugins()
     if args.mode == "llm":
@@ -302,10 +312,10 @@ async def start(args):
         __llm_test(langchainLib,args)
     elif args.mode == "prompt":
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试prompt {Color.RESET}")
-        await __prompt_test(langchainLib,args)    
+        __prompt_test(langchainLib,args)    
     elif args.mode == 'loader':    
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试loader {Color.RESET}")
-        await __loader_test(langchainLib,args)    
+        __loader_test(langchainLib,args)    
     elif args.mode == 'runnable':
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试runnable {Color.RESET}")
         __runnalble_test(langchainLib)
