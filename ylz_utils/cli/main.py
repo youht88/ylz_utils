@@ -29,10 +29,17 @@ def main():
                               choices=["llm","chat","prompt","loader","runnable","tools","rag","outputParser","graph","agent"],
                               help="测试内容")
     start_parser.add_argument("--llm",type=str,help="语言模型标识，例如：LLM.DEEPSEEK")
+    start_parser.add_argument("--embedding",type=str,help="嵌入模型标识，例如：EMBEDDING.TOGETHER")
     start_parser.add_argument("--model",type=str,help="model")
-    start_parser.add_argument("--message",type=str,default="hello",help="input message")
+    start_parser.add_argument("--message",type=str,help="input message")
     start_parser.add_argument("--user",type=str,help="user_id,example: alice")    
     start_parser.add_argument("--conversation",type=str,help="conversation_id,example: 123") 
+    start_parser.add_argument("--url",type=str,help="仅rag,loader使用,下载的URL地址")    
+    start_parser.add_argument("--depth",type=int,default=1,help="仅rag使用,下载的深度，默认为1")
+    start_parser.add_argument("--dbname",type=str,default="test.faiss",help="保存的向量数据库，默认test.faiss") 
+    start_parser.add_argument("--docx",type=str,help="docx文档文件名") 
+    start_parser.add_argument("--pptx",type=str,help="pptx文档文件名") 
+     
 
     # start_parser.add_argument("--only_download",type=bool,default=False,help="仅下载网页html,不进行翻译。默认:False (json模式该参数不起作用)")
     # start_parser.add_argument("-s","--size",type=int,default=1500,help="切分文件的字节大小,默认:1500")

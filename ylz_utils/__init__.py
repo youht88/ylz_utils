@@ -1,5 +1,3 @@
-print("utils init ...")
-
 from ylz_utils.file import FileLib
 from ylz_utils.crypto import HashLib
 from ylz_utils.config import Config

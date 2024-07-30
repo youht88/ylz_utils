@@ -161,17 +161,37 @@ async def __prompt_test(langchainLib:LangchainLib,args):
     print(promise)
     print("llms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.get_llm(full=True)])
 
-def __rag_test(langchainLib:LangchainLib):
-    ###### create vectorestore
-    docs=langchainLib.load_html_split_markdown("https://python.langchain.com/v0.2/docs/concepts/#tools",max_depth=1)
-    vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(docs[0]["blocks"])
-    langchainLib.save_faiss("langchain_docs.db",vectorestore)
-    # docs = [Document("I am a student"),Document("who to go to china"),Document("this is a table")]
-    # vectorestore = langchainLib.create_faiss_from_docs(docs)
-    # langchainLib.save_faiss("faiss.db",vectorestore)
-    
-    #vectorestore = langchainLib.load_faiss("faiss.db")
-    #print("v--->",langchainLib.search_faiss("I want to buy a table?",vectorestore,k=1))
+def __rag_test(langchainLib:LangchainLib,args):
+    embedding_key = args.embedding
+    faiss_dbname = args.dbname or "test.faiss"
+    url = args.url
+    depth = args.depth
+    message = args.message
+
+    if (not url) and  (not message):
+        print(f"1、指定url:系统将下载该地址下的文档并切片后向量化到{faiss_dbname}数据库\n2、指定message:系统将从{faiss_dbname}数据库中搜索相关的两条记录。\n您需要至少指定url和message中的一个参数.")
+        return
+    if embedding_key:
+        embedding = langchainLib.get_embedding(embedding_key)
+    else:
+        embedding = None
+    if url and faiss_dbname:
+        ##### create vectorestore
+        # url = "https://python.langchain.com/v0.2/docs/concepts/#tools"
+        # faiss_dbname = "langchain_docs.faiss"
+        docs=langchainLib.load_html_split_markdown(url,max_depth=depth)
+        print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks'])} for doc in docs])
+        for doc in docs:
+            blocks = doc['blocks']
+            vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(blocks,embedding)
+            langchainLib.vectorstoreLib.faiss.save(faiss_dbname,vectorestore)
+    if message and faiss_dbname:   
+        # docs = [Document("I am a student"),Document("who to go to china"),Document("this is a table")]
+        # vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(docs)
+        # langchainLib.vectorstoreLib.faiss.save("test.faiss",vectorestore)
+        
+        vectorestore = langchainLib.vectorstoreLib.faiss.load(faiss_dbname,embedding)
+        print("v--->",langchainLib.vectorstoreLib.faiss.search(message,vectorestore,k=2))
     
     ###### have bug when poetry add sentence_transformers   
     #v1 = langchainLib.get_huggingface_embedding()
@@ -180,19 +200,27 @@ def __rag_test(langchainLib:LangchainLib):
     ###### tet google embdeeding
     # embed = langchainLib.get_embedding("EMBEDDING.GEMINI")
     # docs = [Document("I am a student"),Document("who to go to china"),Document("this is a table")]
-    # vectorestore = langchainLib.create_faiss_from_docs(docs,embedding=embed)
-    # langchainLib.save_faiss("faiss.db",vectorestore,index_name="gemini")
+    # vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(docs,embedding=embed)
+    # langchainLib.vectorstoreLib.faiss.save("test.faiss",vectorestore,index_name="gemini")
 
-async def __loader_test(langchainLib:LangchainLib):
-    result = langchainLib.load_html_split_markdown(url = "https://python.langchain.com/v0.2/docs")
-    print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks'])} for doc in result])
-    blocks = []
-    for item in result:
-        blocks.extend(item['blocks'])
-    print(len(blocks))
-    faiss = langchainLib.vectorstoreLib.faiss
-    vectorestore = faiss.create_from_docs(blocks)
-    faiss.save("faiss.db",vectorestore,index_name="langchain_doc")
+async def __loader_test(langchainLib:LangchainLib,args):
+    url = args.url
+    depth = args.depth
+    docx_file = args.docx
+    pptx_file = args.pptx
+    only_one = list(filter(lambda x: x,[url,docx_file,pptx_file]))
+    if len(only_one) != 1:
+        print(f"请指定url,docx,pptx其中的一个")
+        return 
+    if url:
+        result = langchainLib.load_html_split_markdown(url = url,max_depth = depth)
+        print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks']),"metadata":doc['metadata']} for doc in result])
+    elif docx_file:
+        result = langchainLib.loaderLib.docx.loader(docx_file)
+        print(result.load())
+    elif pptx_file:
+        result = langchainLib.loaderLib.pptx.loader(pptx_file)
+        print(result.load())
 
 def __tools_test(langchainLib:LangchainLib,args):
     # tool: TavilySearchResults = langchainLib.get_search_tool("TAVILY")
@@ -276,7 +304,7 @@ async def start(args):
         await __prompt_test(langchainLib,args)    
     elif args.mode == 'loader':    
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试loader {Color.RESET}")
-        await __loader_test(langchainLib)    
+        await __loader_test(langchainLib,args)    
     elif args.mode == 'runnable':
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试runnable {Color.RESET}")
         __runnalble_test(langchainLib)
@@ -285,7 +313,7 @@ async def start(args):
         __outputParser_test(langchainLib,args)
     elif args.mode == 'rag':    
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试rag {Color.RESET}")
-        __rag_test(langchainLib)
+        __rag_test(langchainLib,args)
     elif args.mode == 'tools':
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试tools {Color.RESET}")
         __tools_test(langchainLib,args)

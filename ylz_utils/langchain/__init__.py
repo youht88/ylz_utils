@@ -114,8 +114,8 @@ class LangchainLib():
         docs = self.loaderLib.url.loader(url,max_depth=max_depth,extractor=extractor,metadata_extractor=metadata_extractor)
         transformer = MarkdownifyTransformer()
         converted_docs = transformer.transform_documents(docs)
-        result = []        
+        result = []
         for doc in converted_docs:
             splited_docs = self.split_markdown_docs(doc.page_content,chunk_size=chunk_size,chunk_overlap=chunk_overlap)
-            result.append({"doc":doc,"blocks":splited_docs})
+            result.append({"doc":doc,"blocks":splited_docs,"metadata":doc.metadata})
         return result

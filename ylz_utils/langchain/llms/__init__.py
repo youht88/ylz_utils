@@ -158,17 +158,19 @@ class LLMLib():
                   }
         for key in defaults:
             default = defaults[key]
-            language = self.config.get(key)
-            if not language:
+            llm = self.config.get(key)
+            if not llm:
                 continue
-            base_url = language.get("BASE_URL")
-            api_keys = language.get("API_KEYS")
+            base_url = llm.get("BASE_URL")
+            api_keys = llm.get("API_KEYS")
             if api_keys:
                 api_keys = api_keys.split(",")
+                if not api_keys[-1]:
+                    api_keys.pop()
             else:
                 api_keys = []
 
-            sec_keys = language.get("SEC_KEYS")
+            sec_keys = llm.get("SEC_KEYS")
             if sec_keys:
                 sec_keys = sec_keys.split(",")
                 # 防止最后
@@ -176,8 +178,8 @@ class LLMLib():
                     sec_keys.pop()
             else:
                 sec_keys = []
-            model= language.get("MODEL") if language.get("MODEL") else default['model']
-            temperature = language.get("TEMPERATURE") if language.get("TEMPERATURE") else default['temperature']
+            model= llm.get("MODEL") if llm.get("MODEL") else default['model']
+            temperature = llm.get("TEMPERATURE") if llm.get("TEMPERATURE") else default['temperature']
             for idx, api_key in enumerate(api_keys):
                 if key == "LLM.QIANFAN" and len(api_keys) == len(sec_keys):
                     sec_key = sec_keys[idx]

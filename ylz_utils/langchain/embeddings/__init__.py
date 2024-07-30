@@ -13,13 +13,35 @@ from langchain_community.embeddings import (
 
 class EmbeddingLib():
     embeddings:list  = []
+    default_embedding_key = None
     def __init__(self):
         self.config = Config.get()
         self.regist_embedding()
-    def get_embedding(self,key="EMBEDDING.TOGETHER",full=False) :
+        if self.config.get("EMBEDDING.DEFAULT"):
+            default_embedding_key = self.config.get("EMBEDDING.DEFAULT")
+            self.set_default_embedding_key(default_embedding_key)
+        else:
+            self.clear_default_embedding_key()
+    def set_default_embedding_key(self,key):
+        embeddings = [item for item in self.embeddings if item['type']==key]
+        if embeddings:
+            self.default_embedding_key = key
+        else:
+            self.clear_default_embedding_key()
+    def get_default_embedding_key(self):
+        return self.default_embedding_key
+    def clear_default_embedding_key(self):
+        self.default_embedding_key=None
+
+    def get_embedding(self,key="EMBEDDING.TOGETHER",model=None, full=False) :
+        if full:
+            return self.embeddings
         if self.embeddings:
             if not key:
-                embeddings = self.embeddings
+                if self.default_embedding_key:
+                    embeddings = [item for item in self.embeddings if item['type']==self.default_embedding_key]
+                else:
+                    embeddings = self.embeddings
             else:
                 embeddings = [item for item in self.embeddings if item['type']==key]
             if embeddings:
@@ -34,11 +56,8 @@ class EmbeddingLib():
                         raise Exception(f"目前不支持{embedding['type']}嵌入模型")
                 embedding['used'] = embedding.get('used',0) + 1 
                 embedding['last_used'] = time.time()
-                if full:
-                    return embedding
-                else:
-                    return embedding['embedding']
-        raise Exception("请先调用regist_embedding注册嵌入模型")
+                return embedding['embedding']
+        raise Exception(f"请确保{key}_API_KEYS环境变量被正确设置,然后调用regist_embedding注册语言模型")
 
     def regist_embedding(self):
         defaults = {
@@ -52,6 +71,8 @@ class EmbeddingLib():
             api_keys = embed.get("API_KEYS")
             if api_keys:
                 api_keys = api_keys.split(",")
+                if not api_keys[-1]:
+                    api_keys.pop()
             else:
                 api_keys = []
             model= embed.get("MODEL") if embed.get("MODEL") else default['model']

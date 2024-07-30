@@ -32,6 +32,7 @@ LLM:
         BASE_URL: https://api.moonshot.cn/v1
         MODEL: ${MOONSHOT_LLM_MODEL}    
 EMBEDDING:
+    DEFAULT: EMBEDDING.TOGETHER
     TOGETHER: 
         API_KEYS: ${TOGETHER_API_KEYS}
         MODEL: ${TOGETHER_EMBEDDING_MODEL}
