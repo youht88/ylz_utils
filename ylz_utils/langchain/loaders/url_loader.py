@@ -28,6 +28,6 @@ class UrlLoader():
         converted_docs = transformer.transform_documents(docs)
         result = []
         for doc in converted_docs:
-            splited_docs = self.langchainLib.spliterLib.split_markdown_docs(doc.page_content,chunk_size=chunk_size,chunk_overlap=chunk_overlap)
+            splited_docs = self.langchainLib.splitterLib.split_markdown_docs(doc.page_content,chunk_size=chunk_size,chunk_overlap=chunk_overlap)
             result.append({"doc":doc,"blocks":splited_docs,"metadata":doc.metadata})
         return result
