@@ -165,26 +165,35 @@ def __rag_test(langchainLib:LangchainLib,args):
     embedding_key = args.embedding
     faiss_dbname = args.dbname or "test.faiss"
     url = args.url
-    depth = args.depth
+    pptx = args.pptx
+    docx = args.docx
     message = args.message
-    chunk_size = args.size or 512
-    if (not url) and  (not message):
-        print(f"1、指定url:系统将下载该地址下的文档并切片后向量化到{faiss_dbname}数据库\n2、指定message:系统将从{faiss_dbname}数据库中搜索相关的两条记录。\n您需要至少指定url和message中的一个参数.")
+    
+    
+    if (not url and not pptx and not docx) and  (not message):
+        print(f"1、指定url/pptx/docx:系统将文档下载切片后向量化到{faiss_dbname}数据库\n2、指定message:系统将从{faiss_dbname}数据库中搜索相关的两条记录。\n您需要至少指定url和message中的一个参数.")
         return
+
     if embedding_key:
         embedding = langchainLib.get_embedding(embedding_key)
     else:
         embedding = None
-    if url and faiss_dbname:
-        ##### create vectorestore
-        # url = "https://python.langchain.com/v0.2/docs/concepts/#tools"
-        # faiss_dbname = "langchain_docs.faiss"
-        docs=langchainLib.load_url_and_split_markdown(url,max_depth=depth,chunk_size=chunk_size)
-        print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks'])} for doc in docs])
-        for doc in docs:
-            blocks = doc['blocks']
-            vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(blocks,embedding)
-            langchainLib.vectorstoreLib.faiss.save(faiss_dbname,vectorestore)
+
+    if (url or pptx or docx):
+        docs = __loader_test(langchainLib,args)
+        print("#"*60)
+        if url and faiss_dbname:
+            ##### create vectorestore
+            # url = "https://python.langchain.com/v0.2/docs/concepts/#tools"
+            # faiss_dbname = "langchain_docs.faiss"
+            print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks'])} for doc in docs])
+            for doc in docs:
+                blocks = doc['blocks']
+                vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(blocks,embedding)
+                langchainLib.vectorstoreLib.faiss.save(faiss_dbname,vectorestore)
+        elif pptx or docx:
+                vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(docs,embedding)
+                langchainLib.vectorstoreLib.faiss.save(faiss_dbname,vectorestore)
     if message and faiss_dbname:   
         # docs = [Document("I am a student"),Document("who to go to china"),Document("this is a table")]
         # vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(docs)
@@ -222,6 +231,7 @@ def __loader_test(langchainLib:LangchainLib,args):
     elif pptx_file:
         result = langchainLib.loaderLib.pptx.load_and_split(pptx_file,chunk_size=chunk_size)
         print(result)
+    return result
 
 def __tools_test(langchainLib:LangchainLib,args):
     tool = langchainLib.toolLib.python_repl.get_tool()
