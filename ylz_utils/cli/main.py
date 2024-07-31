@@ -59,11 +59,13 @@ def main():
 
     #print("args====>",args)
 
+    if args.command =="reset":
+        reset(args)
+        return
+    
     init(args)
    
-    if args.command == "reset":
-        reset(args)
-    elif args.command == "start":
+    if args.command == "start":
         asyncio.run(start(args))
     elif args.command == "serve":
         serve(args)
