@@ -66,7 +66,7 @@ def main():
     init(args)
    
     if args.command == "start":
-        asyncio.run(start(args))
+        start(args)
     elif args.command == "serve":
         serve(args)
 
