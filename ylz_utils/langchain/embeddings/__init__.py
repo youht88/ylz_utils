@@ -5,6 +5,7 @@ from ylz_utils import Config
 
 from langchain_together import TogetherEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_ollama import OllamaEmbeddings
 
 from langchain_community.embeddings import (
     HuggingFaceEmbeddings,
@@ -52,6 +53,8 @@ class EmbeddingLib():
                         embedding['embedding'] = TogetherEmbeddings(api_key = embedding.get('api_key'),model=embedding.get('model'))
                     elif embed_type == "EMBEDDING.GEMINI" :
                         embedding['embedding'] = GoogleGenerativeAIEmbeddings(model=embedding.get('model'),google_api_key=embedding.get('api_key'))
+                    elif embed_type == 'EMBEDDING.OLLAMA':
+                        embedding['embedding'] = OllamaEmbeddings(model=embedding.get('model'),ollama_url=embedding.get('base_url'))
                     else:
                         raise Exception(f"目前不支持{embedding['type']}嵌入模型")
                 embedding['used'] = embedding.get('used',0) + 1 
