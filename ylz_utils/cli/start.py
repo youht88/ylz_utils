@@ -288,49 +288,22 @@ print(3+2)
     res = llm.invoke({"ask":"北京2024年人口多少"})
     print(res)
 def __graph_test(langchainLib:LangchainLib,args):
-    message = args.message
-    graph = langchainLib.get_graph()
-    res = langchainLib.graphLib.graph_invoke(graph,message)
-    print(res)
-    return
     llm_key = args.llm
     llm_model = args.model
-    message = args.message or "125*245是多少？"
-    @tool
-    def multiply(one: int, two:int):
-        """Multiply two numbers"""
-        return one * two
-    llm = langchainLib.get_llm(llm_key,llm_model)
-    llm_with_tools = llm.bind_tools([multiply])
-    checkpointer = MemorySaver()
-    
-    def call_llm(state:MessagesState):
-        messages = state["messages"]
-        response = llm_with_tools.invoke(messages)
-        return {"messages":[response]}
-    def router(state:MessagesState)-> Literal["tools","__end__"]:
-        messages = state["messages"]
-        tool_calls = messages[-1].tool_calls
-        if tool_calls:
-            return "tools"
-        else:
-            return END
-    workflow = StateGraph(MessagesState)
-    workflow.add_node("agent",call_llm)
-    tool_node = ToolNode([multiply])
-    workflow.add_node("tools",tool_node)
-    
-    workflow.set_entry_point("agent")
-    
-    workflow.add_conditional_edges("agent",router)
-    workflow.add_edge("tools","agent")
+    message = args.message
+    user = args.user or 'default'
+    conversation = args.conversation or 'default'
+    thread_id = f"{user}-{conversation}"
 
-    chain = workflow.compile(checkpointer=checkpointer)
+    if not message:
+        print("必须提供--message参数!")
+        return
+
+    graph = langchainLib.get_graph(llm_key=llm_key,llm_model=llm_model)
+    res = langchainLib.graphLib.graph_invoke(graph,message,thread_id=thread_id)
+    print(res)
+    return
     #FileLib.writeFile("graph.png",chain.get_graph(xray=True).draw_mermaid_png(),mode="wb")
-
-    final_state = chain.invoke({"messages":[HumanMessage(content = message)]},
-                               config = {"configurable":{"thread_id":24}})
-    print(final_state)
 
 def start(args):
     langchainLib = LangchainLib()

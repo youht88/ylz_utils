@@ -13,17 +13,8 @@ class GraphLib():
         self.websearch_tool = langchainLib.get_websearch_tool
         self.ragsearch_tool = langchainLib.get_ragsearch_tool
         self.python_repl_tool = langchainLib.get_python_repl_tool
-        self.llm = langchainLib.get_llm()
-        self.tools = [
-               Tool(name="websearch",
-                    description="use TAVILY tool to search info from internet",
-                    func=self.websearch_tool),
-               Tool(name="python_repl",
-                    description="when you need to calculation, use python repl tool to execute code ,then return the result to AI.",
-                    func=self.python_repl_tool)
-             ]
-        self.llm_with_tools = self.llm.bind_tools(self.tools)      
         self.checkpointer = MemorySaver()
+        self.llm_with_tools = None
 
     def call_llm(self,state:MessagesState):
         messages = state["messages"]
@@ -38,10 +29,21 @@ class GraphLib():
             else:
                 return END
     
-    def get_graph(self):
+    def get_graph(self,llm_key=None,llm_model=None):
+        llm = self.langchainLib.get_llm(llm_key,llm_model)
+        tools = [
+               Tool(name="websearch",
+                    description="use TAVILY tool to search info from internet",
+                    func=self.websearch_tool),
+               Tool(name="python_repl",
+                    description="when you need to calculation, use python repl tool to execute code ,then return the result to AI.",
+                    func=self.python_repl_tool)
+             ]
+        self.llm_with_tools = llm.bind_tools(tools)      
+
         workflow = StateGraph(MessagesState)
         workflow.add_node("agent",self.call_llm)
-        tool_node = ToolNode(self.tools)
+        tool_node = ToolNode(tools)
         workflow.add_node("tools",tool_node)
         workflow.set_entry_point("agent")
         
@@ -52,7 +54,7 @@ class GraphLib():
 
         return graph    
 
-    def graph_invoke(self,graph,message,thread_id="default"):    
+    def graph_invoke(self,graph,message,thread_id="default-default"):    
         final_state = graph.invoke({"messages":[HumanMessage(content = message)]},
                                 config = {"configurable":{"thread_id":thread_id}})
         print("*"*80)
