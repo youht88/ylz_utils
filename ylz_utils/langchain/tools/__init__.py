@@ -5,9 +5,9 @@ from ylz_utils.langchain.tools.wolfram_alpha import WolframAlphaTool
 
 
 class ToolLib():
-    def __init__(self,langchain):
-        self.langchain = langchain
-        self.web_search = WebSearchTool(langchain)
-        self.rag_search = RagSearchTool(langchain)
-        self.python_repl = PythonREPLTool(langchain)
-        self.wolfram_alpha = WolframAlphaTool(langchain)
+    def __init__(self,langchainLib):
+        self.langchainLib = langchainLib
+        self.web_search = WebSearchTool(langchainLib)
+        self.rag_search = RagSearchTool(langchainLib)
+        self.python_repl = PythonREPLTool(langchainLib)
+        self.wolfram_alpha = WolframAlphaTool(langchainLib)

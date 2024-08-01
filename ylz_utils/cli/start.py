@@ -7,9 +7,11 @@ from typing import Literal,List
 
 from langchain.prompts import PromptTemplate,ChatPromptTemplate
 from langchain.output_parsers import OutputFixingParser
-
+from langchain_core.messages import HumanMessage
+from langchain_core.tools import tool
 from langchain_core.runnables import RunnablePassthrough,RunnableLambda,RunnableParallel
-from langgraph.graph import START,END,MessageGraph
+from langgraph.graph import START,END,StateGraph,MessagesState
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import ToolNode
 
 def __agent(langchainLib:LangchainLib,args):
@@ -286,33 +288,49 @@ print(3+2)
     res = llm.invoke({"ask":"北京2024年人口多少"})
     print(res)
 def __graph_test(langchainLib:LangchainLib,args):
+    message = args.message
+    graph = langchainLib.get_graph()
+    res = langchainLib.graphLib.graph_invoke(graph,message)
+    print(res)
+    return
     llm_key = args.llm
     llm_model = args.model
+    message = args.message or "125*245是多少？"
+    @tool
     def multiply(one: int, two:int):
         """Multiply two numbers"""
         return one * two
     llm = langchainLib.get_llm(llm_key,llm_model)
     llm_with_tools = llm.bind_tools([multiply])
-    graph = MessageGraph()
-    graph.add_node("oracle",llm_with_tools)
-    tool_node = ToolNode([multiply])
-    graph.add_node("multiply",tool_node)
-    graph.add_edge(START,"oracle")
-    graph.add_edge("multiply",END)
-    def router(state)-> Literal["multiply","__end__"]:
-        StringLib.logging_in_box(str(state))
-        tool_calls = state[-1].additional_kwargs.get("tool_nodes",[])
-        if len(tool_calls):
-            print("okokok"*10)
-            return "multiply"
+    checkpointer = MemorySaver()
+    
+    def call_llm(state:MessagesState):
+        messages = state["messages"]
+        response = llm_with_tools.invoke(messages)
+        return {"messages":[response]}
+    def router(state:MessagesState)-> Literal["tools","__end__"]:
+        messages = state["messages"]
+        tool_calls = messages[-1].tool_calls
+        if tool_calls:
+            return "tools"
         else:
             return END
-    graph.add_conditional_edges("oracle",router)
-    chain = graph.compile()
-    FileLib.writeFile("graph.png",chain.get_graph(xray=True).draw_mermaid_png(),mode="wb")
+    workflow = StateGraph(MessagesState)
+    workflow.add_node("agent",call_llm)
+    tool_node = ToolNode([multiply])
+    workflow.add_node("tools",tool_node)
+    
+    workflow.set_entry_point("agent")
+    
+    workflow.add_conditional_edges("agent",router)
+    workflow.add_edge("tools","agent")
 
-    res = chain.invoke("202*308是多少")
-    print(res)
+    chain = workflow.compile(checkpointer=checkpointer)
+    #FileLib.writeFile("graph.png",chain.get_graph(xray=True).draw_mermaid_png(),mode="wb")
+
+    final_state = chain.invoke({"messages":[HumanMessage(content = message)]},
+                               config = {"configurable":{"thread_id":24}})
+    print(final_state)
 
 def start(args):
     langchainLib = LangchainLib()

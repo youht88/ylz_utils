@@ -24,6 +24,7 @@ from langgraph.graph import START,END,MessageGraph,StateGraph
 from langgraph.prebuilt import ToolNode
 
 from ylz_utils.langchain.agents import AgentLib
+from ylz_utils.langchain.graph import GraphLib
 from ylz_utils.langchain.llms import LLMLib
 from ylz_utils.langchain.embeddings import EmbeddingLib
 from ylz_utils.langchain.loaders import LoaderLib
@@ -40,30 +41,40 @@ from ylz_utils.data import StringLib,Color
 class LangchainLib():
     def __init__(self):
         self.config = Config.get()
-        self.llmLib = LLMLib()
-        self.embeddingLib = EmbeddingLib()
-        self.promptLib = PromptLib()
-        self.loaderLib = LoaderLib(self)
-        self.splitterLib = SplitterLib()
-        self.outputParserLib = OutputParserLib()
-        self.vectorstoreLib = VectorstoreLib(self)
-        self.toolLib = ToolLib(self)
-        self.agentLib = AgentLib(self)
-        #self.add_plugins()
-        # 创建一个对话历史管理器
         self.memory = ConversationBufferMemory()
 
+        self.llmLib = LLMLib()
         self.get_chat = self.llmLib.get_chat
         self.get_llm = self.llmLib.get_llm
+
+        self.embeddingLib = EmbeddingLib()
         self.get_embedding = self.embeddingLib.get_embedding
+
+        self.promptLib = PromptLib()
         self.get_prompt = self.promptLib.get_prompt
+
+        self.outputParserLib = OutputParserLib()
         self.get_outputParser = self.outputParserLib.get_outputParser
+        
+        self.vectorstoreLib = VectorstoreLib(self)
+        
+        self.toolLib = ToolLib(self)
         self.get_websearch_tool = self.toolLib.web_search.get_tool
         self.get_ragsearch_tool = self.toolLib.rag_search.get_tool
+        self.get_python_repl_tool = self.toolLib.python_repl.get_tool
+
+        self.splitterLib = SplitterLib()
         self.get_textsplitter = self.splitterLib.get_textsplitter
         self.split_markdown_docs = self.splitterLib.split_markdown_docs
+
+        self.loaderLib = LoaderLib(self)
         self.load_url_and_split_markdown = self.loaderLib.url.load_and_split_markdown
+
+        self.agentLib = AgentLib(self)
         self.get_agent = self.agentLib.get_agent
+
+        self.graphLib = GraphLib(self)
+        self.get_graph = self.graphLib.get_graph
         
     def add_plugins(self,debug=False):
         plugins = [{"class":ChatOpenAI,"func":ChatOpenAI.invoke},

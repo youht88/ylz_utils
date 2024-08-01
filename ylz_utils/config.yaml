@@ -25,8 +25,9 @@ LLM:
         SEC_KEYS: ${QIANFAN_SEC_KEYS}
         MODEL: ${QIANFAN_LLM_MODEL}
     OLLAMA:
-        API_KEYS: ${OLLAMA_LLM_KEYS}
+        API_KEYS: ${OLLAMA_API_KEYS}
         MODEL: ${OLLAMA_LLM_MODEL}
+        KEEP_ALIVE: -1
     MOONSHOT:
         API_KEYS: ${MOONSHOT_API_KEYS}
         BASE_URL: https://api.moonshot.cn/v1

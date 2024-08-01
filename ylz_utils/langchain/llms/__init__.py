@@ -118,7 +118,9 @@ class LLMLib():
                         elif llm_type == 'LLM.OLLAMA':
                             try:
                                 StringLib.logging_in_box(f"ollama_api_key={llm.get('api_key')},model={llm.get('model')}")
-                                llm['llm'] = ChatOllama(model= llm.get('model'),temperature= llm.get('temperature'))
+                                llm['llm'] = ChatOllama(model= llm.get('model'),
+                                                        temperature= llm.get('temperature'),
+                                                        keep_alive=llm.get('keep_alive'))
                             except:
                                 raise Exception(f"请确保{llm_type}_API_KEYS环境变量被正确设置")
                             
@@ -163,6 +165,7 @@ class LLMLib():
                 continue
             base_url = llm.get("BASE_URL")
             api_keys = llm.get("API_KEYS")
+            keep_alive = llm.get("KEEP_ALIVE")
             if api_keys:
                 api_keys = api_keys.split(",")
                 if not api_keys[-1]:
@@ -194,6 +197,7 @@ class LLMLib():
                     "default_model": model,
                     "model":model,
                     "temperature":temperature,
+                    "keep_alive":keep_alive,
                     "used":0,
                     "last_used": 0 
                 })
