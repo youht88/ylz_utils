@@ -120,7 +120,7 @@ class LLMLib():
                                 StringLib.logging_in_box(f"ollama_api_key={llm.get('api_key')},model={llm.get('model')}")
                                 llm['llm'] = ChatOllama(model= llm.get('model'),temperature= llm.get('temperature'))
                             except:
-                                raise Exception(f"请确保{llm_type}_API_KEYS和{llm_type}_SEC_KEYS环境变量被正确设置")
+                                raise Exception(f"请确保{llm_type}_API_KEYS环境变量被正确设置")
                             
                         else:
                             try:

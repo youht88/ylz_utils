@@ -34,7 +34,7 @@ class EmbeddingLib():
     def clear_default_embedding_key(self):
         self.default_embedding_key=None
 
-    def get_embedding(self,key="EMBEDDING.TOGETHER",model=None, full=False) :
+    def get_embedding(self,key=None,model=None, full=False) :
         if full:
             return self.embeddings
         if self.embeddings:
@@ -54,7 +54,7 @@ class EmbeddingLib():
                     elif embed_type == "EMBEDDING.GEMINI" :
                         embedding['embedding'] = GoogleGenerativeAIEmbeddings(model=embedding.get('model'),google_api_key=embedding.get('api_key'))
                     elif embed_type == 'EMBEDDING.OLLAMA':
-                        embedding['embedding'] = OllamaEmbeddings(model=embedding.get('model'),ollama_url=embedding.get('base_url'))
+                        embedding['embedding'] = OllamaEmbeddings(model=embedding.get('model'))
                     else:
                         raise Exception(f"目前不支持{embedding['type']}嵌入模型")
                 embedding['used'] = embedding.get('used',0) + 1 
@@ -65,7 +65,8 @@ class EmbeddingLib():
     def regist_embedding(self):
         defaults = {
                       "EMBEDDING.TOGETHER": {"model":"BAAI/bge-large-en-v1.5"},
-                      "EMBEDDING.GEMINI": {"model":"models/embedding-001"}
+                      "EMBEDDING.GEMINI": {"model":"models/embedding-001"},
+                      "EMBEDDING.OLLAMA": {"model":"mxbai-embed-large"}
                   }
         for key in defaults:
             default = defaults[key]

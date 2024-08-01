@@ -347,4 +347,5 @@ def start(args):
         __agent(langchainLib,args)
     else:
         print("args=",args)
-        print("llms:",[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_llm(full=True)])
+        print("llms--->:",[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_llm(full=True)])
+        print("embeddings---->:",[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_embedding(full=True)])
