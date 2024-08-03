@@ -39,6 +39,9 @@ def main():
     start_parser.add_argument("--dbname",type=str,default="test.faiss",help="保存的向量数据库，默认test.faiss") 
     start_parser.add_argument("--docx",type=str,help="docx文档文件名") 
     start_parser.add_argument("--pptx",type=str,help="pptx文档文件名") 
+    start_parser.add_argument("--pdf",type=str,help="pdf文档文件名") 
+    start_parser.add_argument("--glob",type=str,help="当前目录下的glob匹配的文件") 
+    
     start_parser.add_argument("--size",type=int,help="文档分隔的size") 
      
 

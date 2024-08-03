@@ -169,10 +169,12 @@ def __rag_test(langchainLib:LangchainLib,args):
     url = args.url
     pptx = args.pptx
     docx = args.docx
+    pdf = args.pdf
+    glob = args.glob
     message = args.message
     
     
-    if (not url and not pptx and not docx) and  (not message):
+    if (not url and not pptx and not docx and not pdf and not glob) and  (not message):
         print(f"1、指定url/pptx/docx:系统将文档下载切片后向量化到{faiss_dbname}数据库\n2、指定message:系统将从{faiss_dbname}数据库中搜索相关的两条记录。\n您需要至少指定url和message中的一个参数.")
         return
 
@@ -181,9 +183,11 @@ def __rag_test(langchainLib:LangchainLib,args):
     else:
         embedding = None
 
-    if (url or pptx or docx):
+    if (url or pptx or docx or pdf or glob):
         docs = __loader_test(langchainLib,args)
         print("#"*60)
+        if not docs:
+            return
         if url and faiss_dbname:
             ##### create vectorestore
             # url = "https://python.langchain.com/v0.2/docs/concepts/#tools"
@@ -193,7 +197,7 @@ def __rag_test(langchainLib:LangchainLib,args):
                 blocks = doc['blocks']
                 vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(blocks,embedding)
                 langchainLib.vectorstoreLib.faiss.save(faiss_dbname,vectorestore)
-        elif pptx or docx:
+        else:
                 vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(docs,embedding)
                 langchainLib.vectorstoreLib.faiss.save(faiss_dbname,vectorestore)
     if message and faiss_dbname:   
@@ -219,10 +223,12 @@ def __loader_test(langchainLib:LangchainLib,args):
     depth = args.depth
     docx_file = args.docx
     pptx_file = args.pptx
+    pdf_file = args.pdf
+    glob = args.glob
     chunk_size = args.size or 512
-    only_one = list(filter(lambda x: x,[url,docx_file,pptx_file]))
+    only_one = list(filter(lambda x: x,[url,docx_file,pptx_file,pdf_file,glob]))
     if len(only_one) != 1:
-        print(f"请指定url,docx,pptx其中的一个")
+        print(f"请指定url,docx,pptx,pdf,glob其中的一个")
         return 
     if url:
         result = langchainLib.load_url_and_split_markdown(url = url,max_depth = depth, chunk_size=chunk_size)
@@ -232,6 +238,20 @@ def __loader_test(langchainLib:LangchainLib,args):
         print(result)
     elif pptx_file:
         result = langchainLib.loaderLib.pptx.load_and_split(pptx_file,chunk_size=chunk_size)
+        print(result)
+    elif pdf_file:
+        result = langchainLib.loaderLib.pdf.load_and_split(pdf_file,chunk_size=chunk_size)
+        print(result)
+    elif glob:
+        loader_cls = None
+        if glob.find(".docx")>=0:
+            loader_cls = langchainLib.loaderLib.docx.loader
+        elif glob.find(".pptx")>=0:
+            loader_cls = langchainLib.loaderLib.pptx.loader
+        elif glob.find(".pdf")>=0:
+            loader_cls = langchainLib.loaderLib.pdf.loader
+        loader  = langchainLib.loaderLib.dir.loader(".",glob=glob,show_progress=True,loader_cls=loader_cls)
+        result  = loader.load()
         print(result)
     return result
 
@@ -340,3 +360,15 @@ def start(args):
         print("args=",args)
         print("llms--->:",[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_llm(full=True)])
         print("embeddings---->:",[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_embedding(full=True)])
+        # docx_loader = langchainLib.loaderLib.docx.loader
+        # loader =  langchainLib.loaderLib.dir.loader(
+        #     ".",
+        #     glob ="**/*.docx",
+        #     show_progress=True,
+        #     loader_cls=docx_loader)
+        # docs = loader.load()
+        # print(docs)
+
+        loader = langchainLib.loaderLib.pdf.loader("abc.pdf")
+        docs = loader.load()
+        print(docs)
