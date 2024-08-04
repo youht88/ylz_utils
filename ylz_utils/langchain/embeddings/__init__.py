@@ -71,6 +71,8 @@ class EmbeddingLib():
         for key in defaults:
             default = defaults[key]
             embed = self.config.get(key)
+            if not embed:
+                continue
             base_url = embed.get("BASE_URL")
             api_keys = embed.get("API_KEYS")
             if api_keys:
