@@ -7,6 +7,27 @@ from langgraph.graph import START,END,StateGraph,MessagesState
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import ToolNode
 
+from ylz_utils.file import FileLib
+#from ylz_utils.langchain import LangchainLib
+
+@tool
+def websearch(self,query):
+    '''
+        use TAVILY to search from the internet
+        arguments:
+            self: the first args must be self
+            query: the query which should be search from the internet . string it must be single-str format 
+    '''
+    print(query)
+    if isinstance(query,list):
+        query = query[0]
+    query = query
+    #res = websearch_tool.invoke(query)
+    res = "中国，北京"
+    if res:
+        return res
+    else:
+        return "I don't search result from the internet."
 class GraphLib():
     def __init__(self,langchainLib):
         self.langchainLib = langchainLib
@@ -33,8 +54,9 @@ class GraphLib():
         llm = self.langchainLib.get_llm(llm_key,llm_model)
         tools = [
                Tool(name="websearch",
-                    description="use TAVILY tool to search info from internet",
-                    func=self.websearch_tool),
+                    description = "the tool when you can not sure,please search from the internet",
+                    func = websearch
+               ),
                Tool(name="python_repl",
                     description="when you need to calculation, use python repl tool to execute code ,then return the result to AI.",
                     func=self.python_repl_tool)
@@ -61,4 +83,6 @@ class GraphLib():
         print(final_state)
         print("*"*80)
         return final_state['messages'][-1].content
-         
+    
+    def export_graph(self,graph):
+        FileLib.writeFile("graph.png",graph(xray=True).draw_mermaid_png(),mode="wb")    

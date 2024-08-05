@@ -13,6 +13,21 @@ class WebSearchTool():
     def __init__(self,langchainLib):
         self.langchainLib = langchainLib
         self.config = langchainLib.config
+    def get_tool_wrapper(self):
+        search_config = self.config.get(f"SEARCH_TOOLS.TAVILY")        
+        api_keys = search_config.get("API_KEYS")
+        try:
+            if api_keys:
+                api_keys = api_keys.split(",")
+            else:
+                api_keys = []
+            api_key = random.choice(api_keys)
+        except:
+            raise Exception(f"请先设置TAVILY_API_KEYS环境变量") 
+        search = TavilySearchAPIWrapper(tavily_api_key=api_key)
+        tool = TavilySearchResults(api_wrapper=search,max_results=4)
+        return tool
+
     def get_tool(self,key="TAVILY",rows=4):
         key = key.upper()
         if key == "DUCKDUCKGO":

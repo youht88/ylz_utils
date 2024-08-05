@@ -51,7 +51,8 @@ def __chat(langchainLib:LangchainLib,args):
             message=input("USER:")
         else:
             print(f"USER:{message}")
-        if message.lower() in ['/break','/quit','/exit','/stop','/q']:
+        if message.lower() in ['/quit','/exit','/stop','/bye','/q']:
+            print("Good bye!!")
             break
         res = chain.stream({"input":message}, {'configurable': {'user_id': user_id,'conversation_id': conversation_id}} )
         message = ""
@@ -324,15 +325,29 @@ def __graph_test(langchainLib:LangchainLib,args):
     conversation = args.conversation or 'default'
     thread_id = f"{user}-{conversation}"
 
-    if not message:
-        print("必须提供--message参数!")
-        return
-
     graph = langchainLib.get_graph(llm_key=llm_key,llm_model=llm_model)
-    res = langchainLib.graphLib.graph_invoke(graph,message,thread_id=thread_id)
-    print(res)
-    return
-    #FileLib.writeFile("graph.png",chain.get_graph(xray=True).draw_mermaid_png(),mode="wb")
+    # while True:
+    #     if not message:
+    #         message = input("User: ")
+    #     else:
+    #         print(f"User:{message}")
+    #     if message.lower() in ["/quit", "/exit", "/stop","/q","/bye"]:
+    #         print("Goodbye!")
+    #         break
+    #     for event in graph.stream({"messages": ("user", message)},
+    #                               config = {"configurable":{"thread_id":thread_id}}):
+    #         for value in event.values():
+    #             print("Assistant:", value["messages"][-1].content)
+    #     message = ""
+
+    if not message:
+        message = input("User: ")
+    final_state = graph.invoke({"messages": ("user", message)},
+                 config = {"configurable":{"thread_id":thread_id}})   
+    print("*"*80)
+    print(final_state)
+    print("*"*80)
+    print(final_state['messages'][-1].content)
 
 def start(args):
     langchainLib = LangchainLib()
