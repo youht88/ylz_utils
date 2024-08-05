@@ -4,6 +4,7 @@ from ylz_utils import LangchainLib
 
 from pydantic import BaseModel,Field
 from typing import Literal,List
+from pptx.util import Inches,Cm,Pt
 
 from langchain.prompts import PromptTemplate,ChatPromptTemplate
 from langchain.output_parsers import OutputFixingParser
@@ -384,5 +385,9 @@ def start(args):
         print("args=",args)
         print("llms--->:",[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_llm(full=True)])
         print("embeddings---->:",[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_embedding(full=True)])
-    
-    
+        #loader = langchainLib.loaderLib.pptx.loader("30335320.pptx")
+        #docs = loader.load()
+        #print(docs)
+        loader = langchainLib.loaderLib.pptx.newer("test.pptx")
+        loader.add_slide().set_title("Hello World").add_text("youht",Cm(1),Cm(1),Cm(2),Cm(2))
+        loader.save()
