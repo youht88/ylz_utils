@@ -13,6 +13,7 @@ from langchain_core.runnables import RunnablePassthrough,RunnableLambda,Runnable
 from langgraph.graph import START,END,StateGraph,MessagesState
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import ToolNode
+from langchain_community.document_loaders import UnstructuredFileLoader
 
 def __agent(langchainLib:LangchainLib,args):
     llm_key = args.llm
@@ -243,7 +244,7 @@ def __loader_test(langchainLib:LangchainLib,args):
         result = langchainLib.loaderLib.pdf.load_and_split(pdf_file,chunk_size=chunk_size)
         print(result)
     elif glob:
-        loader_cls = None
+        loader_cls = UnstructuredFileLoader
         if glob.find(".docx")>=0:
             loader_cls = langchainLib.loaderLib.docx.loader
         elif glob.find(".pptx")>=0:
