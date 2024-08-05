@@ -16,8 +16,8 @@ from langgraph.prebuilt import ToolNode
 from langchain_community.document_loaders import UnstructuredFileLoader
 
 def __agent(langchainLib:LangchainLib,args):
-    llm_key = args.llm
-    llm_model = args.model
+    llm_key = args.llm_key
+    llm_model = args.llm_model
     message = args.message if args.message else "厦门今天天气怎么样?"
     llm = langchainLib.get_llm(llm_key,llm_model)
     prompt = langchainLib.get_prompt()
@@ -36,9 +36,9 @@ def __agent(langchainLib:LangchainLib,args):
     print("\n",langchainLib.get_llm(full=True),"\n")
 
 def __chat(langchainLib:LangchainLib,args):
-    llm_key = args.llm
+    llm_key = args.llm_key
     message = args.message
-    model = args.model
+    model = args.llm_model
     user_id = args.user if args.user else 'default'
     conversation_id = args.conversation if args.conversation else 'default'
     llm = langchainLib.get_llm(key=llm_key,model=model)
@@ -62,7 +62,7 @@ def __chat(langchainLib:LangchainLib,args):
     print("\n",langchainLib.get_llm(full=True))
 
 def __llm_test(langchainLib:LangchainLib,args):
-    llm_key = args.llm
+    llm_key = args.llm_key
     for _ in range(3):
         llm = langchainLib.get_llm(llm_key)
         res = llm.invoke("hello")
@@ -71,7 +71,7 @@ def __llm_test(langchainLib:LangchainLib,args):
 
 def __outputParser_test(langchainLib:LangchainLib,args):
     message = args.message
-    llm_key = args.llm
+    llm_key = args.llm_key
     class Food(BaseModel):
         name: str = Field(description="name of the food")
         place: str = Field(defualt="未指定",description="where to eat food?",examples=["家","公司","体育馆"])
@@ -145,8 +145,8 @@ def __runnalble_test(langchainLib:LangchainLib):
     print("\nrunnalbe:",res)
 
 def __prompt_test(langchainLib:LangchainLib,args):
-    llm_key = args.llm
-    llm_model = args.model
+    llm_key = args.llm_key
+    llm_model = args.llm_model
     prompt = langchainLib.get_prompt(f"你对日历时间非常精通",human_keys={"context":"关联的上下文","question":"问题是"},use_chat = False)
     prompt.partial(context="我的名字叫小美")   # 这个为什么不起作用?
     print("!!!!",langchainLib.llmLib.default_llm_key,llm_key)
@@ -170,7 +170,8 @@ def __prompt_test(langchainLib:LangchainLib,args):
     print("llms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.get_llm(full=True)])
 
 def __rag_test(langchainLib:LangchainLib,args):
-    embedding_key = args.embedding
+    embedding_key = args.embedding_key
+    embedding_model = args.embedding_model
     faiss_dbname = args.dbname or "test.faiss"
     url = args.url
     pptx = args.pptx
@@ -184,8 +185,8 @@ def __rag_test(langchainLib:LangchainLib,args):
         print(f"1、指定url/pptx/docx:系统将文档下载切片后向量化到{faiss_dbname}数据库\n2、指定message:系统将从{faiss_dbname}数据库中搜索相关的两条记录。\n您需要至少指定url和message中的一个参数.")
         return
 
-    if embedding_key:
-        embedding = langchainLib.get_embedding(embedding_key)
+    if embedding_key or embedding_model:
+        embedding = langchainLib.get_embedding(embedding_key,embedding_model)
     else:
         embedding = None
 
@@ -292,7 +293,7 @@ print(3+2)
         age:int = Field(description= "年龄")
 
     langchainLib.add_plugins()
-    llm_key = args.llm
+    llm_key = args.llm_key
     llm = langchainLib.get_llm(llm_key)
     print("llms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.get_llm(full=True)])
 
@@ -316,8 +317,8 @@ print(3+2)
     res = llm.invoke({"ask":"北京2024年人口多少"})
     print(res)
 def __graph_test(langchainLib:LangchainLib,args):
-    llm_key = args.llm
-    llm_model = args.model
+    llm_key = args.llm_key
+    llm_model = args.llm_model
     message = args.message
     user = args.user or 'default'
     conversation = args.conversation or 'default'

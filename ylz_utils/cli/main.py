@@ -28,9 +28,10 @@ def main():
                               required=True,
                               choices=["llm","chat","prompt","loader","runnable","tools","rag","outputParser","graph","agent","info"],
                               help="测试内容")
-    start_parser.add_argument("--llm",type=str,help="语言模型标识，例如：LLM.DEEPSEEK")
-    start_parser.add_argument("--embedding",type=str,help="嵌入模型标识，例如：EMBEDDING.TOGETHER")
-    start_parser.add_argument("--model",type=str,help="model")
+    start_parser.add_argument("--llm_key",type=str,help="语言模型标识，例如：LLM.DEEPSEEK")
+    start_parser.add_argument("--embedding_key",type=str,help="嵌入模型标识，例如：EMBEDDING.TOGETHER")
+    start_parser.add_argument("--llm_model",type=str,help="语言模型model")
+    start_parser.add_argument("--embedding_model",type=str,help="嵌入模型model")
     start_parser.add_argument("--message",type=str,help="input message")
     start_parser.add_argument("--user",type=str,help="user_id,example: alice")    
     start_parser.add_argument("--conversation",type=str,help="conversation_id,example: 123") 
