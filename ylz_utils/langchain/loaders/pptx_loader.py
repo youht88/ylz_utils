@@ -7,9 +7,10 @@ from pptx.presentation import Presentation
 from typing import List,Dict, Literal, Tuple
 from pptx.shapes.autoshape import Shape, MSO_SHAPE_TYPE
 from pptx.enum.shapes import MSO_SHAPE
-from pptx.chart.data import ChartData
+from pptx.chart.data import ChartData,XyChartData,BubbleChartData
 from pptx.dml.color import RGBColor
 from pptx.enum.chart import XL_CHART_TYPE
+from pptx.enum.chart import XL_LEGEND_POSITION
 from pptx.enum.text import PP_ALIGN
 from pptx.util import Inches,Cm,Pt
 class PptxLoader():
@@ -160,19 +161,78 @@ class PptxLoader():
         shapes = slide.shapes
         image = shapes.add_picture(image_path,left,top,width,height)
         return image
-    def add_chart(self,chart_type=XL_CHART_TYPE.PIE,chart_data=None,slide_idx=None):
+    def add_chart(self,chart_type:Literal['pie','column','scatter','bubble'],
+                  data:List[Dict[str,Dict]] | List[Dict[str,List[Tuple[int,int]]]] | List[Dict[str,List[Tuple[int,int,int]]]],
+                  x,y,cx,cy,
+                  smooth:List[bool]=None,
+                  label = False,
+                  label_size = None,
+                  label_color: Tuple[int,int,int] = None,
+                  legend = True,
+                  legend_position:Literal['top','left','right','bottom'] = None,
+                  slide_idx=None):
         if slide_idx:
             slide = self.slides[slide_idx]
         else:
             slide = self.slides[-1]
+        x,y,cx,cy = self._get_sizes(x,y,cx,cy)
         shapes = slide.shapes
-        placeholder = slide.placeholders[10]
-        print(placeholder.placeholder_format.type)
-        chart_data = ChartData()
-        chart_data.categories = ["a","b"]
-        chart_data.add_series("series 1",(43,22))
-        chart_frame = placeholder.insert_chart(chart_type,chart_data)
+        if chart_type.lower() == 'pie':
+            chart_type = XL_CHART_TYPE.PIE
+        elif chart_type.lower() == 'column':
+            chart_type = XL_CHART_TYPE.COLUMN_CLUSTERED
+        elif chart_type.lower() == 'scatter':
+            chart_type = XL_CHART_TYPE.XY_SCATTER
+        elif chart_type.lower() == 'bubble':
+            chart_type = XL_CHART_TYPE.BUBBLE
+        elif chart_type.lower() == 'line':
+            chart_type = XL_CHART_TYPE.LINE
+        else:
+            chart_type = XL_CHART_TYPE.COLUMN_CLUSTERED
+
+        
+        if chart_type == XL_CHART_TYPE.XY_SCATTER:
+            chart_data = XyChartData()
+            for idx,item in enumerate(data):
+                s = chart_data.add_series(list(item.keys())[0])
+                for value in list(item.values())[0]:
+                    s.add_data_point(*value)
+        elif chart_type == XL_CHART_TYPE.BUBBLE:
+            chart_data = BubbleChartData()
+            for idx,item in enumerate(data):
+                s = chart_data.add_series(list(item.keys())[0])
+                for value in list(item.values())[0]:
+                    s.add_data_point(*value)
+        else:
+            chart_data = ChartData()
+            categories = list(list(data[0].values())[0].keys())
+            chart_data.categories = categories
+            for idx,item in enumerate(data):
+                chart_data.add_series(list(item.keys())[0],list(list(item.values())[0].values()))
+        chart_frame = shapes.add_chart(chart_type,x,y,cx,cy,chart_data)
         chart = chart_frame.chart
+        if smooth and chart_type.lower == 'line' and len(smooth)==len(data):
+            for idx,is_smooth in enumerate(smooth):
+                chart_data.series[idx].smooth = is_smooth
+        if label:
+            plot = chart.plots[0]
+            plot.has_data_labels = True
+            data_labels = plot.data_labels
+            if label_size:
+                data_labels.font.size = self._get_size(label_size)
+            if label_color:
+                data_labels.font.color.rgb = RGBColor(*label_color)
+        if legend:
+            chart.has_legend = True
+            if legend_position:
+                if legend_position.lower() == 'left':
+                    chart.legend.position = XL_LEGEND_POSITION.LEFT
+                elif legend_position.lower() == 'right':
+                    chart.legend.position = XL_LEGEND_POSITION.RIGHT
+                elif legend_position.lower() == 'top':
+                    chart.legend.position = XL_LEGEND_POSITION.TOP
+                elif legend_position.lower() == 'bottom':
+                    chart.legend.position = XL_LEGEND_POSITION.BOTTOM
         return chart
     
     def add_shape(self,shape_type,left,top,width,height,text=None,
@@ -241,5 +301,8 @@ class PptxLoader():
             for jdx,col_key in enumerate(row):
                 table.cell(idx,jdx).text = str(new_contents[idx][col_key])
         return table
+    def get_slide_master(self):
+        slide_master = self.ppt.slide_master
+        return slide_master
     def save(self):
         self.ppt.save(self.filename)

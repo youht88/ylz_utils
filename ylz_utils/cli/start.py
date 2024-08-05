@@ -393,12 +393,18 @@ def start(args):
         loader.add_slide(0).set_title("Hello World","gogogo").add_text("youht",10,10,60,40)
         tab = [{"name":"youht","age":20},{"name":"jinli","age":10}] 
         tx = loader.add_slide(1).set_title("你好","step1").add_text("Step1",10,10,100,40)
-        loader.add_text_paragraph(tx,"如何学习python",font_size=30,level=1)
-        loader.add_text_paragraph(tx,"numpy",bold=True,font_size=20,level=2)
+        loader.add_text_paragraph(tx,"如何学习python",size=30,level=1)
+        loader.add_text_paragraph(tx,"numpy",bold=True,size=20,level=2)
         loader.add_slide(2).set_title("你好","step1").add_table(tab,100,100,600,400,with_header = True)
         shape = loader.add_slide(8).set_title("Shape").add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,50,50,50,50,
                                                         line_brightness=0.5,
                                                         text="hello")
         print(loader.get_shape_sizes(shape))
-        loader.add_slide().set_title("chart").add_chart()
+        loader.add_slide().set_title("chart1").add_chart("pie",
+                                                        [{"s1":{"a":1,"b":2,"c":3}},
+                                                         {"s2":{"a":3,"b":2,"c":1}}],10,10,600,300)
+        loader.add_slide().set_title("chart2").add_chart("bubble",
+                                                        [{"s1":[(1,2,10),(4,6,3),(2,3,1)]},
+                                                         {"s2":[(2,1,2),(8,2,3),(4,1,5)]}],10,10,600,300)
+
         loader.save()
