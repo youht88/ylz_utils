@@ -396,8 +396,9 @@ def start(args):
         loader.add_text_paragraph(tx,"如何学习python",font_size=30,level=1)
         loader.add_text_paragraph(tx,"numpy",bold=True,font_size=20,level=2)
         loader.add_slide(2).set_title("你好","step1").add_table(tab,100,100,600,400,with_header = True)
-        shape = loader.add_slide().set_title("Shape").add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,50,50,50,50,
+        shape = loader.add_slide(8).set_title("Shape").add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,50,50,50,50,
                                                         line_brightness=0.5,
                                                         text="hello")
         print(loader.get_shape_sizes(shape))
+        loader.add_slide().set_title("chart").add_chart()
         loader.save()

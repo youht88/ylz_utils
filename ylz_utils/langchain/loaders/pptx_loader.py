@@ -4,9 +4,13 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 import pptx 
 from pptx.slide import Slide,SlideLayout,SlideShapes
 from pptx.presentation import Presentation
-from typing import List,Dict, Literal
+from typing import List,Dict, Literal, Tuple
 from pptx.shapes.autoshape import Shape, MSO_SHAPE_TYPE
 from pptx.enum.shapes import MSO_SHAPE
+from pptx.chart.data import ChartData
+from pptx.dml.color import RGBColor
+from pptx.enum.chart import XL_CHART_TYPE
+from pptx.enum.text import PP_ALIGN
 from pptx.util import Inches,Cm,Pt
 class PptxLoader():
     ppt: Presentation  = None
@@ -87,7 +91,16 @@ class PptxLoader():
         if subtitle:
             slide.placeholders[1].text = subtitle
         return self
-    def add_text(self,text,left,top,width,height,slide_idx=None):
+    def add_text(self,text,left,top,width,height,
+                 word_wrap=False,
+                 name=None,
+                 bold=None,
+                 italic=None,
+                 size=None,
+                 href=None,
+                 alignment=None,
+                 color=None,
+                 slide_idx=None):
         if slide_idx:
             slide = self.slides[slide_idx]
         else:
@@ -96,16 +109,49 @@ class PptxLoader():
         shapes = slide.shapes
         txBox = shapes.add_textbox(left,top,width,height)
         tf = txBox.text_frame
-        tf.text = text
+        if word_wrap:
+            tf.word_wrap = True
+        if isinstance(text,list):
+            tf.text = text[0]
+            for rest_text in text[1:]:
+                self.add_text_paragraph(tf,rest_text,
+                                        name=name,
+                                        bold=bold,
+                                        italic=italic,
+                                        size=size,
+                                        href=href,
+                                        alignment=alignment,
+                                        color=color,
+                                        level=1)
+        else:
+            tf.text = text
         return tf
-    def add_text_paragraph(self,tf,text,bold=False,font_size=20,level=0):
+    def add_text_paragraph(self,tf,text,
+                           name=None,bold=False,italic=False,size=20,
+                           href=None,
+                           alignment=None,
+                           color:Tuple[int,int,int]=None,level=0):
         p=tf.add_paragraph()
         p.text = text
+        if name:
+            p.font.name = name
         p.font.blod = bold
-        p.font.size = Pt(font_size)
+        p.font.italic = italic
+        p.font.size = Pt(size)
+        if alignment:
+            if alignment.lower()=="left":
+                p.alignment = PP_ALIGN.LEFT
+            elif alignment.lower()=="right":
+                p.alignment = PP_ALIGN.RIGHT
+            elif alignment.lower()=="center":
+                p.alignment = PP_ALIGN.CENTER
+        if color:
+            p.font.color.rgb = RGBColor(*color)
+        if href:
+            p.hyperlink.address = href
         p.level = level
         return p
-    def add_image(self,image_path,left,top,width,height,slide_idx):
+    def add_image(self,image_path,left,top,width,height,slide_idx=None):
         if slide_idx:
             slide = self.slides[slide_idx]
         else:
@@ -114,6 +160,21 @@ class PptxLoader():
         shapes = slide.shapes
         image = shapes.add_picture(image_path,left,top,width,height)
         return image
+    def add_chart(self,chart_type=XL_CHART_TYPE.PIE,chart_data=None,slide_idx=None):
+        if slide_idx:
+            slide = self.slides[slide_idx]
+        else:
+            slide = self.slides[-1]
+        shapes = slide.shapes
+        placeholder = slide.placeholders[10]
+        print(placeholder.placeholder_format.type)
+        chart_data = ChartData()
+        chart_data.categories = ["a","b"]
+        chart_data.add_series("series 1",(43,22))
+        chart_frame = placeholder.insert_chart(chart_type,chart_data)
+        chart = chart_frame.chart
+        return chart
+    
     def add_shape(self,shape_type,left,top,width,height,text=None,
                   fill_type:Literal["solid","transparent"]|None=None,
                   fill_color=None,
@@ -135,9 +196,10 @@ class PptxLoader():
                 shape.fill.solid()
             elif fill_type=="transparent":
                 shape.fill.background()
+        if fill_color and fill_type!="transparent":
+            shape.fill.color.rgb = RGBColor(*fill_color)
         if line_color: 
-            pass
-            #shape.line.color.rgb = RGBColor(*line_color)
+            shape.line.color.rgb = RGBColor(*line_color)
         if line_brightness:
             shape.line.brightness = line_brightness
         if line_width:
