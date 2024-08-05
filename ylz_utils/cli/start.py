@@ -37,7 +37,7 @@ def __agent(langchainLib:LangchainLib,args):
 
 def __chat(langchainLib:LangchainLib,args):
     llm_key = args.llm
-    input = args.message
+    message = args.message
     model = args.model
     user_id = args.user if args.user else 'default'
     conversation_id = args.conversation if args.conversation else 'default'
@@ -46,14 +46,19 @@ def __chat(langchainLib:LangchainLib,args):
     prompt = langchainLib.get_prompt(use_chat=True)
     chat = langchainLib.get_chat(llm,prompt)
     chain = chat | langchainLib.get_outputParser()
-    res = chain.stream({"input":input}, {'configurable': {'user_id': user_id,'conversation_id': conversation_id}} )
-    #### llm 模式
-    # prompt = langchainLib.get_prompt()
-    # chain = prompt | llm | langchainLib.get_outputParser()
-    # res = chain.stream({"input":input} )
-    
-    for chunk in res:
-        print(chunk,end="")
+    while True:
+        if not message:
+            message=input("USER:")
+        else:
+            print(f"USER:{message}")
+        if message.lower() in ['/break','/quit','/exit','/stop','/q']:
+            break
+        res = chain.stream({"input":message}, {'configurable': {'user_id': user_id,'conversation_id': conversation_id}} )
+        message = ""
+        print("AI:",end="")
+        for chunk in res:
+            print(chunk,end="")
+        print("\n")
     print("\n",langchainLib.get_llm(full=True))
 
 def __llm_test(langchainLib:LangchainLib,args):
@@ -196,11 +201,13 @@ def __rag_test(langchainLib:LangchainLib,args):
             print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks'])} for doc in docs])
             for doc in docs:
                 blocks = doc['blocks']
-                vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(blocks,embedding)
+                vectorestore,ids = langchainLib.vectorstoreLib.faiss.create_from_docs(blocks,embedding)
                 langchainLib.vectorstoreLib.faiss.save(faiss_dbname,vectorestore)
+                print("ids:",ids)
         else:
-                vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(docs,embedding)
+                vectorestore,ids = langchainLib.vectorstoreLib.faiss.create_from_docs(docs,embedding)
                 langchainLib.vectorstoreLib.faiss.save(faiss_dbname,vectorestore)
+                print("ids:",ids)
     if message and faiss_dbname:   
         # docs = [Document("I am a student"),Document("who to go to china"),Document("this is a table")]
         # vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(docs)
@@ -252,7 +259,7 @@ def __loader_test(langchainLib:LangchainLib,args):
         elif glob.find(".pdf")>=0:
             loader_cls = langchainLib.loaderLib.pdf.loader
         loader  = langchainLib.loaderLib.dir.loader(".",glob=glob,show_progress=True,loader_cls=loader_cls)
-        result  = loader.load()
+        result  = loader.load_and_split(langchainLib.splitterLib.get_textsplitter(chunk_size=chunk_size,chunk_overlap=0))
         print(result)
     return result
 
@@ -361,15 +368,5 @@ def start(args):
         print("args=",args)
         print("llms--->:",[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_llm(full=True)])
         print("embeddings---->:",[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_embedding(full=True)])
-        # docx_loader = langchainLib.loaderLib.docx.loader
-        # loader =  langchainLib.loaderLib.dir.loader(
-        #     ".",
-        #     glob ="**/*.docx",
-        #     show_progress=True,
-        #     loader_cls=docx_loader)
-        # docs = loader.load()
-        # print(docs)
-
-        loader = langchainLib.loaderLib.pdf.loader("abc.pdf")
-        docs = loader.load()
-        print(docs)
+    
+    
