@@ -46,7 +46,9 @@ class PptxLoader():
         return splited_docs
     def add_slide(self,slide_layout=None):
         if not slide_layout:
-            slide_layout = self.ppt.slide_layouts[0]
+            slide_layout = self.ppt.slide_layouts[1]
+        else:
+            slide_layout = self.ppt.slide_layouts[slide_layout]
         slide = self.ppt.slides.add_slide(slide_layout)
         self.slides.append(slide)
         return self
@@ -57,6 +59,8 @@ class PptxLoader():
             slide = self.slides[-1]
         shapes = slide.shapes
         shapes.title.text = title
+        if subtitle:
+            slide.placeholders[1].text = subtitle
         return self
     def add_text(self,text,left,top,width,height,slide_idx=None):
         if slide_idx:
@@ -68,32 +72,52 @@ class PptxLoader():
         tf = txBox.text_frame
         tf.text = text
         return tf
-    def add_text_paragraph(self,tf,text,bold=False,font_size=40,level=0):
+    def add_text_paragraph(self,tf,text,bold=False,font_size=20,level=0):
         p=tf.add_paragraph()
         p.text = text
         p.font.blod = bold
         p.font.size = Pt(font_size)
         p.level = level
         return p
-    def add_image(self,slide,image_path,left,top,width,height):
+    def add_image(self,image_path,left,top,width,height,slide_idx):
+        if slide_idx:
+            slide = self.slides[slide_idx]
+        else:
+            slide = self.slides[-1]
         shapes = slide.shapes
         image = shapes.add_picture(image_path,left,top,width,height)
         return image
-    def add_shape(self,slide,shape_type,left,top,width,height,text=None):
+    def add_shape(self,shape_type,left,top,width,height,text=None,slide_idx=None):
+        if slide_idx:
+            slide = self.slides[slide_idx]
+        else:
+            slide = self.slides[-1]
         shapes = slide.shapes
         shape = shapes.add_shape(shape_type,left,top,width,height)
         shape.text = text
         return shape
-    def add_table(self,slide,contents:List[Dict],left,top,width,height):
+    def add_table(self,contents:List[Dict],left,top,width,height,slide_idx=None,with_header=False):
+        if slide_idx:
+            slide = self.slides[slide_idx]
+        else:
+            slide = self.slides[-1]
         shapes = slide.shapes
-        if len(contents)==0:
+        new_contents = contents.copy()
+        if len(new_contents)==0:
             raise Exception("表格应至少包含一行一列!")
-        rows = len(contents)
-        cols = len(contents[0].keys())
+        if with_header:
+            header = {}
+            for key in new_contents[0]:
+                header[key] = key
+            new_contents.insert(0,header)
+        
+        rows = len(new_contents)
+        cols = len(new_contents[0].keys())
+        
         table = shapes.add_table(rows,cols,left,top,width,height).table
-        for idx,row in enumerate(contents):
+        for idx,row in enumerate(new_contents):
             for jdx,col_key in enumerate(row):
-                table.cell(idx,jdx).text = contents[idx][col_key]
+                table.cell(idx,jdx).text = str(new_contents[idx][col_key])
         return table
     def save(self):
         self.ppt.save(self.filename)

@@ -389,5 +389,10 @@ def start(args):
         #docs = loader.load()
         #print(docs)
         loader = langchainLib.loaderLib.pptx.newer("test.pptx")
-        loader.add_slide().set_title("Hello World").add_text("youht",Cm(1),Cm(1),Cm(2),Cm(2))
+        loader.add_slide(0).set_title("Hello World","gogogo").add_text("youht",Cm(1),Cm(1),Cm(2),Cm(2))
+        tab = [{"name":"youht","age":20},{"name":"jinli","age":10}] 
+        tx = loader.add_slide(1).set_title("你好","step1").add_text("Step1",Cm(1),Cm(1),Cm(20),Cm(10))
+        loader.add_text_paragraph(tx,"如何学习python",font_size=30,level=1)
+        loader.add_text_paragraph(tx,"numpy",bold=True,font_size=20,level=2)
+        loader.add_slide(2).set_title("你好","step1").add_table(tab,Cm(1),Cm(1),Cm(6),Cm(10),with_header = True)
         loader.save()
