@@ -5,6 +5,7 @@ from ylz_utils import LangchainLib
 from pydantic import BaseModel,Field
 from typing import Literal,List
 from pptx.util import Inches,Cm,Pt
+from pptx.enum.shapes import MSO_SHAPE
 
 from langchain.prompts import PromptTemplate,ChatPromptTemplate
 from langchain.output_parsers import OutputFixingParser
@@ -389,10 +390,14 @@ def start(args):
         #docs = loader.load()
         #print(docs)
         loader = langchainLib.loaderLib.pptx.newer("test.pptx")
-        loader.add_slide(0).set_title("Hello World","gogogo").add_text("youht",Cm(1),Cm(1),Cm(2),Cm(2))
+        loader.add_slide(0).set_title("Hello World","gogogo").add_text("youht",10,10,60,40)
         tab = [{"name":"youht","age":20},{"name":"jinli","age":10}] 
-        tx = loader.add_slide(1).set_title("你好","step1").add_text("Step1",Cm(1),Cm(1),Cm(20),Cm(10))
+        tx = loader.add_slide(1).set_title("你好","step1").add_text("Step1",10,10,100,40)
         loader.add_text_paragraph(tx,"如何学习python",font_size=30,level=1)
         loader.add_text_paragraph(tx,"numpy",bold=True,font_size=20,level=2)
-        loader.add_slide(2).set_title("你好","step1").add_table(tab,Cm(1),Cm(1),Cm(6),Cm(10),with_header = True)
+        loader.add_slide(2).set_title("你好","step1").add_table(tab,100,100,600,400,with_header = True)
+        shape = loader.add_slide().set_title("Shape").add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,50,50,50,50,
+                                                        line_brightness=0.5,
+                                                        text="hello")
+        print(loader.get_shape_sizes(shape))
         loader.save()

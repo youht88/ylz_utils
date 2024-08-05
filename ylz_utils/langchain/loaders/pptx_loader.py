@@ -4,15 +4,40 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 import pptx 
 from pptx.slide import Slide,SlideLayout,SlideShapes
 from pptx.presentation import Presentation
-from typing import List,Dict
+from typing import List,Dict, Literal
+from pptx.shapes.autoshape import Shape, MSO_SHAPE_TYPE
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.util import Inches,Cm,Pt
-
 class PptxLoader():
     ppt: Presentation  = None
     slides: List[Slide] = []
+    unit = None
     def __init__(self,langchainLib):
         self.langchainLib = langchainLib
+        self.unit = Pt
+    def set_default_unit(self,unit):
+        if unit.lower()=="inches":
+            self.unit = Inches
+        elif unit.lower()=="cm":
+            self.unit = Cm
+        elif unit.lower()=="pt":
+            self.unit = Pt
+        else:
+            raise Exception("必须指定Inches,Cm,Pt中的一种单位")
+    def _get_sizes(self,left:float|int,top:float|int,width:float|int,height:float|int):
+        if self.unit == Inches:
+            return Inches(left),Inches(top),Inches(width),Inches(height)
+        elif self.unit == Cm:
+            return Cm(left),Cm(top),Cm(width),Cm(height)
+        else:
+            return Pt(left),Pt(top),Pt(width),Pt(height)
+    def _get_size(self,size:float|int):
+        if self.unit == Inches:
+            return Inches(size)
+        elif self.unit == Cm:
+            return Cm(size)
+        else:
+            return Pt(size)
     def newer(self,filename:str):
         self.ppt = pptx.Presentation()
         self.filename = filename
@@ -67,6 +92,7 @@ class PptxLoader():
             slide = self.slides[slide_idx]
         else:
             slide = self.slides[-1]
+        left,top,width,height = self._get_sizes(left,top,width,height)
         shapes = slide.shapes
         txBox = shapes.add_textbox(left,top,width,height)
         tf = txBox.text_frame
@@ -84,23 +110,57 @@ class PptxLoader():
             slide = self.slides[slide_idx]
         else:
             slide = self.slides[-1]
+        left,top,width,height = self._get_sizes(left,top,width,height)
         shapes = slide.shapes
         image = shapes.add_picture(image_path,left,top,width,height)
         return image
-    def add_shape(self,shape_type,left,top,width,height,text=None,slide_idx=None):
+    def add_shape(self,shape_type,left,top,width,height,text=None,
+                  fill_type:Literal["solid","transparent"]|None=None,
+                  fill_color=None,
+                  line_color=None,
+                  line_brightness=None,
+                  line_width=None,
+                  rotation=None,
+                  slide_idx=None) -> Shape:
         if slide_idx:
             slide = self.slides[slide_idx]
         else:
             slide = self.slides[-1]
+        left,top,width,height = self._get_sizes(left,top,width,height)
         shapes = slide.shapes
         shape = shapes.add_shape(shape_type,left,top,width,height)
         shape.text = text
+        if fill_type:
+            if fill_type=="solid":
+                shape.fill.solid()
+            elif fill_type=="transparent":
+                shape.fill.background()
+        if line_color: 
+            pass
+            #shape.line.color.rgb = RGBColor(*line_color)
+        if line_brightness:
+            shape.line.brightness = line_brightness
+        if line_width:
+            shape.line.width = self._get_size(line_width)
+        if rotation:
+            shape.rotation = rotation
+        print(type(shape))
         return shape
+    def get_shape_sizes(self,shape:Shape,unit=None):
+        if not unit:
+            unit = self.unit
+        if unit==Inches:
+            return shape.left.inches,shape.top.inches,shape.width.inches,shape.height.inches
+        elif unit == Cm:
+            return shape.left.cm,shape.top.cm,shape.width.cm,shape.height.cm
+        else:
+            return shape.left.pt,shape.top.pt,shape.width.pt,shape.height.pt 
     def add_table(self,contents:List[Dict],left,top,width,height,slide_idx=None,with_header=False):
         if slide_idx:
             slide = self.slides[slide_idx]
         else:
             slide = self.slides[-1]
+        left,top,width,height = self._get_sizes(left,top,width,height)
         shapes = slide.shapes
         new_contents = contents.copy()
         if len(new_contents)==0:
