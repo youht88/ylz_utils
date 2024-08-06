@@ -27,7 +27,7 @@ from ylz_utils.langchain.agents import AgentLib
 from ylz_utils.langchain.graph import GraphLib
 from ylz_utils.langchain.llms import LLMLib
 from ylz_utils.langchain.embeddings import EmbeddingLib
-from ylz_utils.langchain.loaders import LoaderLib
+from ylz_utils.langchain.documents import DocumentLib
 from ylz_utils.langchain.prompts import PromptLib
 from ylz_utils.langchain.output_parsers import OutputParserLib
 from ylz_utils.langchain.splitters import SplitterLib
@@ -67,8 +67,8 @@ class LangchainLib():
         self.get_textsplitter = self.splitterLib.get_textsplitter
         self.split_markdown_docs = self.splitterLib.split_markdown_docs
 
-        self.loaderLib = LoaderLib(self)
-        self.load_url_and_split_markdown = self.loaderLib.url.load_and_split_markdown
+        self.documentLib = DocumentLib(self)
+        self.load_url_and_split_markdown = self.documentLib.url.load_and_split_markdown
 
         self.agentLib = AgentLib(self)
         self.get_agent = self.agentLib.get_agent

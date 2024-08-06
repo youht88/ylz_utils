@@ -246,23 +246,23 @@ def __loader_test(langchainLib:LangchainLib,args):
         result = langchainLib.load_url_and_split_markdown(url = url,max_depth = depth, chunk_size=chunk_size)
         print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks']),"metadata":doc['metadata']} for doc in result])
     elif docx_file:
-        result = langchainLib.loaderLib.docx.load_and_split(docx_file,chunk_size=chunk_size)
+        result = langchainLib.documentLib.docx.load_and_split(docx_file,chunk_size=chunk_size)
         print(result)
     elif pptx_file:
-        result = langchainLib.loaderLib.pptx.load_and_split(pptx_file,chunk_size=chunk_size)
+        result = langchainLib.documentLib.pptx.load_and_split(pptx_file,chunk_size=chunk_size)
         print(result)
     elif pdf_file:
-        result = langchainLib.loaderLib.pdf.load_and_split(pdf_file,chunk_size=chunk_size)
+        result = langchainLib.documentLib.pdf.load_and_split(pdf_file,chunk_size=chunk_size)
         print(result)
     elif glob:
         loader_cls = UnstructuredFileLoader
         if glob.find(".docx")>=0:
-            loader_cls = langchainLib.loaderLib.docx.loader
+            loader_cls = langchainLib.documentLib.docx.loader
         elif glob.find(".pptx")>=0:
-            loader_cls = langchainLib.loaderLib.pptx.loader
+            loader_cls = langchainLib.documentLib.pptx.loader
         elif glob.find(".pdf")>=0:
-            loader_cls = langchainLib.loaderLib.pdf.loader
-        loader  = langchainLib.loaderLib.dir.loader(".",glob=glob,show_progress=True,loader_cls=loader_cls)
+            loader_cls = langchainLib.documentLib.pdf.loader
+        loader  = langchainLib.documentLib.dir.loader(".",glob=glob,show_progress=True,loader_cls=loader_cls)
         result  = loader.load_and_split(langchainLib.splitterLib.get_textsplitter(chunk_size=chunk_size,chunk_overlap=0))
         print(result)
     return result
@@ -386,10 +386,10 @@ def start(args):
         print("args=",args)
         print("llms--->:",[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_llm(full=True)])
         print("embeddings---->:",[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_embedding(full=True)])
-        #loader = langchainLib.loaderLib.pptx.loader("30335320.pptx")
+        #loader = langchainLib.documentLib.pptx.loader("30335320.pptx")
         #docs = loader.load()
         #print(docs)
-        loader = langchainLib.loaderLib.pptx.newer("test.pptx")
+        loader = langchainLib.documentLib.pptx.newer("test.pptx")
         loader.add_slide(0).set_title("Hello World","gogogo").add_text("youht",10,10,60,40)
         tab = [{"name":"youht","age":20},{"name":"jinli","age":10}] 
         tx = loader.add_slide(1).set_title("你好","step1").add_text("Step1",10,10,100,40)
