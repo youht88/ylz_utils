@@ -14,9 +14,11 @@ class PythonREPLTool():
         # You can create the tool to pass to an agent
         python_repl = PythonREPL()
         name = name or "python_repl"
+        #So You are not skilled at dealing with computation issues,All question about calculate shoud use this tool when you get all argument value.
         repl_tool = Tool(
             name=name,
-            description="A Python shell. Use this to execute python commands. Input should be a valid python command. If you want to see the output of a value, you should print it out with `print(...)`.",
+            description="""
+The tool is a Python shell. Use this to execute python commands. Input should be a valid python command. If you want to see the output of a value, you should print it out with `print(...)`.""",
             args_schema = PythonREPLArgSchema ,
             func=python_repl.run
         )

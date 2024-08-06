@@ -137,15 +137,15 @@ class GraphLib():
             if "messages" in event:
                 event['messages'][-1].pretty_print()
     
-    def graph_get_state_history(self,graph,config):
-        state_history = graph.get_state_history(config)
+    def graph_get_state_history(self,graph,thread_id="default-default"):
+        state_history = graph.get_state_history(config = {"configurable":{"thread_id":thread_id}} )
         for state in state_history:
             print("Num Messages: ", len(state.values["messages"]), "Next: ", state.next)
             print("-" * 80)
         return state_history
     
-    def graph_get_state(self,graph,config):
-        state = graph.get_state(config)
+    def graph_get_state(self,graph,thread_id="default-default"):
+        state = graph.get_state(config =  {"configurable":{"thread_id":thread_id}})
         print("Num Messages: ", state.values["messages"], "Next: ", state.next)
         return state
     

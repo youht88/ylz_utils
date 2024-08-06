@@ -331,20 +331,24 @@ def __graph_test(langchainLib:LangchainLib,args):
     if dbname:                                  
         langchainLib.graphLib.set_dbname(dbname)
     graph = langchainLib.get_graph(llm_key=llm_key,llm_model=llm_model)
-    while True:
-        if not message:
-            message = input("User: ")
-        else:
-            print(f"User:{message}")
-        if message.lower() in ["/quit", "/exit", "/stop","/q","/bye"]:
-            print("Goodbye!")
-            break
-        langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id)
-        message=""
-    #if not message:
-    #    message = input("User: ")
-    #langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id)   
-    langchainLib.graphLib.graph_get_state_history()
+    # while True:
+    #     if not message:
+    #         message = input("User: ")
+    #     else:
+    #         print(f"User:{message}")
+    #     if message.lower() in ["/quit", "/exit", "/stop","/q","/bye"]:
+    #         print("Goodbye!")
+    #         break
+    #     langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id)
+    #     message=""
+    if not message:
+       message = input("User: ")
+    langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id) 
+    print("*"*50)  
+    langchainLib.graphLib.graph_get_state_history(graph,thread_id=thread_id)
+    print("*"*50)
+    langchainLib.graphLib.graph_get_state(graph,thread_id=thread_id)
+    
 
 def start(args):
     langchainLib = LangchainLib()
