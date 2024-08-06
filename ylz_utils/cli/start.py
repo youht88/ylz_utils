@@ -325,11 +325,16 @@ def __graph_test(langchainLib:LangchainLib,args):
     llm_model = args.llm_model
     message = args.message
     dbname = args.chat_dbname
+    faiss_dbname = args.embedding_dbname
     user = args.user or 'default'
     conversation = args.conversation or 'default'
     thread_id = f"{user}-{conversation}"
     if dbname:                                  
         langchainLib.graphLib.set_dbname(dbname)
+    if faiss_dbname:
+        retriever = langchainLib.vectorstoreLib.faiss.load("embedding.faiss").as_retriever()
+        langchainLib.graphLib.set_retriever(retriever)
+        print("!!!",f"使用知识库{faiss_dbname}")
     graph = langchainLib.get_graph(llm_key=llm_key,llm_model=llm_model)
     # while True:
     #     if not message:
@@ -344,15 +349,15 @@ def __graph_test(langchainLib:LangchainLib,args):
     if not message:
        message = input("User: ")
     langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id) 
-    print("*"*50)  
-    langchainLib.graphLib.graph_get_state_history(graph,thread_id=thread_id)
-    print("*"*50)
-    langchainLib.graphLib.graph_get_state(graph,thread_id=thread_id)
+    # print("*"*50)  
+    # langchainLib.graphLib.graph_get_state_history(graph,thread_id=thread_id)
+    # print("*"*50)
+    # langchainLib.graphLib.graph_get_state(graph,thread_id=thread_id)
     
 
 def start(args):
     langchainLib = LangchainLib()
-    #langchainLib.add_plugins()
+    langchainLib.add_plugins()
     if args.mode == "llm":
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试llm {Color.RESET}")
         __llm_test(langchainLib,args)

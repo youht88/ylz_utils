@@ -51,6 +51,7 @@ class GraphLib():
         self.langchainLib = langchainLib
         self.websearch_tool = langchainLib.get_websearch_tool()        
         #self.ragsearch_tool = langchainLib.get_ragsearch_tool()
+        self.ragsearch_tool = None
         self.python_repl_tool = langchainLib.get_python_repl_tool()
         self.memory = SqliteSaver.from_conn_string(db_conn_string)
 
@@ -58,7 +59,10 @@ class GraphLib():
     def set_dbname(self,dbname):
         "checkpoint.sqlite"
         self.memory = SqliteSaver.from_conn_string(dbname)
-
+    def set_retriever(self,retriever):
+        name = "rag_searcher"
+        description = "一个有用的工具用来从本地知识库中获取信息。你总是利用这个工具优先从本地知识库中搜索有用的信息"
+        self.ragsearch_tool = self.langchainLib.get_ragsearch_tool(retriever,name,description)
     def chatbot(self,state: State):
         response = self.llm_with_tools.invoke(state["messages"])
         ask_human = False
@@ -101,6 +105,8 @@ class GraphLib():
             self.websearch_tool,
             self.python_repl_tool,
         ]
+        if self.ragsearch_tool:
+            tools.append(self.ragsearch_tool)
         # tools = [
         #        Tool(name="websearch",
         #             description = "the tool when you can not sure,please search from the internet",
