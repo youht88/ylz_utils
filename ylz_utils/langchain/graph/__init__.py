@@ -12,9 +12,8 @@ from langgraph.prebuilt import ToolNode, tools_condition
 
 from ylz_utils.file import FileLib
 #from ylz_utils.langchain import LangchainLib
-from langchain_community.tools.tavily_search import TavilySearchResults
-
-tool_tavily = TavilySearchResults(max_results=2)
+#from langchain_community.tools.tavily_search import TavilySearchResults
+#tool_tavily = TavilySearchResults(max_results=2)
 # tools = [tool]
 # tool.invoke("What's a 'node' in LangGraph?")
 
@@ -50,9 +49,9 @@ class RequestAssistance(BaseModel):
 class GraphLib():
     def __init__(self,langchainLib,db_conn_string=":memory:"):
         self.langchainLib = langchainLib
-        self.websearch_tool = langchainLib.get_websearch_tool
-        self.ragsearch_tool = langchainLib.get_ragsearch_tool
-        self.python_repl_tool = langchainLib.get_python_repl_tool
+        self.websearch_tool = langchainLib.get_websearch_tool()        
+        #self.ragsearch_tool = langchainLib.get_ragsearch_tool()
+        self.python_repl_tool = langchainLib.get_python_repl_tool()
         self.memory = SqliteSaver.from_conn_string(db_conn_string)
 
         self.llm_with_tools = None
@@ -99,8 +98,8 @@ class GraphLib():
     def get_graph(self,llm_key=None,llm_model=None):
         llm = self.langchainLib.get_llm(llm_key,llm_model)
         tools = [
-            tool_tavily,
-            RequestAssistance
+            self.websearch_tool,
+            self.python_repl_tool,
         ]
         # tools = [
         #        Tool(name="websearch",
@@ -111,11 +110,11 @@ class GraphLib():
         #             description="when you need to calculation, use python repl tool to execute code ,then return the result to AI.",
         #             func=self.python_repl_tool)
         #      ]
-        self.llm_with_tools = llm.bind_tools(tools)      
+        self.llm_with_tools = llm.bind_tools(tools+[ RequestAssistance ])      
 
         workflow = StateGraph(State)
         workflow.add_node("chatbot",self.chatbot)
-        workflow.add_node("tools",ToolNode(tools=[tool_tavily]))
+        workflow.add_node("tools",ToolNode(tools=tools))
         workflow.add_node("human", self.human_node)
         
         workflow.add_conditional_edges("chatbot", self.select_next_node,

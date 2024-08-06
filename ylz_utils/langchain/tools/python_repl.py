@@ -1,5 +1,10 @@
+from typing import Type
 from langchain_core.tools import Tool
 from langchain_experimental.utilities import PythonREPL
+from langchain_core.pydantic_v1 import BaseModel,Field
+class PythonREPLArgSchema(BaseModel):
+    ''' input str for python repl tool'''
+    command: str = Field(description="the command to execute use python repl")
 
 class PythonREPLTool():
     def __init__(self,langchainLib):
@@ -12,6 +17,8 @@ class PythonREPLTool():
         repl_tool = Tool(
             name=name,
             description="A Python shell. Use this to execute python commands. Input should be a valid python command. If you want to see the output of a value, you should print it out with `print(...)`.",
-            func=python_repl.run,
+            args_schema = PythonREPLArgSchema ,
+            func=python_repl.run
         )
         return repl_tool
+

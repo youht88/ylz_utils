@@ -16,7 +16,6 @@ from langgraph.graph import START,END,StateGraph,MessagesState
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import ToolNode
 from langchain_community.document_loaders import UnstructuredFileLoader
-from langchain_community.tools.tavily_search import TavilySearchResults
 
 def __agent(langchainLib:LangchainLib,args):
     llm_key = args.llm_key
@@ -25,8 +24,7 @@ def __agent(langchainLib:LangchainLib,args):
     llm = langchainLib.get_llm(llm_key,llm_model)
     prompt = langchainLib.get_prompt()
     tools = []
-    #tavily_tool = langchainLib.toolLib.web_search.get_tool()
-    tavily_tool = TavilySearchResults(max_results=2)
+    tavily_tool = langchainLib.toolLib.web_search.get_tool()
     tools.append(tavily_tool)
     # langchain_docs_vectorestore = langchainLib.vectorstoreLib.faiss.load("langchain_docs.db")
     # langchain_docs_retriever = langchain_docs_vectorestore.as_retriever()
@@ -34,7 +32,6 @@ def __agent(langchainLib:LangchainLib,args):
     # tools.append(rag_tool)
     
     agent =  langchainLib.get_agent(llm,tools)
-    print("\n",agent,"\n")
     res = agent.stream({"messages":[("user",message)]})
     for chunk in res:
         print(chunk , end="")
@@ -334,25 +331,20 @@ def __graph_test(langchainLib:LangchainLib,args):
     if dbname:                                  
         langchainLib.graphLib.set_dbname(dbname)
     graph = langchainLib.get_graph(llm_key=llm_key,llm_model=llm_model)
-    # while True:
-    #     if not message:
-    #         message = input("User: ")
-    #     else:
-    #         print(f"User:{message}")
-    #     if message.lower() in ["/quit", "/exit", "/stop","/q","/bye"]:
-    #         print("Goodbye!")
-    #         break
-    #     for event in graph.stream({"messages": ("user", message)},
-    #                               config = {"configurable":{"thread_id":thread_id}}):
-    #         for value in event.values():
-    #             print("Assistant:", value["messages"][-1].content)
-    #     message = ""
-
-    if not message:
-        message = input("User: ")
-    
-    langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id)   
-    
+    while True:
+        if not message:
+            message = input("User: ")
+        else:
+            print(f"User:{message}")
+        if message.lower() in ["/quit", "/exit", "/stop","/q","/bye"]:
+            print("Goodbye!")
+            break
+        langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id)
+        message=""
+    #if not message:
+    #    message = input("User: ")
+    #langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id)   
+    langchainLib.graphLib.graph_get_state_history()
 
 def start(args):
     langchainLib = LangchainLib()
@@ -392,6 +384,7 @@ def start(args):
         #loader = langchainLib.documentLib.pptx.loader("30335320.pptx")
         #docs = loader.load()
         #print(docs)
+        return
         loader = langchainLib.documentLib.pptx.newer("test.pptx")
         loader.add_slide(0).set_title("Hello World","gogogo").add_text("youht",10,10,60,40)
         tab = [{"name":"youht","age":20},{"name":"jinli","age":10}] 
