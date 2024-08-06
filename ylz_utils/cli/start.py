@@ -16,6 +16,7 @@ from langgraph.graph import START,END,StateGraph,MessagesState
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import ToolNode
 from langchain_community.document_loaders import UnstructuredFileLoader
+from langchain_community.tools.tavily_search import TavilySearchResults
 
 def __agent(langchainLib:LangchainLib,args):
     llm_key = args.llm_key
@@ -24,7 +25,8 @@ def __agent(langchainLib:LangchainLib,args):
     llm = langchainLib.get_llm(llm_key,llm_model)
     prompt = langchainLib.get_prompt()
     tools = []
-    tavily_tool = langchainLib.toolLib.web_search.get_tool()
+    #tavily_tool = langchainLib.toolLib.web_search.get_tool()
+    tavily_tool = TavilySearchResults(max_results=2)
     tools.append(tavily_tool)
     # langchain_docs_vectorestore = langchainLib.vectorstoreLib.faiss.load("langchain_docs.db")
     # langchain_docs_retriever = langchain_docs_vectorestore.as_retriever()
@@ -32,10 +34,11 @@ def __agent(langchainLib:LangchainLib,args):
     # tools.append(rag_tool)
     
     agent =  langchainLib.get_agent(llm,tools)
+    print("\n",agent,"\n")
     res = agent.stream({"messages":[("user",message)]})
     for chunk in res:
         print(chunk , end="")
-    print("\n",langchainLib.get_llm(full=True),"\n")
+    print("\n\n",langchainLib.get_llm(full=True),"\n")
 
 def __chat(langchainLib:LangchainLib,args):
     llm_key = args.llm_key
@@ -44,6 +47,7 @@ def __chat(langchainLib:LangchainLib,args):
     user_id = args.user if args.user else 'default'
     conversation_id = args.conversation if args.conversation else 'default'
     llm = langchainLib.get_llm(key=llm_key,model=model)
+    dbname = args.chat_dbname or 'chat.sqlite'
     #### chat 模式
     prompt = langchainLib.get_prompt(use_chat=True)
     chat = langchainLib.get_chat(llm,prompt)
@@ -175,7 +179,7 @@ def __prompt_test(langchainLib:LangchainLib,args):
 def __rag_test(langchainLib:LangchainLib,args):
     embedding_key = args.embedding_key
     embedding_model = args.embedding_model
-    faiss_dbname = args.dbname or "test.faiss"
+    faiss_dbname = args.embedding_dbname or "embedding.faiss"
     url = args.url
     pptx = args.pptx
     docx = args.docx
@@ -323,10 +327,12 @@ def __graph_test(langchainLib:LangchainLib,args):
     llm_key = args.llm_key
     llm_model = args.llm_model
     message = args.message
+    dbname = args.chat_dbname
     user = args.user or 'default'
     conversation = args.conversation or 'default'
     thread_id = f"{user}-{conversation}"
-
+    if dbname:                                  
+        langchainLib.graphLib.set_dbname(dbname)
     graph = langchainLib.get_graph(llm_key=llm_key,llm_model=llm_model)
     # while True:
     #     if not message:
@@ -353,7 +359,7 @@ def __graph_test(langchainLib:LangchainLib,args):
 
 def start(args):
     langchainLib = LangchainLib()
-    langchainLib.add_plugins()
+    #langchainLib.add_plugins()
     if args.mode == "llm":
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试llm {Color.RESET}")
         __llm_test(langchainLib,args)

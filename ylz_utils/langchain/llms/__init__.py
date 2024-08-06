@@ -19,6 +19,7 @@ from gradio_client import Client,file
 class LLMLib():
     llms:list = [] 
     default_llm_key = None
+    chat_dbname = "chat.sqlite"
     def __init__(self):
         self.config = Config.get()
         self.regist_llm()
@@ -38,9 +39,10 @@ class LLMLib():
         return self.default_llm_key
     def clear_default_llm_key(self):
         self.default_llm_key=None
-    
+    def set_dbname(self,dbname):
+        self.chat_dbname = dbname
     def get_user_session_history(self, user_id: str, conversation_id: str):
-        return SQLChatMessageHistory(f"{user_id}--{conversation_id}", "sqlite:///memory.db")
+        return SQLChatMessageHistory(f"{user_id}--{conversation_id}", f"sqlite:///{self.chat_dbname}")
 
     def get_chat(self,llm,prompt,history_messages_key = "history",input_key = "input"):
         return RunnableWithMessageHistory(
