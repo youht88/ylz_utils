@@ -350,12 +350,9 @@ def __graph_test(langchainLib:LangchainLib,args):
 
     if not message:
         message = input("User: ")
-    final_state = graph.invoke({"messages": ("user", message)},
-                 config = {"configurable":{"thread_id":thread_id}})   
-    print("*"*80)
-    print(final_state)
-    print("*"*80)
-    print(final_state['messages'][-1].content)
+    
+    langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id)   
+    
 
 def start(args):
     langchainLib = LangchainLib()
