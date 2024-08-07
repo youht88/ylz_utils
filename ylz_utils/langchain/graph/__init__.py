@@ -1,5 +1,5 @@
 from typing import Literal,List,Annotated
-from langchain_core.messages import HumanMessage,AIMessage,BaseMessage,ToolMessage
+from langchain_core.messages import SystemMessage,HumanMessage,AIMessage,BaseMessage,ToolMessage
 from langchain_core.pydantic_v1 import BaseModel
 from typing_extensions import TypedDict
 from langchain_core.tools import tool,Tool
@@ -66,20 +66,10 @@ class GraphLib():
         )
     
     def human_node(self, state: State):
-        print("????","this is human...")
         new_messages = []
-        input = input("输入你的意见...")
         if not isinstance(state["messages"][-1],ToolMessage):
             new_messages.append(
-                self.create_response("No response from human.",state["messages"])
-            )
-        elif input:
-            new_messages.append(
-                self.create_response(input,state["messages"])
-            )
-        else:
-            new_messages.append(
-                self.create_response("my height is 178cm",state["messages"])
+                self.create_response("No response from human.",state["messages"][-1])
             )
         return {
             "messages": new_messages,
@@ -87,7 +77,14 @@ class GraphLib():
         }
     
     def select_next_node(self, state:State) -> Literal["human","tools","__end__"]:
-        print("route here!!!",state)
+        print("route here!!!","*"*80)
+        print(state)
+        # for message in state["messages"]:
+        #     p_message = message.copy()
+        #     if p_message.content and len(p_message.content)>50:
+        #         p_message.content = p_message.content[:50]+"..."
+        #     p_message.pretty_print()
+        print("*"*80)
         if state["ask_human"]:
             return "human"
         return tools_condition(state)
@@ -129,8 +126,15 @@ class GraphLib():
 
         return graph    
 
-    def graph_stream(self,graph,message,thread_id="default-default"):    
-        events = graph.stream({"messages":[HumanMessage(content = message)]},
+    def graph_stream(self,graph,message,thread_id="default-default",system_message=None):    
+        messages = []
+        if system_message:
+            messages.append(SystemMessage(content=system_message))
+        if message:
+            messages.append(HumanMessage(content=message))
+        else:
+            messages = None
+        events = graph.stream({"messages":messages},
                                 config = {"configurable":{"thread_id":thread_id}},
                                 stream_mode = "values")
         for event in events:
@@ -146,7 +150,6 @@ class GraphLib():
     
     def graph_get_state(self,graph,thread_id="default-default"):
         state = graph.get_state(config =  {"configurable":{"thread_id":thread_id}})
-        print("Num Messages: ", state.values["messages"], "Next: ", state.next)
         return state
     
     def graph_update_state(self,graph,config,message):
