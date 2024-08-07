@@ -343,6 +343,12 @@ def __graph_test(langchainLib:LangchainLib,args):
         print("!!!",f"使用搜索工具{websearch_key}")
         
     graph = langchainLib.get_graph(llm_key=llm_key,llm_model=llm_model)
+    if not message:
+        message = input("User: ")
+    langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id,
+                                    system_message="所有问题务必请用中文回答,如果没有能力回答请升级为专家模式。只有计算和时间问题才使用python_repl工具") 
+
+    
     # while True:
     #     if not message:
     #         message = input("User: ")
@@ -354,24 +360,24 @@ def __graph_test(langchainLib:LangchainLib,args):
     #     langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id)
     #     message=""
     
-    while True:
-        current_state = langchainLib.graphLib.graph_get_state(graph,thread_id)
+    # while True:
+    #     current_state = langchainLib.graphLib.graph_get_state(graph,thread_id)
         
-        if current_state.values["messages"] and current_state.values["messages"][-1].content=="":        
-            langchainLib.graphLib.graph_stream(graph,None,thread_id = thread_id) 
-        elif current_state.values["messages"]:
-            if not message:
-                message = input("User: ")
-            if not message or message == '/q':
-                break
-        else:
-            if not message:
-                message = input("User: ")
-            if not message or message == '/q':
-                break
-            langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id,
-                                            system_message="所有问题务必请用中文回答,如果没有能力回答请升级为专家模式。只有计算和时间问题才使用python_repl工具") 
-        message = ""
+    #     if current_state.values["messages"] and current_state.values["messages"][-1].content=="":        
+    #         langchainLib.graphLib.graph_stream(graph,None,thread_id = thread_id) 
+    #     elif current_state.values["messages"]:
+    #         if not message:
+    #             message = input("User: ")
+    #         if not message or message == '/q':
+    #             break
+    #     else:
+    #         if not message:
+    #             message = input("User: ")
+    #         if not message or message == '/q':
+    #             break
+    #         langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id,
+    #                                         system_message="所有问题务必请用中文回答,如果没有能力回答请升级为专家模式。只有计算和时间问题才使用python_repl工具") 
+    #     message = ""
         # print("*"*50)  
         # langchainLib.graphLib.graph_get_state_history(graph,thread_id=thread_id)
         # print("*"*50)
