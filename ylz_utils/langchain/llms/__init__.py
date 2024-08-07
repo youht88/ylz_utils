@@ -150,7 +150,7 @@ class LLMLib():
                    "LLM.SILICONFLOW":
                       {"model":"alibaba/Qwen1.5-110B-Chat","temperature":0},
                    "LLM.GROQ":
-                      {"model":"llama3-groq-70b-8192-tool-use-preview","temperature":0},
+                      {"model":"llama-3.1-70b-versatile","temperature":0},
                    "LLM.GEMINI":
                       {"model":"gemini-pro","temperature":0},
                     "LLM.DEEPSEEK":
