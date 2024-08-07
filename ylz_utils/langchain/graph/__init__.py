@@ -9,6 +9,7 @@ from langgraph.graph.message import add_messages
 from langgraph.checkpoint.sqlite import SqliteSaver
 
 from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.graph.state import CompiledStateGraph
 
 from ylz_utils.file import FileLib
 #from ylz_utils.langchain import LangchainLib
@@ -65,10 +66,20 @@ class GraphLib():
         )
     
     def human_node(self, state: State):
+        print("????","this is human...")
         new_messages = []
+        input = input("输入你的意见...")
         if not isinstance(state["messages"][-1],ToolMessage):
             new_messages.append(
                 self.create_response("No response from human.",state["messages"])
+            )
+        elif input:
+            new_messages.append(
+                self.create_response(input,state["messages"])
+            )
+        else:
+            new_messages.append(
+                self.create_response("my height is 178cm",state["messages"])
             )
         return {
             "messages": new_messages,
@@ -76,6 +87,7 @@ class GraphLib():
         }
     
     def select_next_node(self, state:State) -> Literal["human","tools","__end__"]:
+        print("route here!!!",state)
         if state["ask_human"]:
             return "human"
         return tools_condition(state)
@@ -140,5 +152,5 @@ class GraphLib():
     def graph_update_state(self,graph,config,message):
         graph.update_state(config,{"messages":[message]})
 
-    def export_graph(self,graph):
-        FileLib.writeFile("graph.png",graph(xray=True).draw_mermaid_png(),mode="wb")    
+    def export_graph(self,graph:CompiledStateGraph):
+        FileLib.writeFile("graph.png",graph.get_graph().draw_mermaid_png(),mode="wb")    

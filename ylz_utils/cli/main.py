@@ -38,7 +38,7 @@ def main():
     start_parser.add_argument("--url",type=str,help="仅rag,loader使用,下载的URL地址")    
     start_parser.add_argument("--depth",type=int,default=1,help="仅rag使用,下载的深度，默认为1")
     start_parser.add_argument("--embedding_dbname",type=str,help="保存的向量数据库，默认embedding.faiss") 
-    start_parser.add_argument("--chat_dbname",type=str,default="chat.sqlite",help="保存的对话数据库，默认chat.sqlite") 
+    start_parser.add_argument("--chat_dbname",type=str,help="保存的对话数据库，默认chat.sqlite") 
     start_parser.add_argument("--docx",type=str,help="docx文档文件名") 
     start_parser.add_argument("--pptx",type=str,help="pptx文档文件名") 
     start_parser.add_argument("--pdf",type=str,help="pdf文档文件名") 

@@ -47,6 +47,8 @@ def __chat(langchainLib:LangchainLib,args):
     dbname = args.chat_dbname or 'chat.sqlite'
     #### chat 模式
     prompt = langchainLib.get_prompt(use_chat=True)
+    if dbname:
+        langchainLib.llmLib.set_dbname(dbname)
     chat = langchainLib.get_chat(llm,prompt)
     chain = chat | langchainLib.get_outputParser()
     while True:
@@ -358,11 +360,12 @@ def __graph_test(langchainLib:LangchainLib,args):
     # langchainLib.graphLib.graph_get_state_history(graph,thread_id=thread_id)
     # print("*"*50)
     # langchainLib.graphLib.graph_get_state(graph,thread_id=thread_id)
-    
+    print("all done!!")
+    langchainLib.graphLib.export_graph(graph)
 
 def start(args):
     langchainLib = LangchainLib()
-    langchainLib.add_plugins()
+    #langchainLib.add_plugins()
     if args.mode == "llm":
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试llm {Color.RESET}")
         __llm_test(langchainLib,args)

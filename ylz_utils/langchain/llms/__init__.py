@@ -9,8 +9,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.chat_models import QianfanChatEndpoint
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_ollama import ChatOllama
-
-from langchain_community.chat_message_histories import SQLChatMessageHistory
+from langchain_community.chat_message_histories import SQLChatMessageHistory,ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.runnables import ConfigurableFieldSpec
 
@@ -19,7 +18,7 @@ from gradio_client import Client,file
 class LLMLib():
     llms:list = [] 
     default_llm_key = None
-    chat_dbname = "chat.sqlite"
+    chat_dbname = None
     def __init__(self):
         self.config = Config.get()
         self.regist_llm()
@@ -42,8 +41,10 @@ class LLMLib():
     def set_dbname(self,dbname):
         self.chat_dbname = dbname
     def get_user_session_history(self, user_id: str, conversation_id: str):
-        return SQLChatMessageHistory(f"{user_id}--{conversation_id}", f"sqlite:///{self.chat_dbname}")
-
+        if self.chat_dbname:
+            return SQLChatMessageHistory(f"{user_id}--{conversation_id}", f"sqlite:///{self.chat_dbname}")
+        raise Exception("you must give the chat_dbname . please use set_dbname first!")
+        
     def get_chat(self,llm,prompt,history_messages_key = "history",input_key = "input"):
         return RunnableWithMessageHistory(
             prompt | llm,
