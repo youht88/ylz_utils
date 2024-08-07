@@ -41,7 +41,8 @@ class WebSearchTool():
                 docs = [Document(match[0],metadata={"title":match[1],"link":match[2]}) for match in matchs]
                 return docs
             tool_doc = tool | RunnableLambda(__toDocument, name="DDG2Document")
-            return tool_doc 
+            #return tool_doc
+            return tool 
         elif key == "TAVILY":
             # url,content,
             search_config = self.config.get(f"SEARCH_TOOLS.{key}")        

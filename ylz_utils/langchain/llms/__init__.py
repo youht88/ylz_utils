@@ -140,8 +140,10 @@ class LLMLib():
                     llm['used'] = llm.get('used',0) + 1 
                     llm['last_used'] = time.time()
                     return llm['llm'] 
-        raise Exception(f"请确保{key}_API_KEYS环境变量被正确设置,然后调用regist_llm注册语言模型")
-    
+        if self.default_llm_key:
+            raise Exception(f"请确保{self.default_llm_key}_API_KEYS环境变量被正确设置,然后调用regist_llm注册语言模型")
+        else:
+            raise Exception(f"请确保<LLM PROVIDER>_API_KEYS环境变量被正确设置,然后调用regist_llm注册语言模型")        
     def regist_llm(self):
         defaults = {"LLM.TOGETHER":
                       {"model":"Qwen/Qwen1.5-72B-Chat","temperature":0},

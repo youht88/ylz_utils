@@ -329,12 +329,17 @@ def __graph_test(langchainLib:LangchainLib,args):
     user = args.user or 'default'
     conversation = args.conversation or 'default'
     thread_id = f"{user}-{conversation}"
+    websearch_key = args.websearch
     if dbname:                                  
         langchainLib.graphLib.set_dbname(dbname)
     if faiss_dbname:
         retriever = langchainLib.vectorstoreLib.faiss.load("embedding.faiss").as_retriever()
-        langchainLib.graphLib.set_retriever(retriever)
+        langchainLib.graphLib.set_ragsearch_tool(retriever)
         print("!!!",f"使用知识库{faiss_dbname}")
+    if websearch_key:
+        langchainLib.graphLib.set_websearch_tool(websearch_key)
+        print("!!!",f"使用搜索工具{websearch_key}")
+        
     graph = langchainLib.get_graph(llm_key=llm_key,llm_model=llm_model)
     # while True:
     #     if not message:

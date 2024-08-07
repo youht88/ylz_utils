@@ -12,28 +12,6 @@ from langgraph.prebuilt import ToolNode, tools_condition
 
 from ylz_utils.file import FileLib
 #from ylz_utils.langchain import LangchainLib
-#from langchain_community.tools.tavily_search import TavilySearchResults
-#tool_tavily = TavilySearchResults(max_results=2)
-# tools = [tool]
-# tool.invoke("What's a 'node' in LangGraph?")
-
-def websearch(self,query):
-    '''
-        use TAVILY to search from the internet
-        arguments:
-            self: the first args must be self
-            query: the query which should be search from the internet . string it must be single-str format 
-    '''
-    print(query)
-    if isinstance(query,list):
-        query = query[0]
-    query = query
-    #res = websearch_tool.invoke(query)
-    res = "中国，北京"
-    if res:
-        return res
-    else:
-        return "I don't search result from the internet."
 
 class State(TypedDict):
     messages: Annotated[list,add_messages]
@@ -49,8 +27,9 @@ class RequestAssistance(BaseModel):
 class GraphLib():
     def __init__(self,langchainLib,db_conn_string=":memory:"):
         self.langchainLib = langchainLib
-        self.websearch_tool = langchainLib.get_websearch_tool()        
-        #self.ragsearch_tool = langchainLib.get_ragsearch_tool()
+        #self.websearch_tool = self.set_websearch_tool(websearch_key)        
+        #self.ragsearch_tool = langchainLib.get_ragsearch_tool(retriever)
+        self.websearch_tool = None
         self.ragsearch_tool = None
         self.python_repl_tool = langchainLib.get_python_repl_tool()
         self.memory = SqliteSaver.from_conn_string(db_conn_string)
@@ -59,10 +38,12 @@ class GraphLib():
     def set_dbname(self,dbname):
         "checkpoint.sqlite"
         self.memory = SqliteSaver.from_conn_string(dbname)
-    def set_retriever(self,retriever):
+    def set_ragsearch_tool(self,retriever):
         name = "rag_searcher"
         description = "一个有用的工具用来从本地知识库中获取信息。你总是利用这个工具优先从本地知识库中搜索有用的信息"
         self.ragsearch_tool = self.langchainLib.get_ragsearch_tool(retriever,name,description)
+    def set_websearch_tool(self,websearch_key):
+        self.websearch_tool = self.langchainLib.get_websearch_tool(websearch_key)
     def chatbot(self,state: State):
         response = self.llm_with_tools.invoke(state["messages"])
         ask_human = False
@@ -102,9 +83,10 @@ class GraphLib():
     def get_graph(self,llm_key=None,llm_model=None):
         llm = self.langchainLib.get_llm(llm_key,llm_model)
         tools = [
-            self.websearch_tool,
             self.python_repl_tool,
         ]
+        if self.websearch_tool:
+            tools.append(self.websearch_tool)
         if self.ragsearch_tool:
             tools.append(self.ragsearch_tool)
         # tools = [
