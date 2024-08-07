@@ -1,3 +1,4 @@
+from operator import itemgetter
 from typing import Literal,List,Annotated
 from langchain_core.messages import SystemMessage,HumanMessage,AIMessage,BaseMessage,ToolMessage
 from langchain_core.pydantic_v1 import BaseModel
@@ -45,6 +46,15 @@ class GraphLib():
         self.ragsearch_tool = self.langchainLib.get_ragsearch_tool(retriever,name,description)
     def set_websearch_tool(self,websearch_key):
         self.websearch_tool = self.langchainLib.get_websearch_tool(websearch_key)
+    
+    def translate_to_en(self,state:State):
+        content = state["messages"][-1].content
+        prompt = self.langchainLib.get_prompt("将以下句子翻译成英文",use_chat=False)
+        llm = self.langchainLib.get_llm()
+        chain = prompt | llm
+        response = chain.invoke({"input":content})
+        return {"messages":[response],"ask_human":False}
+    
     def chatbot(self,state: State):
         response = self.llm_with_tools.invoke(state["messages"])
         ask_human = False
@@ -110,6 +120,7 @@ class GraphLib():
         self.llm_with_tools = llm.bind_tools(tools+[ RequestAssistance ])      
 
         workflow = StateGraph(State)
+        workflow.add_node("translate",self.translate_to_en)
         workflow.add_node("chatbot",self.chatbot)
         workflow.add_node("tools",ToolNode(tools=tools))
         workflow.add_node("human", self.human_node)
@@ -117,9 +128,10 @@ class GraphLib():
         workflow.add_conditional_edges("chatbot", self.select_next_node,
                                        {"human":"human","tools":"tools","__end__":"__end__"})
         
+        workflow.add_edge(START, "translate")
+        workflow.add_edge("translate","chatbot")
         workflow.add_edge("tools","chatbot")
         workflow.add_edge("human","chatbot")
-        workflow.add_edge(START, "chatbot")
 
         graph = workflow.compile(checkpointer=self.memory,
                                  interrupt_before= ["human"])
