@@ -22,6 +22,7 @@ def main():
     subparsers = parser.add_subparsers(dest="command", required=True, help="可以使用的子命令")
     
     reset_parser = subparsers.add_parser("reset", help="执行初始化")
+    custom_service_parser = subparsers.add_parser("custom_service", help="客服example")
 
     start_parser = subparsers.add_parser("start", help="启动测试")
     start_parser.add_argument("--mode",type=str,
@@ -76,6 +77,8 @@ def main():
         start(args)
     elif args.command == "serve":
         serve(args)
+    elif args.command == "custom_service":
+        import ylz_utils.cli.custom_service
 
 if __name__ == "__main__":
    main()

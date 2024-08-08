@@ -71,7 +71,7 @@ class LLMLib():
                 ]
         )
 
-    def get_llm(self,key=None, model=None, full=False, delay=10)->ChatOpenAI | ChatOllama:
+    def get_llm(self,key=None, model=None, temperature=None, full=False, delay=10)->ChatOpenAI | ChatOllama:
         if full:
             return self.llms
         if self.llms:
@@ -106,7 +106,7 @@ class LLMLib():
                                 llm['llm'] = ChatGoogleGenerativeAI(
                                     google_api_key=llm.get('api_key'), 
                                     model=llm.get('model'),
-                                    temperature= llm.get('temperature'))
+                                    temperature= temperature or llm.get('temperature'))
                             except:
                                 raise Exception(f"请确保{llm_type}_API_KEYS环境变量被正确设置")                                
                         elif llm_type == 'LLM.QIANFAN':
@@ -115,14 +115,15 @@ class LLMLib():
                                 llm['llm'] = QianfanChatEndpoint(
                                     qianfan_ak= llm.get('api_key'),
                                     qianfan_sk= llm.get('sec_key'),
-                                    model= llm.get('model'))
+                                    model= llm.get('model'),
+                                    temperature = temperature or llm.get('temperature'))
                             except:
                                 raise Exception(f"请确保{llm_type}_API_KEYS和{llm_type}_SEC_KEYS环境变量被正确设置")
                         elif llm_type == 'LLM.OLLAMA':
                             try:
                                 StringLib.logging_in_box(f"ollama_api_key={llm.get('api_key')},model={llm.get('model')}")
                                 llm['llm'] = ChatOllama(model= llm.get('model'),
-                                                        temperature= llm.get('temperature'),
+                                                        temperature= temperature or llm.get('temperature'),
                                                         keep_alive=llm.get('keep_alive'))
                             except:
                                 raise Exception(f"请确保{llm_type}_API_KEYS环境变量被正确设置")
@@ -133,7 +134,7 @@ class LLMLib():
                                     base_url=llm.get('base_url'),
                                     api_key= llm.get('api_key'),
                                     model= llm.get('model'),
-                                    temperature= llm.get('temperature')
+                                    temperature= temperature or llm.get('temperature')
                                     )
                             except:
                                 raise Exception(f"请确保{llm_type}_API_KEYS环境变量被正确设置")                                
