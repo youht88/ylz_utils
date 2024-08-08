@@ -151,7 +151,6 @@ class GraphLib():
                                 config = {"configurable":{"thread_id":thread_id}},
                                 stream_mode = "values")
         for event in events:
-            print("???",event.keys())
             if "messages" in event:
                 message = event['messages'][-1]
                 if isinstance(message,AIMessage):
