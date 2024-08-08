@@ -48,9 +48,17 @@ class GraphLib():
         self.websearch_tool = self.langchainLib.get_websearch_tool(websearch_key)
     
     def translate_to_en(self,state:State):
+        return state
         content = state["messages"][-1].content
-        prompt = self.langchainLib.get_prompt("将以下句子翻译成英文",use_chat=False)
-        llm = self.langchainLib.get_llm(model = "llama3-groq-70b-8192-tool-use-preview")
+        prompt = self.langchainLib.get_prompt(
+"""
+将以下句子翻译成英文,注意不要遗漏任何信息，数字不是整数的话要保留所有整数和小数，不要翻译任何公司或人名
+然后一步一步获得最终答案
+""",
+        use_chat=False)
+        #llm = self.langchainLib.get_llm(model = "llama3-groq-70b-8192-tool-use-preview")
+        #llm = self.langchainLib.get_llm(model = "llama3-70b-8192")
+        llm = self.langchainLib.get_llm(key = "LLM.TOGETHER")
         chain = prompt | llm
         response = chain.invoke({"input":content})
         return {"messages":[response],"ask_human":False}
@@ -136,12 +144,14 @@ class GraphLib():
             messages.append(SystemMessage(content=system_message))
         if message:
             messages.append(HumanMessage(content=message))
+            values = {"messages":messages}          
         else:
-            messages = None
-        events = graph.stream({"messages":messages},
+            values = None
+        events = graph.stream( values,
                                 config = {"configurable":{"thread_id":thread_id}},
                                 stream_mode = "values")
         for event in events:
+            print("???",event.keys())
             if "messages" in event:
                 message = event['messages'][-1]
                 if isinstance(message,AIMessage):
@@ -160,12 +170,13 @@ class GraphLib():
             print("-" * 80)
         return state_history
     
-    def graph_get_state(self,graph,thread_id="default-default"):
+    def graph_get_state(self,graph:CompiledStateGraph,thread_id="default-default"):
         state = graph.get_state(config =  {"configurable":{"thread_id":thread_id}})
         return state
     
-    def graph_update_state(self,graph,config,message):
-        graph.update_state(config,{"messages":[message]})
+    def graph_update_state(self,graph:CompiledStateGraph,thread_id,values,as_node = None):
+        if not as_node:
+            graph.update_state(config = {"configurable":{"thread_id":thread_id}},values=values)
 
     def export_graph(self,graph:CompiledStateGraph):
         FileLib.writeFile("graph.png",graph.get_graph().draw_mermaid_png(),mode="wb")    

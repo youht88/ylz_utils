@@ -9,7 +9,7 @@ from pptx.enum.shapes import MSO_SHAPE
 
 from langchain.prompts import PromptTemplate,ChatPromptTemplate
 from langchain.output_parsers import OutputFixingParser
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage,ToolMessage
 from langchain_core.tools import tool
 from langchain_core.runnables import RunnablePassthrough,RunnableLambda,RunnableParallel
 from langgraph.graph import START,END,StateGraph,MessagesState
@@ -344,12 +344,15 @@ def __graph_test(langchainLib:LangchainLib,args):
         print("!!!",f"使用搜索工具{websearch_key}")
         
     graph = langchainLib.get_graph(llm_key=llm_key,llm_model=llm_model)
+    system_message = \
+"""
+请确保中文正确。只有计算和时间问题才使用python_repl工具,使用python_repl工具时要记得用print函数返回结果
+不要产生幻觉，不知道的问题优先从互联网查询，关于用户自己的问题可以向用户询问。
+当碰到需要需要用户来确认的问题或你需要用户告诉你的问题时，请使用使用human工具向用户询问。注意，询问时请提出询问的具体问题，不要重复我提出的问题
+"""
     if not message:
         message = input("User: ")
-    langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id,
-                                    system_message="所有问题务必请用中文回答,如果没有能力回答请升级为专家模式。只有计算和时间问题才使用python_repl工具") 
-
-    
+    langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id,system_message=system_message)
     while True:
         if not message:
             message = input("User: ")
@@ -358,15 +361,18 @@ def __graph_test(langchainLib:LangchainLib,args):
         if message.lower() in ["/quit", "/exit", "/stop","/q","/bye"]:
             print("Goodbye!")
             break
-        system_message = """请始终用中文回答"""
+        #system_message = """请始终用中文回答"""
         langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id,system_message=system_message)
         snapshot = langchainLib.graphLib.graph_get_state(graph,thread_id)
-        while snapshot.next:   
-            message = input("需要您的确认，继续吗？(y/n)")
-            if message.strip().lower() == 'y':
+        if snapshot.next: 
+            question = snapshot.values["messages"][-1].tool_calls[0]["args"]["request"]            
+            tool_call_id = snapshot.values["messages"][-1].tool_calls[0]["id"]
+            message = input(f"{question}: ")
+            if message.strip().lower() != '':
+                tool_message = ToolMessage(tool_call_id=tool_call_id, content=message)
+                langchainLib.graphLib.graph_update_state(graph,thread_id=thread_id, values = {"messages":[tool_message]})
                 langchainLib.graphLib.graph_stream(graph,None,thread_id = thread_id)
-            else:
-                break
+
         message = ""
 
     current_state = langchainLib.graphLib.graph_get_state(graph,thread_id)
