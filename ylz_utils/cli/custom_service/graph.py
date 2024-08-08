@@ -50,7 +50,7 @@ class Assistant:
 # Haiku is faster and cheaper, but less accurate
 # llm = ChatAnthropic(model="claude-3-haiku-20240307")
 langchainLib = LangchainLib()
-llm = langchainLib.get_llm(model="claude-3-sonnet-20240229", temperature=1)
+llm = langchainLib.get_llm(temperature=1)
 # You could swap LLMs, though you will likely want to update the prompts when
 # doing so!
 # from langchain_openai import ChatOpenAI
@@ -72,8 +72,10 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
     ]
 ).partial(time=datetime.now())
 
+tavily_tool = langchainLib.toolLib.web_search.get_tool(rows=1)
 part_1_tools = [
-    TavilySearchResults(max_results=1),
+    #TavilySearchResults(max_results=1),
+    tavily_tool,
     fetch_user_flight_information,
     search_flights,
     lookup_policy,
