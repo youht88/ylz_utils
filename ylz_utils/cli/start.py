@@ -178,7 +178,7 @@ def __prompt_test(langchainLib:LangchainLib,args):
 def __rag_test(langchainLib:LangchainLib,args):
     embedding_key = args.embedding_key
     embedding_model = args.embedding_model
-    faiss_dbname = args.embedding_dbname or "embedding.faiss"
+    rag_dbname = args.rag_dbname or "rag.faiss"
     url = args.url
     pptx = args.pptx
     docx = args.docx
@@ -188,7 +188,7 @@ def __rag_test(langchainLib:LangchainLib,args):
     
     
     if (not url and not pptx and not docx and not pdf and not glob) and  (not message):
-        print(f"1、指定url/pptx/docx:系统将文档下载切片后向量化到{faiss_dbname}数据库\n2、指定message:系统将从{faiss_dbname}数据库中搜索相关的两条记录。\n您需要至少指定url和message中的一个参数.")
+        print(f"1、指定url/pptx/docx:系统将文档下载切片后向量化到{rag_dbname}数据库\n2、指定message:系统将从{rag_dbname}数据库中搜索相关的两条记录。\n您需要至少指定url和message中的一个参数.")
         return
 
     if embedding_key or embedding_model:
@@ -201,7 +201,7 @@ def __rag_test(langchainLib:LangchainLib,args):
         print("#"*60)
         if not docs:
             return
-        if url and faiss_dbname:
+        if url and rag_dbname:
             ##### create vectorestore
             # url = "https://python.langchain.com/v0.2/docs/concepts/#tools"
             # faiss_dbname = "langchain_docs.faiss"
@@ -209,18 +209,18 @@ def __rag_test(langchainLib:LangchainLib,args):
             for doc in docs:
                 blocks = doc['blocks']
                 vectorestore,ids = langchainLib.vectorstoreLib.faiss.create_from_docs(blocks,embedding)
-                langchainLib.vectorstoreLib.faiss.save(faiss_dbname,vectorestore)
+                langchainLib.vectorstoreLib.faiss.save(rag_dbname,vectorestore)
                 print("ids:",ids)
         else:
                 vectorestore,ids = langchainLib.vectorstoreLib.faiss.create_from_docs(docs,embedding)
-                langchainLib.vectorstoreLib.faiss.save(faiss_dbname,vectorestore)
+                langchainLib.vectorstoreLib.faiss.save(rag_dbname,vectorestore)
                 print("ids:",ids)
-    if message and faiss_dbname:   
+    if message and rag_dbname:   
         # docs = [Document("I am a student"),Document("who to go to china"),Document("this is a table")]
         # vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(docs)
         # langchainLib.vectorstoreLib.faiss.save("test.faiss",vectorestore)
         
-        vectorestore = langchainLib.vectorstoreLib.faiss.load(faiss_dbname,embedding)
+        vectorestore = langchainLib.vectorstoreLib.faiss.load(rag_dbname,embedding)
         print("v--->",langchainLib.vectorstoreLib.faiss.search(message,vectorestore,k=2))
     
     ###### have bug when poetry add sentence_transformers   
@@ -326,18 +326,19 @@ def __graph_test(langchainLib:LangchainLib,args):
     llm_key = args.llm_key
     llm_model = args.llm_model
     message = args.message
-    dbname = args.chat_dbname
-    faiss_dbname = args.embedding_dbname
+    chat_dbname = args.chat_dbname
+    rag_dbname = args.rag_dbname
     user = args.user or 'default'
     conversation = args.conversation or 'default'
     thread_id = f"{user}-{conversation}"
     websearch_key = args.websearch
-    if dbname:                                  
-        langchainLib.graphLib.set_dbname(dbname)
-    if faiss_dbname:
-        retriever = langchainLib.vectorstoreLib.faiss.load("embedding.faiss").as_retriever()
+    if chat_dbname:                                  
+        langchainLib.graphLib.set_dbname(chat_dbname)
+        print("!!!",f"使用对话数据库{chat_dbname}")
+    if rag_dbname:
+        retriever = langchainLib.vectorstoreLib.faiss.load(rag_dbname).as_retriever()
         langchainLib.graphLib.set_ragsearch_tool(retriever)
-        print("!!!",f"使用知识库{faiss_dbname}")
+        print("!!!",f"使用知识库{rag_dbname}")
     if websearch_key:
         langchainLib.graphLib.set_websearch_tool(websearch_key)
         print("!!!",f"使用搜索工具{websearch_key}")
@@ -349,41 +350,27 @@ def __graph_test(langchainLib:LangchainLib,args):
                                     system_message="所有问题务必请用中文回答,如果没有能力回答请升级为专家模式。只有计算和时间问题才使用python_repl工具") 
 
     
-    # while True:
-    #     if not message:
-    #         message = input("User: ")
-    #     else:
-    #         print(f"User:{message}")
-    #     if message.lower() in ["/quit", "/exit", "/stop","/q","/bye"]:
-    #         print("Goodbye!")
-    #         break
-    #     langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id)
-    #     message=""
-    
-    # while True:
-    #     current_state = langchainLib.graphLib.graph_get_state(graph,thread_id)
-        
-    #     if current_state.values["messages"] and current_state.values["messages"][-1].content=="":        
-    #         langchainLib.graphLib.graph_stream(graph,None,thread_id = thread_id) 
-    #     elif current_state.values["messages"]:
-    #         if not message:
-    #             message = input("User: ")
-    #         if not message or message == '/q':
-    #             break
-    #     else:
-    #         if not message:
-    #             message = input("User: ")
-    #         if not message or message == '/q':
-    #             break
-    #         langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id,
-    #                                         system_message="所有问题务必请用中文回答,如果没有能力回答请升级为专家模式。只有计算和时间问题才使用python_repl工具") 
-    #     message = ""
-        # print("*"*50)  
-        # langchainLib.graphLib.graph_get_state_history(graph,thread_id=thread_id)
-        # print("*"*50)
-        # langchainLib.graphLib.graph_get_state(graph,thread_id=thread_id)
+    while True:
+        if not message:
+            message = input("User: ")
+        else:
+            print(f"User:{message}")
+        if message.lower() in ["/quit", "/exit", "/stop","/q","/bye"]:
+            print("Goodbye!")
+            break
+        system_message = """请始终用中文回答"""
+        langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id,system_message=system_message)
+        snapshot = langchainLib.graphLib.graph_get_state(graph,thread_id)
+        while snapshot.next:   
+            message = input("需要您的确认，继续吗？(y/n)")
+            if message.strip().lower() == 'y':
+                langchainLib.graphLib.graph_stream(graph,None,thread_id = thread_id)
+            else:
+                break
+        message = ""
+
     current_state = langchainLib.graphLib.graph_get_state(graph,thread_id)
-    print("\n\n",current_state.values["messages"], "Next: ", current_state.next)
+    print("\n本次对话的所有消息:\n",current_state.values["messages"])
 
     langchainLib.graphLib.export_graph(graph)
 

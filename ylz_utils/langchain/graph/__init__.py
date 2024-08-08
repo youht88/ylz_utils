@@ -13,8 +13,8 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.graph.state import CompiledStateGraph
 
 from ylz_utils.file import FileLib
+from ylz_utils.data import StringLib,Color
 #from ylz_utils.langchain import LangchainLib
-
 class State(TypedDict):
     messages: Annotated[list,add_messages]
     ask_human: bool
@@ -50,7 +50,7 @@ class GraphLib():
     def translate_to_en(self,state:State):
         content = state["messages"][-1].content
         prompt = self.langchainLib.get_prompt("将以下句子翻译成英文",use_chat=False)
-        llm = self.langchainLib.get_llm()
+        llm = self.langchainLib.get_llm(model = "llama3-groq-70b-8192-tool-use-preview")
         chain = prompt | llm
         response = chain.invoke({"input":content})
         return {"messages":[response],"ask_human":False}
@@ -87,14 +87,6 @@ class GraphLib():
         }
     
     def select_next_node(self, state:State) -> Literal["human","tools","__end__"]:
-        print("route here!!!","*"*80)
-        print(state)
-        # for message in state["messages"]:
-        #     p_message = message.copy()
-        #     if p_message.content and len(p_message.content)>50:
-        #         p_message.content = p_message.content[:50]+"..."
-        #     p_message.pretty_print()
-        print("*"*80)
         if state["ask_human"]:
             return "human"
         return tools_condition(state)
@@ -151,7 +143,15 @@ class GraphLib():
                                 stream_mode = "values")
         for event in events:
             if "messages" in event:
-                event['messages'][-1].pretty_print()
+                message = event['messages'][-1]
+                if isinstance(message,AIMessage):
+                    if message.tool_calls:
+                        print("AI:",f'使用{Color.GREEN}{message.tool_calls[0]["name"]}{Color.RESET},调用参数:{Color.GREEN}{message.tool_calls[0]["args"]}{Color.RESET}')
+                    else:
+                        print("AI:",message.content,
+                              f'[model:{Color.LYELLOW}{message.response_metadata["model_name"]}{Color.RESET},token:{Color.LYELLOW}{message.usage_metadata["total_tokens"]}{Color.RESET}]')
+                elif isinstance(message,ToolMessage):
+                    print("    Tool:",message.content)
     
     def graph_get_state_history(self,graph,thread_id="default-default"):
         state_history = graph.get_state_history(config = {"configurable":{"thread_id":thread_id}} )
