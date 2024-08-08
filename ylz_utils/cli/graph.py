@@ -1,4 +1,5 @@
 from ylz_utils.langchain import LangchainLib
+from langchain_core.messages import HumanMessage,ToolMessage
 
 def start_graph(langchainLib:LangchainLib,args):
     llm_key = args.llm_key
@@ -28,9 +29,6 @@ def start_graph(langchainLib:LangchainLib,args):
 不要产生幻觉，不知道的问题优先从互联网查询，关于用户自己的问题可以向用户询问。
 当碰到需要需要用户来确认的问题或你需要用户告诉你的问题时，请使用使用human工具向用户询问。注意，询问时请提出询问的具体问题，不要重复我提出的问题
 """
-    if not message:
-        message = input("User: ")
-    langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id,system_message=system_message)
     while True:
         if not message:
             message = input("User: ")

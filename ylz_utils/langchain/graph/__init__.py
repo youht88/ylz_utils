@@ -150,18 +150,32 @@ class GraphLib():
         events = graph.stream( values,
                                 config = {"configurable":{"thread_id":thread_id}},
                                 stream_mode = "values")
+        _print_set = set()
         for event in events:
-            if "messages" in event:
-                message = event['messages'][-1]
+            self._print_event(event,_print_set)
+    def _print_event(self, event: dict, _printed: set, max_length=1500):
+        current_state = event.get("dialog_state")
+        if current_state:
+            print("Currently in: ", current_state[-1])
+        message = event.get("messages")
+        if message:
+            if isinstance(message, list):
+                message = message[-1]
+            if message.id not in _printed:
+                msg_repr = message.content
+                if len(msg_repr) > max_length:
+                    msg_repr = msg_repr[:max_length] + " ... (truncated)"
                 if isinstance(message,AIMessage):
                     if message.tool_calls:
                         print("AI:",f'使用{Color.GREEN}{message.tool_calls[0]["name"]}{Color.RESET},调用参数:{Color.GREEN}{message.tool_calls[0]["args"]}{Color.RESET}')
                     else:
-                        print("AI:",message.content,
+                        print("AI:",msg_repr,
                               f'[model:{Color.LYELLOW}{message.response_metadata["model_name"]}{Color.RESET},token:{Color.LYELLOW}{message.usage_metadata["total_tokens"]}{Color.RESET}]')
                 elif isinstance(message,ToolMessage):
-                    print("    Tool:",message.content)
-    
+                    print("    Tool:",msg_repr)
+                elif isinstance(message,HumanMessage):
+                    print(f"User: {msg_repr}")
+                _printed.add(message.id)
     def graph_get_state_history(self,graph,thread_id="default-default"):
         state_history = graph.get_state_history(config = {"configurable":{"thread_id":thread_id}} )
         for state in state_history:
