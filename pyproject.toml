@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ylz-utils"
-version = "0.1.22"
+version = "0.1.23"
 description = "ylz 工具类"
 authors = ["youht88"]
 readme = "README.md"
@@ -55,6 +55,8 @@ unstructured-inference = "^0.7.36"
 
 langchain-huggingface = "^0.0.3"
 yfinance = "^0.2.41"
+elasticsearch-dsl = "^8.14.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
