@@ -130,12 +130,12 @@ class ESLib():
         return MultiMatch(query=value,fields=column_names,analyzer=self.search_analyzer)
     def get_search(self,index_name):
         return Search(using = self.using,index=index_name)
-    def index_search(self,index_name,q=None,start=0,end=9):
-        s = Search(using = self.using,index=index_name)
+    def index_search(self,index_name,q:Q=None,s:Search|None=None,start=0,end=9):
+        if not s:
+            s = Search(using = self.using,index=index_name)
         if q:
             s=s.query(q)
-        else:
-            s=s
+        
         res = s[start:end].execute()
         cls = self.indexes[index_name]
         results = [cls(**data.to_dict()) for data in res]
@@ -240,5 +240,5 @@ if __name__ == '__main__':
     # res = s.execute()
     # print([(hit.meta.score , hit.name) for hit in res.hits])
     
-    res = esLib.index_search("product")
-    print(res[0].to_dict())
+    results = esLib.index_search("product")
+    print([result.to_dict() for result in results])
