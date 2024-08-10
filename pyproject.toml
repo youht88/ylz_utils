@@ -56,7 +56,6 @@ unstructured-inference = "^0.7.36"
 langchain-huggingface = "^0.0.3"
 yfinance = "^0.2.41"
 elasticsearch-dsl = "^8.14.0"
-langchain-nomic = "^0.1.2"
 
 [build-system]
 requires = ["poetry-core"]
