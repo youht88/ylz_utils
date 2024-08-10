@@ -3,7 +3,7 @@ from elasticsearch_dsl import Index as dsl_Index
 from elasticsearch_dsl import connections, Document, Date, Nested, Boolean, \
     analyzer, InnerDoc, Completion, Keyword, Text,Integer,Long,Double,Float,\
     DateRange,IntegerRange,FloatRange,IpRange,Ip,Range
-from elasticsearch_dsl import Search,Q
+from elasticsearch_dsl import Search,Q,FacetedSearch,MultiSearch
 from elasticsearch_dsl.query import MultiMatch
 from typing import Optional,Union,Literal
 
@@ -30,18 +30,17 @@ class ESLib():
         )
         self.Q = Q
         self.Search = Search
+        self.MultiSearch = MultiSearch
+        self.FacetedSearch = FacetedSearch
         self.MultiMatch = MultiMatch
     
     def register_class(self,cls:Document):
-        setattr(self, cls.__name__, cls) 
+        setattr(self, cls.__name__, cls)
+        self.indexes[cls.Index.name]=cls 
         cls.init(using=self.using) 
         return cls
     def register(self, class_name, index_name, shards:int=None,replicas:int=None,
-                 fields:dict[str,Literal['int','long','float',\
-                                         'double','boolean','ktext',\
-                                         'text','keyword','datetime','date','ip' \
-                                         'int_range','float_range','date_range','ip_range'
-                                         ]]={}):
+                 fields:dict[str,dict]={}):
         """动态创建Document类。
 
         Args:
@@ -49,12 +48,19 @@ class ESLib():
             index_name (str): index的名称
             shards (int): shards数量
             replicas (int): replicas数量
-            field (dict, optional): 字段字典。 默认为空字典。
+            field (key:{"type":Literal['int','long','float',\
+                                         'double','boolean','ktext',\
+                                         'text','keyword','datetime','date','ip' \
+                                         'int_range','float_range','date_range','ip_range'
+                                         ],
+                        "required":False,
+                        "multi":False}): 字段字典。 默认为空字典。
+
         Returns:
             type: 新创建Document类。
         """
         base_classes=(Document,)
-        index_fields = {}
+        index_fields : dict[str,Document]= {}
         for key in fields:
             field_type = fields[key].get("type")
             multi = fields[key].get("multi")
@@ -86,9 +92,9 @@ class ESLib():
             elif field_type=='ip_range':
                 index_fields[key] = IpRange(multi=multi,required=required)
             elif field_type=='int_range':
-                index_fields[key] = IntegerRange(multi=multi,required=required,default=default)
+                index_fields[key] = IntegerRange(multi=multi,required=required)
             elif field_type=='float_range':
-                index_fields[key] = FloatRange(multi=multi,required=required,default=default)
+                index_fields[key] = FloatRange(multi=multi,required=required)
             else:
                 raise Exception(f"ESLib不支持的数据类型:{field_type}")                
 
@@ -105,13 +111,13 @@ class ESLib():
         self.indexes[index_name] = cls
         cls.init(using=self.using)
         return cls
-    def matchQ(self,column_name,value):
+    def get_matchQ(self,column_name,value):
         return Q({"match":{column_name:{"query":value,"analyzer":"ik_smart"}}})
-    def termQ(self,column_name,value):
+    def get_termQ(self,column_name,value):
         return Q({"term":{column_name + ".keyword":value}})
-    def multimatchQ(self,column_names,value):
+    def get_multimatchQ(self,column_names,value):
         return MultiMatch(query=value,fields=column_names,analyzer=self.search_analyzer)
-    def search(self,index_name,q=None,start=0,end=9):
+    def index_search(self,index_name,q=None,start=0,end=9):
         if q:
             s = Search(using = self.using,index=index_name).query(q)
             res = s[start:end].execute()
@@ -124,11 +130,11 @@ class ESLib():
             s = cls.search(using=self.using)
             res = s[start:end].execute()
             return res.hits
-    def get(self,index_name,id:str,missing:Literal["none","raise","skip"]="none"):
+    def index_get(self,index_name,id:str,missing:Literal["none","raise","skip"]="none"):
         cls = self.indexes[index_name]
         doc = cls.get(using=self.using,id=id,missing=missing)
         return doc
-    def mget(self,index_name,ids:list[str],missing:Literal["none","raise","skip"]="none"):
+    def index_mget(self,index_name,ids:list[str],missing:Literal["none","raise","skip"]="none"):
         cls = self.indexes[index_name]
         doc = cls.mget(using=self.using,docs=ids,missing=missing)
         return doc
@@ -152,42 +158,47 @@ class ESLib():
         
 if __name__ == '__main__':
     esLib = ESLib(user_passwd=('elastic','9HIMozq48xIP+PHTpRVP'),using='es')
-    # class Product(Document):
-    #     id = Integer()
-    #     name = Text(analyzer='ik_max_word',search_analyzer='ik_smart',fields={'keyword':Keyword()})
-    #     summary = Text(analyzer='ik_max_word',search_analyzer='ik_smart')
-    #     solution_class = Text(analyzer='ik_max_word',search_analyzer='ik_smart')
-    #     tags = Keyword()
-    #     published_from = Date()
-    #     class Index():
-    #         name = 'product'
-    #         settings = {
-    #             "number_of_shards": 1,
-    #             "number_of_replicas": 0,
-    #         }
-    # Product.init(using="es")
-    # product = Product()
+    class Product(Document):
+        id = Integer()
+        name = Text(analyzer='ik_max_word',search_analyzer='ik_smart',fields={'keyword':Keyword()})
+        summary = Text(analyzer='ik_max_word',search_analyzer='ik_smart')
+        solution_class = Text(analyzer='ik_max_word',search_analyzer='ik_smart')
+        tags = Keyword()
+        published_from = Date()
+        class Index():
+            name = 'product'
+            settings = {
+                "number_of_shards": 1,
+                "number_of_replicas": 0,
+            }
+    esLib.register_class(Product)
+    product0 = Product(meta={'id':44},id=1044,name='soup',summary='bowl with a little fox',solution_class='home',tags=['Linabell'])
+    esLib.doc_save(product0)
+    products = esLib.search("product")
+    print("class search:",[esLib.doc_dict(product) for product in products])    
     # product.save(using="es")
     #product = esLib.Product.get(id=42,using='es')
     #print(product)
-    Product = esLib.register("Product","product_new",fields={
+    ProductNew = esLib.register("Product","product_new",fields={
         "id": {"type":"int","required":True},
         "name":{"type":"ktext"},
         "summary":{"type":"text"},
         "tags":{"type":"keyword","multi":True},
-        "published_from":{"type":"date"}
+        "published_from":{"type":"date",}
     })
     print("index_exists:",esLib.index_exists("product_new"))
-    docs = esLib.search("product_new")
-    product = Product(meta={'id':44},id=1044,name='soup',summary='bowl with a little fox',solution_class='home',tags='Linabell')
-    print("to_dict:",esLib.doc_dict(product))
-    print("insert:",esLib.doc_save(product))
-    print(esLib.mget("product_new",ids=[44,34]))
-    print("update:",esLib.doc_update(product,summary="hello world"))
-    print(esLib.mget("product_new",ids=[44,34]))
-    print("delete:",esLib.doc_delete(product))
-    print(esLib.mget("product_new",ids=[44,34]))
-    print("index_delete",esLib.index_delete("product_new"))
+    docs = esLib.index_search("product_new")
+    product1 = ProductNew(meta={'id':44},id=1044,name='soup',summary='bowl with a little fox',solution_class='home',tags=['Linabell'])
+    product2 = ProductNew(meta={'id':34},id=1034,name='mouse',summary='a white mouse',solution_class='home',tags=['white','wireless'])
+    print("to_dict:",esLib.doc_dict(product1))
+    print("insert:",esLib.doc_save(product1))
+    print("insert:",esLib.doc_save(product2))
+    print(esLib.index_mget("product_new",ids=[44,34]))
+    print("update:",esLib.doc_update(product1,summary="hello world"))
+    print(esLib.index_mget("product_new",ids=[44,34]))
+    #print("delete:",esLib.doc_delete(product1))
+    print(esLib.index_mget("product_new",ids=[44,34]))
+    #print("index_delete",esLib.index_delete("product_new"))
     
     # for doc in docs:
     #     esLib.delete(doc)
@@ -203,4 +214,6 @@ if __name__ == '__main__':
     #     print(res[0].name,size)
     # else:
     #     print("no result")
+    
+    s=esLib.Search()
     
