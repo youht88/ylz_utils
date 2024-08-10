@@ -184,31 +184,31 @@ if __name__ == '__main__':
                 "number_of_replicas": 0,
             }
     esLib.register_class(Product)
-    data = [ 
-        {"id":1,"name":'碗',"summary":'镶边且印有小狐狸图案',"solution_class":'home',"tags":['little'],"price":20.2},
-        {"id":2,"name":'筷子',"summary":'很多，黑色的高级筷子',"solution_class":'home',"tags":['black','multi'],"price":5.8},
-        {"id":3,"name":'钥匙',"summary":'专用的多功能开锁神器',"solution_class":'tool',"tags":['useful'],"price":3.00},
-        {"id":4,"name":'手机',"summary":'各种型号的大屏幕，大内存手机',"solution_class":'office',"tags":['good','multi'],"price":2888},
-        {"id":5,"name":'打火机',"summary":'积压仓库，准备清仓',"solution_class":'tool',"tags":['cheap'],"price":0.1},
-        {"id":6,"name":'鼠标',"summary":'白色无线鼠标，不需要更换电池，typeC充电',"solution_class":'office',"tags":['wireless','white'],"price":109},
-        {"id":7,"name":'苹果',"summary":'20斤大苹果，包甜',"solution_class":'food',"tags":['red','good'],"price":2.2},
-        {"id":8,"name":'电脑',"summary":'苹果imac M1，M2，M3系列',"solution_class":'office',"tags":['useful'],"price":4888},
-        {"id":9,"name":'桌子',"summary":'减价销售，售完为止',"solution_class":'office',"tags":['cheap'],"price":260},
-        {"id":10,"name":'足球',"summary":'官方认证，品质保障',"solution_class":'sport',"tags":['useful'],"price":60},
-        {"id":11,"name":'面巾纸',"summary":'丝滑柔软',"solution_class":'home',"tags":['little','multi'],"price":40.5},
-        {"id":12,"name":'水壶',"summary":'大容量，装水充足，自动报警，智能烧水',"solution_class":'home',"tags":['useful','cheap'],"price":99},
-        {"id":13,"name":'自行车',"summary":'风华牌28寸，26寸都有',"solution_class":'home',"tags":['useful'],"price":120},
-        {"id":14,"name":'手电筒',"summary":'4节电池，多功能',"solution_class":'tool',"tags":['useful'],"price":15},
-        {"id":15,"name":'沙发',"summary":'墨绿色，豪华舒适',"solution_class":'home',"tags":['big','cheap'],"price":1500},
-        {"id":16,"name":'香烟',"summary":'23条，吸烟有害健康',"solution_class":'food',"tags":['red'],"price":17.8},
-        ]
-    products = []
-    for item in data:
-        product = Product(
-            meta={'id':item['id']},id=item['id'],name=item['name'],
-            summary=item['summary'],solution_class=item['solution_class'],tags=item['tags'],price=item['price'])
-        products.append(product)
-        esLib.doc_save(product)
+    # data = [ 
+    #     {"id":1,"name":'碗',"summary":'镶边且印有小狐狸图案',"solution_class":'home',"tags":['little'],"price":20.2},
+    #     {"id":2,"name":'筷子',"summary":'很多，黑色的高级筷子',"solution_class":'home',"tags":['black','multi'],"price":5.8},
+    #     {"id":3,"name":'钥匙',"summary":'专用的多功能开锁神器',"solution_class":'tool',"tags":['useful'],"price":3.00},
+    #     {"id":4,"name":'手机',"summary":'各种型号的大屏幕，大内存手机',"solution_class":'office',"tags":['good','multi'],"price":2888},
+    #     {"id":5,"name":'打火机',"summary":'积压仓库，准备清仓',"solution_class":'tool',"tags":['cheap'],"price":0.1},
+    #     {"id":6,"name":'鼠标',"summary":'白色无线鼠标，不需要更换电池，typeC充电',"solution_class":'office',"tags":['wireless','white'],"price":109},
+    #     {"id":7,"name":'苹果',"summary":'20斤大苹果，包甜',"solution_class":'food',"tags":['red','good'],"price":2.2},
+    #     {"id":8,"name":'电脑',"summary":'苹果imac M1，M2，M3系列',"solution_class":'office',"tags":['useful'],"price":4888},
+    #     {"id":9,"name":'桌子',"summary":'减价销售，售完为止',"solution_class":'office',"tags":['cheap'],"price":260},
+    #     {"id":10,"name":'足球',"summary":'官方认证，品质保障',"solution_class":'sport',"tags":['useful'],"price":60},
+    #     {"id":11,"name":'面巾纸',"summary":'丝滑柔软',"solution_class":'home',"tags":['little','multi'],"price":40.5},
+    #     {"id":12,"name":'水壶',"summary":'大容量，装水充足，自动报警，智能烧水',"solution_class":'home',"tags":['useful','cheap'],"price":99},
+    #     {"id":13,"name":'自行车',"summary":'风华牌28寸，26寸都有',"solution_class":'home',"tags":['useful'],"price":120},
+    #     {"id":14,"name":'手电筒',"summary":'4节电池，多功能',"solution_class":'tool',"tags":['useful'],"price":15},
+    #     {"id":15,"name":'沙发',"summary":'墨绿色，豪华舒适',"solution_class":'home',"tags":['big','cheap'],"price":1500},
+    #     {"id":16,"name":'香烟',"summary":'23条，吸烟有害健康',"solution_class":'food',"tags":['red'],"price":17.8},
+    #     ]
+    # products = []
+    # for item in data:
+    #     product = Product(
+    #         meta={'id':item['id']},id=item['id'],name=item['name'],
+    #         summary=item['summary'],solution_class=item['solution_class'],tags=item['tags'],price=item['price'])
+    #     products.append(product)
+    #     esLib.doc_save(product)
     products = esLib.index_search("product")
     print("class search:",[esLib.doc_dict(product) for product in products])    
     # product.save(using="es")
@@ -266,3 +266,8 @@ if __name__ == '__main__':
     
     # results = esLib.index_search("product")
     # print([result.to_dict() for result in results])
+
+    s = esLib.get_search("product")
+    s.query("term",name="手机")
+    results = esLib.index_search("product",s=s)
+    print([result.to_dict() for result in results])
