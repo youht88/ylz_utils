@@ -175,6 +175,7 @@ if __name__ == '__main__':
         summary = Text(analyzer='ik_max_word',search_analyzer='ik_smart')
         solution_class = Text(analyzer='ik_max_word',search_analyzer='ik_smart')
         tags = Keyword()
+        price = Float()
         published_from = Date()
         class Index():
             name = 'product'
@@ -183,8 +184,31 @@ if __name__ == '__main__':
                 "number_of_replicas": 0,
             }
     esLib.register_class(Product)
-    product0 = Product(meta={'id':44},id=1044,name='soup',summary='bowl with a little fox',solution_class='home',tags=['Linabell'])
-    esLib.doc_save(product0)
+    data = [ 
+        {"id":1,"name":'碗',"summary":'镶边且印有小狐狸图案',"solution_class":'home',"tags":['little'],"price":20.2},
+        {"id":2,"name":'筷子',"summary":'很多，黑色的高级筷子',"solution_class":'home',"tags":['black','multi'],"price":5.8},
+        {"id":3,"name":'钥匙',"summary":'专用的多功能开锁神器',"solution_class":'tool',"tags":['useful'],"price":3.00},
+        {"id":4,"name":'手机',"summary":'各种型号的大屏幕，大内存手机',"solution_class":'office',"tags":['good','multi'],"price":2888},
+        {"id":5,"name":'打火机',"summary":'积压仓库，准备清仓',"solution_class":'tool',"tags":['cheap'],"price":0.1},
+        {"id":6,"name":'鼠标',"summary":'白色无线鼠标，不需要更换电池，typeC充电',"solution_class":'office',"tags":['wireless','white'],"price":109},
+        {"id":7,"name":'苹果',"summary":'20斤大苹果，包甜',"solution_class":'food',"tags":['red','good'],"price":2.2},
+        {"id":8,"name":'电脑',"summary":'苹果imac M1，M2，M3系列',"solution_class":'office',"tags":['useful'],"price":4888},
+        {"id":9,"name":'桌子',"summary":'减价销售，售完为止',"solution_class":'office',"tags":['cheap'],"price":260},
+        {"id":10,"name":'足球',"summary":'官方认证，品质保障',"solution_class":'sport',"tags":['useful'],"price":60},
+        {"id":11,"name":'面巾纸',"summary":'丝滑柔软',"solution_class":'home',"tags":['little','multi'],"price":40.5},
+        {"id":12,"name":'水壶',"summary":'大容量，装水充足，自动报警，智能烧水',"solution_class":'home',"tags":['useful','cheap'],"price":99},
+        {"id":13,"name":'自行车',"summary":'风华牌28寸，26寸都有',"solution_class":'home',"tags":['useful'],"price":120},
+        {"id":14,"name":'手电筒',"summary":'4节电池，多功能',"solution_class":'tool',"tags":['useful'],"price":15},
+        {"id":15,"name":'沙发',"summary":'墨绿色，豪华舒适',"solution_class":'home',"tags":['big','cheap'],"price":1500},
+        {"id":16,"name":'香烟',"summary":'23条，吸烟有害健康',"solution_class":'food',"tags":['red'],"price":17.8},
+        ]
+    products = []
+    for item in data:
+        product = Product(
+            meta={'id':item['id']},id=item['id'],name=item['name'],
+            summary=item['summary'],solution_class=item['solution_class'],tags=item['tags'],price=item['price'])
+        products.append(product)
+        esLib.doc_save(product)
     products = esLib.index_search("product")
     print("class search:",[esLib.doc_dict(product) for product in products])    
     # product.save(using="es")
@@ -203,42 +227,42 @@ if __name__ == '__main__':
                                 "price":{"type":"float"}
         }}}
     })
-    print("index_exists:",esLib.index_exists("product_new"))
-    docs = esLib.index_search("product_new")
-    product1 = ProductNew(meta={'id':44},id=1044,name='soup',summary='bowl with a little fox',solution_class='home',tags=['Linabell'])
-    product1.info = esLib.Info(provider="abc",price=20.2)
-    print("*"*20,product1.to_dict())
-    product2 = ProductNew(meta={'id':34},id=1034,name='mouse',summary='a white mouse',solution_class='home',tags=['white','wireless'])
-    product2.info = esLib.Info(provider="xyz",price=30.4)
-    print("to_dict:",esLib.doc_dict(product1))
-    print("insert:",esLib.doc_save(product1))
-    print("insert:",esLib.doc_save(product2))
-    print(esLib.index_mget("product_new",ids=[44,34]))
-    print("update:",esLib.doc_update(product1,summary="hello world"))
-    print(esLib.index_mget("product_new",ids=[44,34]))
-    #print("delete:",esLib.doc_delete(product1))
-    print(esLib.index_mget("product_new",ids=[44,34]))
-    #print("index_delete",esLib.index_delete("product_new"))
+    # print("index_exists:",esLib.index_exists("product_new"))
+    # docs = esLib.index_search("product_new")
+    # product1 = ProductNew(meta={'id':44},id=1044,name='soup',summary='bowl with a little fox',solution_class='home',tags=['Linabell'])
+    # product1.info = esLib.Info(provider="abc",price=20.2)
+    # print("*"*20,product1.to_dict())
+    # product2 = ProductNew(meta={'id':34},id=1034,name='mouse',summary='a white mouse',solution_class='home',tags=['white','wireless'])
+    # product2.info = esLib.Info(provider="xyz",price=30.4)
+    # print("to_dict:",esLib.doc_dict(product1))
+    # print("insert:",esLib.doc_save(product1))
+    # print("insert:",esLib.doc_save(product2))
+    # print(esLib.index_mget("product_new",ids=[44,34]))
+    # print("update:",esLib.doc_update(product1,summary="hello world"))
+    # print(esLib.index_mget("product_new",ids=[44,34]))
+    # #print("delete:",esLib.doc_delete(product1))
+    # print(esLib.index_mget("product_new",ids=[44,34]))
+    # #print("index_delete",esLib.index_delete("product_new"))
     
-    # for doc in docs:
-    #     esLib.delete(doc)
-    #product.save(using="es")
-    #esLib.save("product_new")  
-    # product = Product(meta={'id':44},id=1044,name='soup',summary='bowl with a little fox',solution_class='home',tags='Linabell')
-    # product.publish_from = datetime.now()
-    # product.save(using="es")
+    # # for doc in docs:
+    # #     esLib.delete(doc)
+    # #product.save(using="es")
+    # #esLib.save("product_new")  
+    # # product = Product(meta={'id':44},id=1044,name='soup',summary='bowl with a little fox',solution_class='home',tags='Linabell')
+    # # product.publish_from = datetime.now()
+    # # product.save(using="es")
     
-    # q = esLib.termQ("tags","Linabell")
-    # res,size = esLib.search("product",q) 
-    # if res:
-    #     print(res[0].name,size)
-    # else:
-    #     print("no result")
+    # # q = esLib.termQ("tags","Linabell")
+    # # res,size = esLib.search("product",q) 
+    # # if res:
+    # #     print(res[0].name,size)
+    # # else:
+    # #     print("no result")
     
-    # s=esLib.get_search("product")
-    # s.query("term",solution_class="abc")
-    # res = s.execute()
-    # print([(hit.meta.score , hit.name) for hit in res.hits])
+    # # s=esLib.get_search("product")
+    # # s.query("term",solution_class="abc")
+    # # res = s.execute()
+    # # print([(hit.meta.score , hit.name) for hit in res.hits])
     
-    results = esLib.index_search("product")
-    print([result.to_dict() for result in results])
+    # results = esLib.index_search("product")
+    # print([result.to_dict() for result in results])
