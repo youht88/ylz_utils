@@ -40,13 +40,11 @@ class ESLib():
         cls.init(using=self.using) 
         return cls
     def _parse_fields(self,raw_fields):
-        print("@@@@",raw_fields)
         wrapped_fields : dict[str,Field]= {}
         for key in raw_fields:
             field_type = raw_fields[key].get("type")
             multi = raw_fields[key].get("multi")
             required = raw_fields[key].get("requried")
-            print("====",key,field_type)
             if field_type=='int':
                 wrapped_fields[key] = Integer(multi=multi,required=required)
             elif field_type=='long':
@@ -82,11 +80,9 @@ class ESLib():
                 innerdoc_name = innerdoc["name"]
                 innerdoc_raw_fields = innerdoc["fields"]
                 innerdoc_wrapped_fields = self._parse_fields(innerdoc_raw_fields)
-                print("???",innerdoc_wrapped_fields)
                 innerdoc_cls = type(innerdoc_name, (InnerDoc,), innerdoc_wrapped_fields)
-                print("!!!!",innerdoc_cls(),isinstance(innerdoc_cls(),InnerDoc))
                 setattr(self,innerdoc_cls.__name__,innerdoc_cls) 
-                wrapped_fields[key] = innerdoc_cls()
+                #wrapped_fields[key] = innerdoc_cls() ????
             else:
                 raise Exception(f"ESLib不支持的数据类型:{field_type}") 
         return wrapped_fields               
@@ -113,7 +109,6 @@ class ESLib():
         """
         base_classes=(Document,)
         wrapped_fields = self._parse_fields(fields)
-        print("-----",wrapped_fields)
         # 创建 Index 类
         settings={}
         if shards:
@@ -133,19 +128,19 @@ class ESLib():
         return Q({"term":{column_name + ".keyword":value}})
     def get_multimatchQ(self,column_names,value):
         return MultiMatch(query=value,fields=column_names,analyzer=self.search_analyzer)
+    def get_search(self,index_name):
+        return Search(using = self.using,index=index_name)
     def index_search(self,index_name,q=None,start=0,end=9):
+        s = Search(using = self.using,index=index_name)
         if q:
-            s = Search(using = self.using,index=index_name).query(q)
-            res = s[start:end].execute()
-            cls = self.indexes[index_name]
-            results = [cls(**data.to_dict()) for data in res]
-            #size = res.hits.total.value
-            return results
+            s=s.query(q)
         else:
-            cls = self.indexes[index_name]
-            s = cls.search(using=self.using)
-            res = s[start:end].execute()
-            return res.hits
+            s=s
+        res = s[start:end].execute()
+        cls = self.indexes[index_name]
+        results = [cls(**data.to_dict()) for data in res]
+        #size = res.hits.total.value
+        return results
     def index_get(self,index_name,id:str,missing:Literal["none","raise","skip"]="none"):
         cls = self.indexes[index_name]
         doc = cls.get(using=self.using,id=id,missing=missing)
@@ -201,9 +196,11 @@ if __name__ == '__main__':
         "summary":{"type":"text"},
         "tags":{"type":"keyword","multi":True},
         "published_from":{"type":"date",},
-        "info":{"type":"innerdoc","innerdoc":{"name":"Info","fields":{
-            "provider":{"type":"text"},
-            "price":{"type":"float"}
+        "info":{"type":"innerdoc",
+                "innerdoc":{"name":"Info",
+                            "fields":{
+                                "provider":{"type":"text"},
+                                "price":{"type":"float"}
         }}}
     })
     print("index_exists:",esLib.index_exists("product_new"))
@@ -238,5 +235,10 @@ if __name__ == '__main__':
     # else:
     #     print("no result")
     
-    s=esLib.Search()
+    # s=esLib.get_search("product")
+    # s.query("term",solution_class="abc")
+    # res = s.execute()
+    # print([(hit.meta.score , hit.name) for hit in res.hits])
     
+    res = esLib.index_search("product")
+    print(res[0].to_dict())
