@@ -1,6 +1,6 @@
 from datetime import datetime
 from elasticsearch_dsl import Index as dsl_Index
-from elasticsearch_dsl import connections, Document, Date, Nested, Boolean, \
+from elasticsearch_dsl import connections, Field,Document, Date, Nested, Boolean, \
     analyzer, InnerDoc, Completion, Keyword, Text,Integer,Long,Double,Float,\
     DateRange,IntegerRange,FloatRange,IpRange,Ip,Range
 from elasticsearch_dsl import Search,Q,FacetedSearch,MultiSearch
@@ -39,6 +39,58 @@ class ESLib():
         self.indexes[cls.Index.name]=cls 
         cls.init(using=self.using) 
         return cls
+    def _parse_fields(self,raw_fields):
+        print("@@@@",raw_fields)
+        wrapped_fields : dict[str,Field]= {}
+        for key in raw_fields:
+            field_type = raw_fields[key].get("type")
+            multi = raw_fields[key].get("multi")
+            required = raw_fields[key].get("requried")
+            print("====",key,field_type)
+            if field_type=='int':
+                wrapped_fields[key] = Integer(multi=multi,required=required)
+            elif field_type=='long':
+                wrapped_fields[key] = Long(multi=multi,required=required)
+            elif field_type=='float':
+                wrapped_fields[key] = Float(multi=multi,required=required)
+            elif field_type=='double':
+                wrapped_fields[key] = Double(multi=multi,required=required)
+            elif field_type=='boolean':
+                wrapped_fields[key] = Boolean(multi=multi,required=required)
+            elif field_type=='ktext':
+                wrapped_fields[key] = Text(analyzer=self.analyzer,search_analyzer=self.search_analyzer,fields={'keyword':Keyword()},multi=multi,required=required)
+            elif field_type=='text':
+                wrapped_fields[key] = Text(analyzer=self.analyzer,search_analyzer=self.search_analyzer,multi=multi,required=required)
+            elif field_type=='keyword':
+                wrapped_fields[key] = Keyword(multi=multi,required=required)
+            elif field_type=='datetime':
+                wrapped_fields[key] = Date(multi=multi,required=required)
+            elif field_type=='date':
+                wrapped_fields[key] = Date(format="yyyy-MM-dd", multi=multi,required=required)
+            elif field_type=='ip':
+                wrapped_fields[key] = Ip(multi=multi,required=required)
+            elif field_type=='date_range':
+                wrapped_fields[key] = DateRange(multi=multi,required=required)
+            elif field_type=='ip_range':
+                wrapped_fields[key] = IpRange(multi=multi,required=required)
+            elif field_type=='int_range':
+                wrapped_fields[key] = IntegerRange(multi=multi,required=required)
+            elif field_type=='float_range':
+                wrapped_fields[key] = FloatRange(multi=multi,required=required)
+            elif field_type=='innerdoc':
+                innerdoc = raw_fields[key]["innerdoc"]
+                innerdoc_name = innerdoc["name"]
+                innerdoc_raw_fields = innerdoc["fields"]
+                innerdoc_wrapped_fields = self._parse_fields(innerdoc_raw_fields)
+                print("???",innerdoc_wrapped_fields)
+                innerdoc_cls = type(innerdoc_name, (InnerDoc,), innerdoc_wrapped_fields)
+                print("!!!!",innerdoc_cls(),isinstance(innerdoc_cls(),InnerDoc))
+                setattr(self,innerdoc_cls.__name__,innerdoc_cls) 
+                wrapped_fields[key] = innerdoc_cls()
+            else:
+                raise Exception(f"ESLib不支持的数据类型:{field_type}") 
+        return wrapped_fields               
+
     def register(self, class_name, index_name, shards:int=None,replicas:int=None,
                  fields:dict[str,dict]={}):
         """动态创建Document类。
@@ -60,44 +112,8 @@ class ESLib():
             type: 新创建Document类。
         """
         base_classes=(Document,)
-        index_fields : dict[str,Document]= {}
-        for key in fields:
-            field_type = fields[key].get("type")
-            multi = fields[key].get("multi")
-            required = fields[key].get("requried")
-            if field_type=='int':
-                index_fields[key] = Integer(multi=multi,required=required)
-            elif field_type=='long':
-                index_fields[key] = Long(multi=multi,required=required)
-            elif field_type=='float':
-                index_fields[key] = Float(multi=multi,required=required)
-            elif field_type=='double':
-                index_fields[key] = Double(multi=multi,required=required)
-            elif field_type=='boolean':
-                index_fields[key] = Boolean(multi=multi,required=required)
-            elif field_type=='ktext':
-                index_fields[key] = Text(analyzer=self.analyzer,search_analyzer=self.search_analyzer,fields={'keyword':Keyword()},multi=multi,required=required)
-            elif field_type=='text':
-                index_fields[key] = Text(analyzer=self.analyzer,search_analyzer=self.search_analyzer,multi=multi,required=required)
-            elif field_type=='keyword':
-                index_fields[key] = Keyword(multi=multi,required=required)
-            elif field_type=='datetime':
-                index_fields[key] = Date(multi=multi,required=required)
-            elif field_type=='date':
-                index_fields[key] = Date(format="yyyy-MM-dd", multi=multi,required=required)
-            elif field_type=='ip':
-                index_fields[key] = Ip(multi=multi,required=required)
-            elif field_type=='date_range':
-                index_fields[key] = DateRange(multi=multi,required=required)
-            elif field_type=='ip_range':
-                index_fields[key] = IpRange(multi=multi,required=required)
-            elif field_type=='int_range':
-                index_fields[key] = IntegerRange(multi=multi,required=required)
-            elif field_type=='float_range':
-                index_fields[key] = FloatRange(multi=multi,required=required)
-            else:
-                raise Exception(f"ESLib不支持的数据类型:{field_type}")                
-
+        wrapped_fields = self._parse_fields(fields)
+        print("-----",wrapped_fields)
         # 创建 Index 类
         settings={}
         if shards:
@@ -105,8 +121,8 @@ class ESLib():
         if replicas:
             settings["number_of_replicas"] = replicas
         Index = type('Index', tuple(), {'name': index_name, 'settings': settings})
-        index_fields['Index'] = Index
-        cls = type(class_name, base_classes, index_fields)        
+        wrapped_fields['Index'] = Index
+        cls = type(class_name, base_classes, wrapped_fields)        
         setattr(self, cls.__name__, cls)
         self.indexes[index_name] = cls
         cls.init(using=self.using)
@@ -174,7 +190,7 @@ if __name__ == '__main__':
     esLib.register_class(Product)
     product0 = Product(meta={'id':44},id=1044,name='soup',summary='bowl with a little fox',solution_class='home',tags=['Linabell'])
     esLib.doc_save(product0)
-    products = esLib.search("product")
+    products = esLib.index_search("product")
     print("class search:",[esLib.doc_dict(product) for product in products])    
     # product.save(using="es")
     #product = esLib.Product.get(id=42,using='es')
@@ -184,12 +200,19 @@ if __name__ == '__main__':
         "name":{"type":"ktext"},
         "summary":{"type":"text"},
         "tags":{"type":"keyword","multi":True},
-        "published_from":{"type":"date",}
+        "published_from":{"type":"date",},
+        "info":{"type":"innerdoc","innerdoc":{"name":"Info","fields":{
+            "provider":{"type":"text"},
+            "price":{"type":"float"}
+        }}}
     })
     print("index_exists:",esLib.index_exists("product_new"))
     docs = esLib.index_search("product_new")
     product1 = ProductNew(meta={'id':44},id=1044,name='soup',summary='bowl with a little fox',solution_class='home',tags=['Linabell'])
+    product1.info = esLib.Info(provider="abc",price=20.2)
+    print("*"*20,product1.to_dict())
     product2 = ProductNew(meta={'id':34},id=1034,name='mouse',summary='a white mouse',solution_class='home',tags=['white','wireless'])
+    product2.info = esLib.Info(provider="xyz",price=30.4)
     print("to_dict:",esLib.doc_dict(product1))
     print("insert:",esLib.doc_save(product1))
     print("insert:",esLib.doc_save(product2))
