@@ -1,6 +1,7 @@
 import logging
 import inspect
 import json
+import os
 from datetime import datetime
 
 from langchain_openai import ChatOpenAI
@@ -39,8 +40,25 @@ from ylz_utils.config import Config
 from ylz_utils.data import StringLib,Color
 
 class LangchainLib():
-    def __init__(self):
+    def __init__(self,trace=True):    
         self.config = Config.get()
+        langsmith_trace = os.environ.get("LANGSMITH_TRACING_V2")
+        if not langsmith_trace: 
+            if trace:
+                os.environ["LANGSMITH_TRACING_V2"] = "true"
+            else:
+                trace = False
+        else:
+            trace = True        
+        if trace:        
+            langsmith_api_key = os.environ.get("LANGSMITH_API_KEY")
+            if not langsmith_api_key:
+                langsmith_api_keys = self.config.get('LANGSMITH.API_KEYS')
+                if langsmith_api_keys:
+                    langsmith_api_key = langsmith_api_keys.split(",")[0]
+                    os.environ["LANGSMITH_API_KEY"]=langsmith_api_key
+        print("smith_tracing=",os.environ.get("LANGSMITH_TRACING_V2"))
+        print("smith_api_key=",os.environ.get("LANGSMITH_API_KEY"))
         self.memory = ConversationBufferMemory()
 
         self.llmLib = LLMLib(self)

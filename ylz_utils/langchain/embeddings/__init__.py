@@ -35,6 +35,7 @@ class EmbeddingLib():
         return self.default_embedding_key
     def clear_default_embedding_key(self):
         self.default_embedding_key=None
+    
     def set_fake_size(self,size=0):
         if size:
             self.fake_size = size
