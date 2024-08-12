@@ -21,11 +21,19 @@ class FaissLib():
                     all_ids.extend(ids)
                 pbar.update(1)
         return vectorstore,all_ids
-    def create_from_textes(self,textes,embedding=None) -> FAISS:
+    def create_from_texts(self,texts,embedding=None) -> FAISS:
         if not embedding:
             embedding = self.langchainLib.get_embedding()
-        vectorstore = FAISS.from_texts(textes, embedding=embedding)
-        return vectorstore
+        #vectorstore = FAISS.from_texts(textes, embedding=embedding)
+        vectorstore = FAISS.from_texts([" "],embedding) 
+        all_ids = []
+        with tqdm(total= len(texts)) as pbar:
+            for idx,text in enumerate(texts):
+                if text:
+                    ids = vectorstore.add_texts([text],embedding=embedding)
+                    all_ids.extend(ids)
+                pbar.update(1)
+        return vectorstore,all_ids
     
     def delete(self,vectorstore: FAISS,ids: List[str] | None = None):
         return vectorstore.delete(ids) 

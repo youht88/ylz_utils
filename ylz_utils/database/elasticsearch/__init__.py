@@ -13,7 +13,8 @@ class ESLib():
     search_analyzer='ik_smart'
     indexes = {}
     def __init__(self,hosts:list[str]=['https://localhost:9200'],
-                 user_passwd:tuple[str,str]=('elastic','abcd1234'),
+                 es_user:str = 'elastic',
+                 es_password:str = 'changeme',
                  using:str = "es",
                  verify_certs=False,
                  ssl_show_warn=False,
@@ -23,7 +24,7 @@ class ESLib():
         self.search_analyzer = search_analyzer
         connections.create_connection(
             hosts=hosts,
-            basic_auth=user_passwd,
+            basic_auth=(es_user,es_password),
             alias=using,
             verify_certs=verify_certs,
             ssl_show_warn=ssl_show_warn
@@ -168,7 +169,7 @@ class ESLib():
         return doc.delete(using=self.using)
         
 if __name__ == '__main__':
-    esLib = ESLib(user_passwd=('elastic','9HIMozq48xIP+PHTpRVP'),using='es')
+    esLib = ESLib(es_user='elastic',es_password='9HIMozq48xIP+PHTpRVP',using='es')
     class Product(Document):
         id = Integer()
         name = Text(analyzer='ik_max_word',search_analyzer='ik_smart',fields={'keyword':Keyword()})

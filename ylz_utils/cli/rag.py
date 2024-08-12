@@ -34,20 +34,20 @@ def start_rag(langchainLib:LangchainLib,args):
             print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks'])} for doc in docs])
             for doc in docs:
                 blocks = doc['blocks']
-                vectorestore,ids = langchainLib.vectorstoreLib.faiss.create_from_docs(blocks,embedding)
-                langchainLib.vectorstoreLib.faiss.save(rag_dbname,vectorestore)
+                vectorestore,ids = langchainLib.vectorstoreLib.faissLib.create_from_docs(blocks,embedding)
+                langchainLib.vectorstoreLib.faissLib.save(rag_dbname,vectorestore)
                 print("ids:",ids)
         else:
-                vectorestore,ids = langchainLib.vectorstoreLib.faiss.create_from_docs(docs,embedding)
-                langchainLib.vectorstoreLib.faiss.save(rag_dbname,vectorestore)
+                vectorestore,ids = langchainLib.vectorstoreLib.faissLib.create_from_docs(docs,embedding)
+                langchainLib.vectorstoreLib.faissLib.save(rag_dbname,vectorestore)
                 print("ids:",ids)
     if message and rag_dbname:   
         # docs = [Document("I am a student"),Document("who to go to china"),Document("this is a table")]
-        # vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(docs)
-        # langchainLib.vectorstoreLib.faiss.save("test.faiss",vectorestore)
+        # vectorestore = langchainLib.vectorstoreLib.faissLib.create_from_docs(docs)
+        # langchainLib.vectorstoreLib.faissLib.save("test.faiss",vectorestore)
         
-        vectorestore = langchainLib.vectorstoreLib.faiss.load(rag_dbname,embedding)
-        print("v--->",langchainLib.vectorstoreLib.faiss.search(message,vectorestore,k=2))
+        vectorestore = langchainLib.vectorstoreLib.faissLib.load(rag_dbname,embedding)
+        print("v--->",langchainLib.vectorstoreLib.faissLib.search(message,vectorestore,k=2))
     
     ###### have bug when poetry add sentence_transformers   
     #v1 = langchainLib.get_huggingface_embedding()
@@ -56,8 +56,8 @@ def start_rag(langchainLib:LangchainLib,args):
     ###### tet google embdeeding
     # embed = langchainLib.get_embedding("EMBEDDING.GEMINI")
     # docs = [Document("I am a student"),Document("who to go to china"),Document("this is a table")]
-    # vectorestore = langchainLib.vectorstoreLib.faiss.create_from_docs(docs,embedding=embed)
-    # langchainLib.vectorstoreLib.faiss.save("test.faiss",vectorestore,index_name="gemini")
+    # vectorestore = langchainLib.vectorstoreLib.faissLib.create_from_docs(docs,embedding=embed)
+    # langchainLib.vectorstoreLib.faissLib.save("test.faiss",vectorestore,index_name="gemini")
 
 def start_loader(langchainLib:LangchainLib,args):
     url = args.url

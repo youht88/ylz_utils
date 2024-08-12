@@ -239,6 +239,13 @@ def start(args):
         #loader = langchainLib.documentLib.pptx.loader("30335320.pptx")
         #docs = loader.load()
         #print(docs)
+        langchainLib.vectorstoreLib.esLib.init_client(es_user="elastic",es_password="9HIMozq48xIP+PHTpRVP")
+        langchainLib.vectorstoreLib.esLib.delete_store("langchain_index")
+        store = langchainLib.vectorstoreLib.esLib.get_store()
+        ids = langchainLib.vectorstoreLib.esLib.create_from_textes(store,["我是一个科技工作者","树上有一只猴子"])
+        print(ids)
+        res = langchainLib.vectorstoreLib.esLib.search_with_score("你在那里上班",store)
+        print(res)
         return
         loader = langchainLib.documentLib.pptx.newer("test.pptx")
         loader.add_slide(0).set_title("Hello World","gogogo").add_text("youht",10,10,60,40)
