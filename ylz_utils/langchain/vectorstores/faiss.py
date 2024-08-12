@@ -47,6 +47,8 @@ class FaissLib():
         vectorestore = FAISS.load_local(db_file, embeddings=embedding, index_name=index_name, allow_dangerous_deserialization=True)
         return vectorestore
     
-    def search(self,query,vectorstore: FAISS,k=10):
-        vectorstore.similarity_search_with_score
-        return vectorstore.similarity_search(query,k=k)
+    def search(self,query,vectorstore: FAISS,k=10,filter=[]):
+        return vectorstore.similarity_search(query,k=k,filter=filter)
+    
+    def search_with_score(self,query,vectorstore: FAISS,k=10,filter=[]):
+        return vectorstore.similarity_search_with_score(query,k=k,filter=filter)
