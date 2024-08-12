@@ -227,6 +227,8 @@ class LLMLib():
                     llm['used'] = llm.get('used',0) + 1 
                     llm['last_used'] = time.time()
                     return llm['llm'] 
+        if key:
+            raise Exception(f"请确保{key}_API_KEYS环境变量被正确设置,然后调用regist_llm注册语言模型")
         if self.default_llm_key:
             raise Exception(f"请确保{self.default_llm_key}_API_KEYS环境变量被正确设置,然后调用regist_llm注册语言模型")
         else:

@@ -78,6 +78,8 @@ class EmbeddingLib():
                 embedding['used'] = embedding.get('used',0) + 1 
                 embedding['last_used'] = time.time()
                 return embedding['embedding']
+        if key:
+            raise Exception(f"请确保{key}_API_KEYS环境变量被正确设置,然后调用regist_embedding注册语言模型")
         if self.default_embedding_key:
             raise Exception(f"请确保{self.default_embedding_key}_API_KEYS环境变量被正确设置,然后调用regist_embedding注册语言模型")
         else:
