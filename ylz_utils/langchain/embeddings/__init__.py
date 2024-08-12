@@ -11,6 +11,7 @@ from langchain_community.embeddings import (
     HuggingFaceEmbeddings,
     HuggingFaceBgeEmbeddings,
 )
+#from langchain_core.embeddings import FakeEmbeddings
 
 class EmbeddingLib():
     embeddings:list  = []
@@ -46,7 +47,10 @@ class EmbeddingLib():
             else:
                 embeddings = [item for item in self.embeddings if item['type']==key]
             if embeddings:
-                embedding = random.choice(embeddings)    
+                #embedding = random.choice(embeddings)    
+                if len(embeddings)!=1:
+                    raise Exception("基于安全的考虑，必须指定embedding的key! 比如key=EMBEDDING.HF")
+                embedding = embeddings[0]
                 if not embedding.get('embedding'):
                     embed_type = embedding['type']
                     if  embed_type == 'EMBEDDING.TOGETHER':
@@ -55,6 +59,8 @@ class EmbeddingLib():
                         embedding['embedding'] = GoogleGenerativeAIEmbeddings(model=embedding.get('model'),google_api_key=embedding.get('api_key'))
                     elif embed_type == 'EMBEDDING.OLLAMA':
                         embedding['embedding'] = OllamaEmbeddings(model=embedding.get('model'))
+                    elif embed_type == 'EMBEDDING.HF':
+                        embedding['embedding'] = HuggingFaceBgeEmbeddings()
                     else:
                         raise Exception(f"目前不支持{embedding['type']}嵌入模型")
                 embedding['used'] = embedding.get('used',0) + 1 
@@ -69,7 +75,8 @@ class EmbeddingLib():
         defaults = {
                       "EMBEDDING.TOGETHER": {"model":"BAAI/bge-large-en-v1.5"},
                       "EMBEDDING.GEMINI": {"model":"models/embedding-001"},
-                      "EMBEDDING.OLLAMA": {"model":"mxbai-embed-large"}
+                      "EMBEDDING.OLLAMA": {"model":"mxbai-embed-large"},
+                      "EMBEDDING.HF": {"model":"BAAI/bge-large-en"}
                   }
         for key in defaults:
             default = defaults[key]
@@ -95,11 +102,3 @@ class EmbeddingLib():
                     "used":0,
                     "last_used": 0 
                 })
-                
-    def get_huggingface_embedding(self,mode="BGE"):
-        if mode=="BGE":
-            embedding = HuggingFaceBgeEmbeddings()
-        else:
-            embedding = HuggingFaceBgeEmbeddings()
-        return embedding
-
