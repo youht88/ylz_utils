@@ -31,7 +31,12 @@ LLM:
     MOONSHOT:
         API_KEYS: ${MOONSHOT_API_KEYS}
         BASE_URL: https://api.moonshot.cn/v1
-        MODEL: ${MOONSHOT_LLM_MODEL}    
+        MODEL: ${MOONSHOT_LLM_MODEL}  
+    DEEPBRICKS:
+        API_KEYS: ${DEEPBRICKS_API_KEYS}
+        BASE_URL: https://api.deepbricks.ai/v1
+        MODEL: ${DEEPBRICKS_LLM_MODEL}
+
 EMBEDDING:
     DEFAULT: EMBEDDING.TOGETHER
     TOGETHER: 

@@ -162,7 +162,9 @@ class LLMLib():
                     "LLM.OLLAMA":
                       {"model":"llama3.1","temperature":0.7},
                     "LLM.MOONSHOT":
-                      {"model":"moonshot-v1-8k","temperature":0.3}
+                      {"model":"moonshot-v1-8k","temperature":0.3},
+                    "LLM.DEEPBRICKS":
+                      {"model":"gpt-4o-mini","temperature":0.3},  
                   }
         for key in defaults:
             default = defaults[key]
