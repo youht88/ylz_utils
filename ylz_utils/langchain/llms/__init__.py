@@ -27,6 +27,7 @@ class LLMLib():
     llms:list = [] 
     default_llm_key = None
     chat_dbname:str = None
+    quantization_config=None
     def __init__(self):
         self.config = Config.get()
         self.regist_llm()
@@ -76,7 +77,7 @@ class LLMLib():
         raise Exception("you must give the chat_dbname . please use set_dbname first!")
     def set_quantization_config(self,load_in_8bit: bool = False,
                         load_in_4bit: bool = False,
-                        llm_int8_threshold: float = 6,
+                        llm_int8_threshold: float = 6.0,
                         llm_int8_skip_modules: Any | None = None,
                         llm_int8_enable_fp32_cpu_offload: bool = False,
                         llm_int8_has_fp16_weight: bool = False,
@@ -185,9 +186,12 @@ class LLMLib():
                             print(f"你正在使用hugging face {llm.get('model')},目前处于实验状态.")
                             try:
                                 huggingface_login(llm.get('api_key'))
-                                if not self.quantization_config:
-                                    self.set_quantization_config()
-                                if llm.get('pipeline'):                                    
+                                if llm.get('pipeline'):  
+                                    if not self.quantization_config:
+                                        # only GPU can do this
+                                        model_kwargs={"quantization_config": self.quantization_config}
+                                    else:
+                                        model_kwargs=None
                                     hf_endpoint = HuggingFacePipeline.from_model_id(
                                             model_id= llm.get('model'),
                                             task="text-generation",
@@ -195,7 +199,7 @@ class LLMLib():
                                                 max_new_tokens=512,
                                                 do_sample=False,
                                                 repetition_penalty=1.03),
-                                            model_kwargs={"quantization_config": self.quantization_config}
+                                            model_kwargs= model_kwargs
                                         )
                                 else:
                                     hf_endpoint = HuggingFaceEndpoint(
