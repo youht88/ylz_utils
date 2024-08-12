@@ -57,7 +57,7 @@ class LLMLib():
                 es_password = self.chat_dbname.split('@')[0].split('://')[1].split(":")[1]
                 index_name = self.chat_dbname.split('@')[1].split('/')[1]
                 session_id = f"{user_id}--{conversation_id}"
-                print(es_url,es_username,es_password,index_name,session_id)
+                #print(es_url,es_username,es_password,index_name,session_id)
                 es_connection = create_elasticsearch_client(
                                 url=es_url,
                                 username=es_username,
