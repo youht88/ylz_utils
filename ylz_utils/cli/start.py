@@ -41,10 +41,11 @@ def __agent(langchainLib:LangchainLib,args):
 
 def __llm_test(langchainLib:LangchainLib,args):
     llm_key = args.llm_key
-    for _ in range(3):
-        llm = langchainLib.get_llm(llm_key)
-        res = llm.invoke("hello")
-        print("res:",res)
+    llm_model = args.llm_model
+    message = args.message
+    llm = langchainLib.get_llm(llm_key,llm_model)
+    res = llm.invoke(message)
+    print("res:",res)
     print("llms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.get_llm(full=True)])
 
 def __outputParser_test(langchainLib:LangchainLib,args):
@@ -241,14 +242,14 @@ def start(args):
         #print(docs)
         
         # ## test elasticsearch vectorstore
-        langchainLib.vectorstoreLib.esLib.init_client(es_user="elastic",es_password="9HIMozq48xIP+PHTpRVP")
-        langchainLib.vectorstoreLib.esLib.delete_store("langchain_index")
-        embed = langchainLib.embeddingLib.get_embedding('EMBEDDING.HF')
-        store = langchainLib.vectorstoreLib.esLib.get_store(embedding=embed)
-        ids = langchainLib.vectorstoreLib.esLib.create_from_texts(store,["我是一个科技工作者","树上有一只猴子"])
-        print(ids)
-        res = langchainLib.vectorstoreLib.esLib.search_with_score("我是谁？",store)
-        print(res)
+        # langchainLib.vectorstoreLib.esLib.init_client(es_user="elastic",es_password="9HIMozq48xIP+PHTpRVP")
+        # langchainLib.vectorstoreLib.esLib.delete_store("langchain_index")
+        # embed = langchainLib.embeddingLib.get_embedding('EMBEDDING.HF')
+        # store = langchainLib.vectorstoreLib.esLib.get_store(embedding=embed)
+        # ids = langchainLib.vectorstoreLib.esLib.create_from_texts(store,["我是一个科技工作者","树上有一只猴子"])
+        # print(ids)
+        # res = langchainLib.vectorstoreLib.esLib.search_with_score("我是谁？",store)
+        # print(res)
 
         #embed = langchainLib.embeddingLib.get_embedding()
         #print(embed)

@@ -7,7 +7,7 @@ from langchain_together import TogetherEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_ollama import OllamaEmbeddings
 
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEndpointEmbeddings,HuggingFaceEmbeddings
 
 #from langchain_core.embeddings import FakeEmbeddings
 

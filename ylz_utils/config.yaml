@@ -36,7 +36,10 @@ LLM:
         API_KEYS: ${DEEPBRICKS_API_KEYS}
         BASE_URL: https://api.deepbricks.ai/v1
         MODEL: ${DEEPBRICKS_LLM_MODEL}
-
+    HF:
+        API_KEYS: ${HF_API_KEYS}
+        MODEL: ${HF_LLM_MODEL}
+        PIPELINE: true
 EMBEDDING:
     DEFAULT: EMBEDDING.TOGETHER
     TOGETHER: 

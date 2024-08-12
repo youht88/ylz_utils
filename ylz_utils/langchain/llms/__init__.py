@@ -1,3 +1,4 @@
+from typing import Any
 from ylz_utils.config import Config
 from ylz_utils.data import StringLib
 
@@ -9,11 +10,16 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.chat_models import QianfanChatEndpoint
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_ollama import ChatOllama
+from langchain_huggingface import HuggingFaceEndpoint,HuggingFacePipeline,ChatHuggingFace
+from huggingface_hub import login as huggingface_login
 from langchain_community.chat_message_histories import SQLChatMessageHistory,ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.runnables import ConfigurableFieldSpec
 
 from gradio_client import Client,file
+
+from transformers import BitsAndBytesConfig
+
 
 class LLMLib():
     llms:list = [] 
@@ -44,7 +50,30 @@ class LLMLib():
         if self.chat_dbname:
             return SQLChatMessageHistory(f"{user_id}--{conversation_id}", f"sqlite:///{self.chat_dbname}")
         raise Exception("you must give the chat_dbname . please use set_dbname first!")
-        
+    def set_quantization_config(self,load_in_8bit: bool = False,
+                        load_in_4bit: bool = False,
+                        llm_int8_threshold: float = 6,
+                        llm_int8_skip_modules: Any | None = None,
+                        llm_int8_enable_fp32_cpu_offload: bool = False,
+                        llm_int8_has_fp16_weight: bool = False,
+                        bnb_4bit_compute_dtype: Any | None = None,
+                        bnb_4bit_quant_type: str = "fp4",
+                        bnb_4bit_use_double_quant: bool = False,
+                        bnb_4bit_quant_storage: Any | None = None):
+        self.quantization_config = BitsAndBytesConfig(
+            load_in_8bit = load_in_8bit,
+            load_in_4bit = load_in_4bit,
+            llm_int8_threshold = llm_int8_threshold,
+            llm_int8_skip_modules = llm_int8_skip_modules,
+            llm_int8_enable_fp32_cpu_offload = llm_int8_enable_fp32_cpu_offload,
+            llm_int8_has_fp16_weight = llm_int8_has_fp16_weight,
+            bnb_4bit_compute_dtype = bnb_4bit_compute_dtype,
+            bnb_4bit_quant_type = bnb_4bit_quant_type,
+            bnb_4bit_use_double_quant = bnb_4bit_use_double_quant,
+            bnb_4bit_quant_storage = bnb_4bit_quant_storage
+        )
+    def get_hf_chat(self,llm,prompt,history_messages_key = "history",input_key = "input"):
+        pass
     def get_chat(self,llm,prompt,history_messages_key = "history",input_key = "input"):
         return RunnableWithMessageHistory(
             prompt | llm,
@@ -128,6 +157,33 @@ class LLMLib():
                             except:
                                 raise Exception(f"请确保{llm_type}_API_KEYS环境变量被正确设置")
                             
+                        elif llm_type == 'LLM.HF':
+                            print(f"你正在使用hugging face {llm.get('model')},目前处于实验状态.")
+                            try:
+                                huggingface_login(llm.get('api_key'))
+                                if not self.quantization_config:
+                                    self.set_quantization_config()
+                                if llm.get('pipeline'):                                    
+                                    hf_endpoint = HuggingFacePipeline.from_model_id(
+                                            model_id= llm.get('model'),
+                                            task="text-generation",
+                                            pipeline_kwargs = dict(
+                                                max_new_tokens=512,
+                                                do_sample=False,
+                                                repetition_penalty=1.03),
+                                            model_kwargs={"quantization_config": self.quantization_config}
+                                        )
+                                else:
+                                    hf_endpoint = HuggingFaceEndpoint(
+                                            repo_id= llm.get('model'),
+                                            task="text-generation",
+                                            max_new_tokens=512,
+                                            do_sample=False,
+                                            repetition_penalty=1.03,
+                                        )
+                                llm['llm'] = ChatHuggingFace(llm=hf_endpoint)
+                            except:
+                                raise Exception(f"请确保{llm_type}_API_KEYS环境变量被正确设置")                                
                         else:
                             try:
                                 llm['llm'] = ChatOpenAI(
@@ -164,7 +220,9 @@ class LLMLib():
                     "LLM.MOONSHOT":
                       {"model":"moonshot-v1-8k","temperature":0.3},
                     "LLM.DEEPBRICKS":
-                      {"model":"gpt-4o-mini","temperature":0.3},  
+                      {"model":"gpt-4o-mini","temperature":0.3}, 
+                    "LLM.HF":
+                      {"model":"HuggingFaceH4/zephyr-7b-beta","temperature":0.3},                        
                   }
         for key in defaults:
             default = defaults[key]
@@ -174,6 +232,7 @@ class LLMLib():
             base_url = llm.get("BASE_URL")
             api_keys = llm.get("API_KEYS")
             keep_alive = llm.get("KEEP_ALIVE")
+            pipeline = llm.get("PIPELINE",False)
             if api_keys:
                 api_keys = api_keys.split(",")
                 if not api_keys[-1]:
@@ -206,6 +265,7 @@ class LLMLib():
                     "model":model,
                     "temperature":temperature,
                     "keep_alive":keep_alive,
+                    "pipeline": pipeline,
                     "used":0,
                     "last_used": 0 
                 })
