@@ -170,7 +170,7 @@ class GraphLib():
                         print(f"{Color.LBLUE}AI:{Color.RESET}",f'使用{Color.GREEN}{message.tool_calls[0]["name"]}{Color.RESET},调用参数:{Color.GREEN}{message.tool_calls[0]["args"]}{Color.RESET}')
                     else:
                         print(f"{Color.LBLUE}AI:{Color.RESET}",msg_repr,
-                              f'[model:{Color.LYELLOW}{message.response_metadata["model_name"]}{Color.RESET},token:{Color.LYELLOW}{message.usage_metadata["total_tokens"]}{Color.RESET}]')
+                              f'[model:{Color.LYELLOW}{message.response_metadata.get("model_name")}{Color.RESET},token:{Color.LYELLOW}{message.usage_metadata["total_tokens"]}{Color.RESET}]')
                 elif isinstance(message,ToolMessage):
                     print(f"    {Color.BLUE}Tool:{Color.RESET}",msg_repr)
                 elif isinstance(message,HumanMessage):
