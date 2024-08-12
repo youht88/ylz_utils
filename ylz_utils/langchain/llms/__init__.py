@@ -28,7 +28,8 @@ class LLMLib():
     default_llm_key = None
     chat_dbname:str = None
     quantization_config=None
-    def __init__(self):
+    def __init__(self,langchainLib):
+        self.langchainLib = langchainLib
         self.config = Config.get()
         self.regist_llm()
         if self.config.get("LLM.DEFAULT"):
@@ -258,24 +259,14 @@ class LLMLib():
             if not llm:
                 continue
             base_url = llm.get("BASE_URL")
-            api_keys = llm.get("API_KEYS")
             keep_alive = llm.get("KEEP_ALIVE")
             pipeline = llm.get("PIPELINE",False)
-            if api_keys:
-                api_keys = api_keys.split(",")
-                if not api_keys[-1]:
-                    api_keys.pop()
-            else:
-                api_keys = []
-
+            
+            api_keys = llm.get("API_KEYS")
+            api_keys = self.langchainLib.split_keys(api_keys)
             sec_keys = llm.get("SEC_KEYS")
-            if sec_keys:
-                sec_keys = sec_keys.split(",")
-                # 防止最后
-                if not sec_keys[-1]:
-                    sec_keys.pop()
-            else:
-                sec_keys = []
+            sec_keys = self.langchainLib.split_keys(sec_keys)
+            
             model= llm.get("MODEL") if llm.get("MODEL") else default['model']
             temperature = llm.get("TEMPERATURE") if llm.get("TEMPERATURE") else default['temperature']
             for idx, api_key in enumerate(api_keys):

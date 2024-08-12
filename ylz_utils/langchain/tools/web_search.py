@@ -48,10 +48,7 @@ class WebSearchTool():
             search_config = self.config.get(f"SEARCH_TOOLS.{key}")        
             api_keys = search_config.get("API_KEYS")
             try:
-                if api_keys:
-                    api_keys = api_keys.split(",")
-                else:
-                    api_keys = []
+                api_keys = self.langchainLib.split_keys(api_keys)
                 api_key = random.choice(api_keys)
             except:
                 raise Exception(f"请先设置{key}_API_KEYS环境变量") 

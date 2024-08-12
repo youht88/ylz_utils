@@ -251,8 +251,9 @@ def start(args):
         # res = langchainLib.vectorstoreLib.esLib.search_with_score("我是谁？",store)
         # print(res)
 
-        #embed = langchainLib.embeddingLib.get_embedding()
-        #print(embed)
+        embed = langchainLib.embeddingLib.get_embedding(fake_size=10)
+        print(embed.embed_documents(["hello world","I am fine!"]))
+
         return
         loader = langchainLib.documentLib.pptx.newer("test.pptx")
         loader.add_slide(0).set_title("Hello World","gogogo").add_text("youht",10,10,60,40)

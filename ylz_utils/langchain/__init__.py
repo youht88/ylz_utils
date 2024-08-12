@@ -43,11 +43,11 @@ class LangchainLib():
         self.config = Config.get()
         self.memory = ConversationBufferMemory()
 
-        self.llmLib = LLMLib()
+        self.llmLib = LLMLib(self)
         self.get_chat = self.llmLib.get_chat
         self.get_llm = self.llmLib.get_llm
 
-        self.embeddingLib = EmbeddingLib()
+        self.embeddingLib = EmbeddingLib(self)
         self.get_embedding = self.embeddingLib.get_embedding
 
         self.promptLib = PromptLib()
@@ -119,4 +119,10 @@ class LangchainLib():
             func_name = func.__name__
             cls = item["class"]
             setattr(cls,func_name,get_wrapper(func))
-    
+    def split_keys(self,keys_str):
+        keys = []
+        if keys_str:
+            keys = keys_str.split(",")
+            if not keys[-1]:
+                keys.pop()
+        return keys        

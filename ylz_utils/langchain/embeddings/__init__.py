@@ -1,5 +1,6 @@
 import random
 import time
+from typing import Optional
 
 from ylz_utils import Config
 
@@ -9,12 +10,14 @@ from langchain_ollama import OllamaEmbeddings
 
 from langchain_huggingface import HuggingFaceEndpointEmbeddings,HuggingFaceEmbeddings
 
-#from langchain_core.embeddings import FakeEmbeddings
+from langchain_core.embeddings import DeterministicFakeEmbedding,Embeddings
 
 class EmbeddingLib():
     embeddings:list  = []
     default_embedding_key = None
-    def __init__(self):
+    fake_size:int = 0
+    def __init__(self,langchainLib):
+        self.langchainLib = langchainLib
         self.config = Config.get()
         self.regist_embedding()
         if self.config.get("EMBEDDING.DEFAULT"):
@@ -32,10 +35,18 @@ class EmbeddingLib():
         return self.default_embedding_key
     def clear_default_embedding_key(self):
         self.default_embedding_key=None
-
-    def get_embedding(self,key=None,model=None, full=False) :
+    def set_fake_size(self,size=0):
+        if size:
+            self.fake_size = size
+        else:
+            self.fake_size = 0
+    def get_embedding(self,key=None,model=None, full=False, fake_size: Optional[int]=None) :
         if full:
             return self.embeddings
+        if fake_size:
+            return DeterministicFakeEmbedding(size = fake_size)
+        if self.fake_size:
+            return DeterministicFakeEmbedding(size = self.fake_size)
         if self.embeddings:
             if not key:
                 if self.default_embedding_key:
@@ -85,12 +96,8 @@ class EmbeddingLib():
                 continue
             base_url = embed.get("BASE_URL")
             api_keys = embed.get("API_KEYS")
-            if api_keys:
-                api_keys = api_keys.split(",")
-                if not api_keys[-1]:
-                    api_keys.pop()
-            else:
-                api_keys = []
+            api_keys = self.langchainLib.split_keys(api_keys)
+
             model= embed.get("MODEL") if embed.get("MODEL") else default['model']
             for api_key in api_keys:
                 self.embeddings.append({
@@ -102,3 +109,10 @@ class EmbeddingLib():
                     "used":0,
                     "last_used": 0 
                 })
+    
+    def embed_documents(self,embed:Embeddings,texts:list[str]):
+        return embed.embed_documents(texts)
+    
+    def embed_query(self,embed:Embeddings,text:str):
+        return embed.embed_query(text)
+    
