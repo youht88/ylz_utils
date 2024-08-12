@@ -16,15 +16,15 @@ def start_chat(langchainLib:LangchainLib,args):
     chain = chat | langchainLib.get_outputParser()
     while True:
         if not message:
-            message=input("USER:")
+            message=input("USER: ")
         else:
-            print(f"USER:{message}")
+            print(f"USER: {message}")
         if message.lower() in ['/quit','/exit','/stop','/bye','/q']:
             print("Good bye!!")
             break
         res = chain.stream({"input":message}, {'configurable': {'user_id': user_id,'conversation_id': conversation_id}} )
         message = ""
-        print("AI:",end="")
+        print("AI: ",end="")
         for chunk in res:
             print(chunk,end="")
         print("\n")

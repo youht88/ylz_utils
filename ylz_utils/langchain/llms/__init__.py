@@ -1,4 +1,7 @@
+import platform
 from typing import Any
+
+from langchain_elasticsearch.client import create_elasticsearch_client 
 from ylz_utils.config import Config
 from ylz_utils.data import StringLib
 
@@ -8,11 +11,10 @@ import random
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.chat_models import QianfanChatEndpoint
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_ollama import ChatOllama
 from langchain_huggingface import HuggingFaceEndpoint,HuggingFacePipeline,ChatHuggingFace
 from huggingface_hub import login as huggingface_login
-from langchain_community.chat_message_histories import SQLChatMessageHistory,ChatMessageHistory
+from langchain_community.chat_message_histories import SQLChatMessageHistory,ChatMessageHistory,ElasticsearchChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.runnables import ConfigurableFieldSpec
 
@@ -24,7 +26,7 @@ from transformers import BitsAndBytesConfig
 class LLMLib():
     llms:list = [] 
     default_llm_key = None
-    chat_dbname = None
+    chat_dbname:str = None
     def __init__(self):
         self.config = Config.get()
         self.regist_llm()
@@ -48,7 +50,29 @@ class LLMLib():
         self.chat_dbname = dbname
     def get_user_session_history(self, user_id: str, conversation_id: str):
         if self.chat_dbname:
-            return SQLChatMessageHistory(f"{user_id}--{conversation_id}", f"sqlite:///{self.chat_dbname}")
+            if self.chat_dbname.startswith("es://"):
+                # es://username:password@127.0.0.1:9200/index_name
+                es_url = f"https://{self.chat_dbname.split('@')[1].split('/')[0]}"
+                es_username = self.chat_dbname.split('@')[0].split('://')[1].split(":")[0]
+                es_password = self.chat_dbname.split('@')[0].split('://')[1].split(":")[1]
+                index_name = self.chat_dbname.split('@')[1].split('/')[1]
+                session_id = f"{user_id}--{conversation_id}"
+                print(es_url,es_username,es_password,index_name,session_id)
+                es_connection = create_elasticsearch_client(
+                                url=es_url,
+                                username=es_username,
+                                password=es_password,
+                                params = {"verify_certs":False,"ssl_show_warn":False},
+                            )
+                return  ElasticsearchChatMessageHistory(
+                            es_connection=es_connection,
+                            index=index_name,
+                            session_id=session_id
+                        )
+            elif self.chat_dbname.startswith("sqlite://"):
+                return SQLChatMessageHistory(f"{user_id}--{conversation_id}", f"{self.chat_dbname}")
+            else:
+                return SQLChatMessageHistory(f"{user_id}--{conversation_id}", f"sqlite:///{self.chat_dbname}")
         raise Exception("you must give the chat_dbname . please use set_dbname first!")
     def set_quantization_config(self,load_in_8bit: bool = False,
                         load_in_4bit: bool = False,
@@ -110,7 +134,7 @@ class LLMLib():
                 else:
                     llms = self.llms
             else:
-                if key == "LLM.GEMINI":
+                if key == "LLM.GEMINI" and platform.system() == "Darwin":
                     #macos不支持
                     llms=[]
                 else:
@@ -210,7 +234,7 @@ class LLMLib():
                    "LLM.GROQ":
                       {"model":"llama-3.1-70b-versatile","temperature":0},
                    "LLM.GEMINI":
-                      {"model":"gemini-pro","temperature":0},
+                      {"model":"gemini-1.5-pro","temperature":0},
                     "LLM.DEEPSEEK":
                       {"model":"deepseek-chat","temperature":1},
                     "LLM.QIANFAN":
