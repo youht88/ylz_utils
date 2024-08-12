@@ -7,10 +7,8 @@ from langchain_together import TogetherEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_ollama import OllamaEmbeddings
 
-from langchain_community.embeddings import (
-    HuggingFaceEmbeddings,
-    HuggingFaceBgeEmbeddings,
-)
+from langchain_huggingface import HuggingFaceEmbeddings
+
 #from langchain_core.embeddings import FakeEmbeddings
 
 class EmbeddingLib():
@@ -60,7 +58,9 @@ class EmbeddingLib():
                     elif embed_type == 'EMBEDDING.OLLAMA':
                         embedding['embedding'] = OllamaEmbeddings(model=embedding.get('model'))
                     elif embed_type == 'EMBEDDING.HF':
-                        embedding['embedding'] = HuggingFaceBgeEmbeddings()
+                        embedding['embedding'] = HuggingFaceEmbeddings(model_name=embedding.get('model'),
+                                                                       model_kwargs = {'device': 'cpu'},
+                                                                       encode_kwargs = {'normalize_embeddings': False})
                     else:
                         raise Exception(f"目前不支持{embedding['type']}嵌入模型")
                 embedding['used'] = embedding.get('used',0) + 1 
@@ -76,7 +76,7 @@ class EmbeddingLib():
                       "EMBEDDING.TOGETHER": {"model":"BAAI/bge-large-en-v1.5"},
                       "EMBEDDING.GEMINI": {"model":"models/embedding-001"},
                       "EMBEDDING.OLLAMA": {"model":"mxbai-embed-large"},
-                      "EMBEDDING.HF": {"model":"BAAI/bge-large-en"}
+                      "EMBEDDING.HF": {"model":"BAAI/bge-large-en"}  #"sentence-transformers/all-mpnet-base-v2"
                   }
         for key in defaults:
             default = defaults[key]

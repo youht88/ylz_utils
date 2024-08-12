@@ -247,7 +247,7 @@ def start(args):
         store = langchainLib.vectorstoreLib.esLib.get_store(embedding=embed)
         ids = langchainLib.vectorstoreLib.esLib.create_from_texts(store,["我是一个科技工作者","树上有一只猴子"])
         print(ids)
-        res = langchainLib.vectorstoreLib.esLib.search_with_score("你在那里上班",store)
+        res = langchainLib.vectorstoreLib.esLib.search_with_score("我是谁？",store)
         print(res)
 
         #embed = langchainLib.embeddingLib.get_embedding()
