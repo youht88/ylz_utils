@@ -242,7 +242,7 @@ def start(args):
         #print(docs)
         
         # ## test elasticsearch vectorstore
-        # langchainLib.vectorstoreLib.esLib.init_client(es_user="elastic",es_password="9HIMozq48xIP+PHTpRVP")
+        # langchainLib.vectorstoreLib.esLib.init_client(es_user="elastic")
         # langchainLib.vectorstoreLib.esLib.delete_store("langchain_index")
         # embed = langchainLib.embeddingLib.get_embedding('EMBEDDING.HF')
         # store = langchainLib.vectorstoreLib.esLib.get_store(embedding=embed)

@@ -4,15 +4,21 @@ from langchain_core.documents import Document
 from tqdm import tqdm
 from typing import List
 
+from ylz_utils.config import Config
+
 class ESLib():
     def __init__(self,langchainLib):
+        self.config = Config()
         self.langchainLib = langchainLib
         self.client = None
-    def init_client(self,host="https://localhost:9200",es_user="elastic",es_password="changeme"):
+        self.es_host=self.config.get("ES.HOST")
+        self.es_user=self.config.get("ES.USER")
+        self.es_password=self.config.get("ES.PASSWORD")
+    def init_client(self,host,es_user,es_password):
         es_connection = create_elasticsearch_client(
-                url=host,
-                username=es_user,
-                password=es_password,
+                url=host or self.es_host,
+                username=es_user or self.es_user,
+                password=es_password or self.es_password,
                 params = {"verify_certs":False,"ssl_show_warn":False},
             )
         self.client = es_connection

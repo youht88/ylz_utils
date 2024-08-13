@@ -9,7 +9,7 @@ from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage,HumanMessage
 
-from langchain.memory import ConversationBufferMemory
+
 
 from langchain.docstore.document import Document
 
@@ -29,6 +29,7 @@ from ylz_utils.langchain.graph import GraphLib
 from ylz_utils.langchain.llms import LLMLib
 from ylz_utils.langchain.embeddings import EmbeddingLib
 from ylz_utils.langchain.documents import DocumentLib
+from ylz_utils.langchain.memory import MemoryLib
 from ylz_utils.langchain.prompts import PromptLib
 from ylz_utils.langchain.output_parsers import OutputParserLib
 from ylz_utils.langchain.splitters import SplitterLib
@@ -59,7 +60,8 @@ class LangchainLib():
                     os.environ["LANGSMITH_API_KEY"]=langsmith_api_key
         print("smith_tracing=",os.environ.get("LANGSMITH_TRACING_V2"))
         print("smith_api_key=",os.environ.get("LANGSMITH_API_KEY"))
-        self.memory = ConversationBufferMemory()
+        
+        self.memoryLib = MemoryLib(self)
 
         self.llmLib = LLMLib(self)
         self.get_chat = self.llmLib.get_chat

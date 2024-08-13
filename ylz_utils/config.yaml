@@ -59,3 +59,7 @@ EMBEDDING:
 SEARCH_TOOLS:
     TAVILY:
         API_KEYS: ${TAVILY_API_KEYS}
+ES:
+    HOST: https://localhost:9200
+    USER: elastic
+    PASSWORD: ${ES_PASSWORD}

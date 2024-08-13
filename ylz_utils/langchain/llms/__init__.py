@@ -1,7 +1,6 @@
 import platform
 from typing import Any
 
-from langchain_elasticsearch.client import create_elasticsearch_client 
 from ylz_utils.config import Config
 from ylz_utils.data import StringLib
 
@@ -14,7 +13,6 @@ from langchain_community.chat_models import QianfanChatEndpoint
 from langchain_ollama import ChatOllama
 from langchain_huggingface import HuggingFaceEndpoint,HuggingFacePipeline,ChatHuggingFace
 from huggingface_hub import login as huggingface_login
-from langchain_community.chat_message_histories import SQLChatMessageHistory,ChatMessageHistory,ElasticsearchChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.runnables import ConfigurableFieldSpec
 
@@ -51,31 +49,7 @@ class LLMLib():
     def set_dbname(self,dbname):
         self.chat_dbname = dbname
     def get_user_session_history(self, user_id: str, conversation_id: str):
-        if self.chat_dbname:
-            if self.chat_dbname.startswith("es://"):
-                # es://username:password@127.0.0.1:9200/index_name
-                es_url = f"https://{self.chat_dbname.split('@')[1].split('/')[0]}"
-                es_username = self.chat_dbname.split('@')[0].split('://')[1].split(":")[0]
-                es_password = self.chat_dbname.split('@')[0].split('://')[1].split(":")[1]
-                index_name = self.chat_dbname.split('@')[1].split('/')[1]
-                session_id = f"{user_id}--{conversation_id}"
-                #print(es_url,es_username,es_password,index_name,session_id)
-                es_connection = create_elasticsearch_client(
-                                url=es_url,
-                                username=es_username,
-                                password=es_password,
-                                params = {"verify_certs":False,"ssl_show_warn":False},
-                            )
-                return  ElasticsearchChatMessageHistory(
-                            es_connection=es_connection,
-                            index=index_name,
-                            session_id=session_id
-                        )
-            elif self.chat_dbname.startswith("sqlite://"):
-                return SQLChatMessageHistory(f"{user_id}--{conversation_id}", f"{self.chat_dbname}")
-            else:
-                return SQLChatMessageHistory(f"{user_id}--{conversation_id}", f"sqlite:///{self.chat_dbname}")
-        raise Exception("you must give the chat_dbname . please use set_dbname first!")
+        return self.langchainLib.memoryLib.getMemory(self.chat_dbname,user_id,conversation_id)
     def set_quantization_config(self,load_in_8bit: bool = False,
                         load_in_4bit: bool = False,
                         llm_int8_threshold: float = 6.0,

@@ -7,24 +7,27 @@ from elasticsearch_dsl import Search,Q,FacetedSearch,MultiSearch
 from elasticsearch_dsl.query import MultiMatch
 from typing import Optional,Union,Literal
 
+from ylz_utils.config import Config
+
 class ESLib():
     using = None
     analyzer='ik_max_word'
     search_analyzer='ik_smart'
     indexes = {}
-    def __init__(self,hosts:list[str]=['https://localhost:9200'],
-                 es_user:str = 'elastic',
-                 es_password:str = 'changeme',
+    def __init__(self,hosts:str=None,
+                 es_user:str=None ,
+                 es_password:str=None ,
                  using:str = "es",
                  verify_certs=False,
                  ssl_show_warn=False,
                  analyzer='ik_max_word',search_analyzer='ik_smart'):
+        self.config = Config()
         self.using = using
         self.analyzer = analyzer
         self.search_analyzer = search_analyzer
         connections.create_connection(
-            hosts=hosts,
-            basic_auth=(es_user,es_password),
+            hosts=hosts or self.config.get("ES.HOST"),
+            basic_auth=(es_user or self.config.get("ES.USER"),es_password or self.config.get("ES.PASSWORD")),
             alias=using,
             verify_certs=verify_certs,
             ssl_show_warn=ssl_show_warn
@@ -169,7 +172,8 @@ class ESLib():
         return doc.delete(using=self.using)
         
 if __name__ == '__main__':
-    esLib = ESLib(es_user='elastic',es_password='9HIMozq48xIP+PHTpRVP',using='es')
+    Config.init('ylz_utils')
+    esLib = ESLib(using='es')
     class Product(Document):
         id = Integer()
         name = Text(analyzer='ik_max_word',search_analyzer='ik_smart',fields={'keyword':Keyword()})
