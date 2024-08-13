@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ylz_utils.langchain import LangchainLib
+
 import random
 import time
 from typing import Optional
@@ -16,7 +21,7 @@ class EmbeddingLib():
     embeddings:list  = []
     default_embedding_key = None
     fake_size:int = 0
-    def __init__(self,langchainLib):
+    def __init__(self,langchainLib:LangchainLib):
         self.langchainLib = langchainLib
         self.config = Config.get()
         self.regist_embedding()

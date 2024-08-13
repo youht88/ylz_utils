@@ -1,20 +1,26 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ylz_utils.langchain import LangchainLib
+
 from langchain_elasticsearch import ElasticsearchStore,DenseVectorStrategy
 from langchain_elasticsearch.client import create_elasticsearch_client
 from langchain_core.documents import Document
 from tqdm import tqdm
 from typing import List
 
+
 from ylz_utils.config import Config
 
 class ESLib():
-    def __init__(self,langchainLib):
+    def __init__(self,langchainLib:LangchainLib):
         self.config = Config()
         self.langchainLib = langchainLib
         self.client = None
         self.es_host=self.config.get("ES.HOST")
         self.es_user=self.config.get("ES.USER")
         self.es_password=self.config.get("ES.PASSWORD")
-    def init_client(self,host=None,es_user=None,es_password=None,connect_string=None):
+    def init_client(self,host=None,es_user=None,es_password=None,connect_string:str=None):
         if connect_string:
             if connect_string.startswith("es:///"):
                 es_url = self.config.get("ES.HOST")

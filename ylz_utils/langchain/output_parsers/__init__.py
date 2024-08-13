@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ylz_utils.langchain import LangchainLib
+    
 from langchain_core.output_parsers import StrOutputParser,JsonOutputParser
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain.output_parsers import OutputFixingParser

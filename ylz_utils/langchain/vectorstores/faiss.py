@@ -1,10 +1,15 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ylz_utils.langchain import LangchainLib
+
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from tqdm import tqdm
 from typing import List
 
 class FaissLib():
-    def __init__(self,langchainLib):
+    def __init__(self,langchainLib:LangchainLib):
         self.langchainLib = langchainLib
 
     def create_from_docs(self,docs,embedding=None) -> FAISS:

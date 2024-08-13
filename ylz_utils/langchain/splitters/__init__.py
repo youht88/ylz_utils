@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ylz_utils.langchain import LangchainLib
+    
 import re
 
 from langchain.docstore.document import Document

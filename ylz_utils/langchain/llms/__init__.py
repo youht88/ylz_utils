@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ylz_utils.langchain import LangchainLib
+
 import platform
 from typing import Any
 
@@ -26,7 +31,7 @@ class LLMLib():
     default_llm_key = None
     chat_dbname:str = None
     quantization_config=None
-    def __init__(self,langchainLib):
+    def __init__(self,langchainLib:LangchainLib):
         self.langchainLib = langchainLib
         self.config = Config.get()
         self.regist_llm()

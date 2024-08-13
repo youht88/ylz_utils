@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ylz_utils.langchain import LangchainLib
+
 import random
 import re
 
@@ -10,7 +15,7 @@ from langchain.docstore.document import Document
 from langchain_core.runnables import RunnableLambda
 
 class WebSearchTool():
-    def __init__(self,langchainLib):
+    def __init__(self,langchainLib:LangchainLib):
         self.langchainLib = langchainLib
         self.config = langchainLib.config
     def get_tool_wrapper(self):

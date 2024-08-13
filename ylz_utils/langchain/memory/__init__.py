@@ -1,4 +1,8 @@
-#self.memoryLib = ConversationBufferMemory()
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ylz_utils.langchain import LangchainLib
+
 from langchain.memory import ConversationBufferMemory
 from langchain_elasticsearch import ElasticsearchChatMessageHistory
 from langchain_community.chat_message_histories import SQLChatMessageHistory,ChatMessageHistory,ElasticsearchChatMessageHistory
@@ -7,7 +11,7 @@ from langchain_elasticsearch.client import create_elasticsearch_client
 from ylz_utils.config import Config 
 
 class MemoryLib():
-    def __init__(self,langchainLib):
+    def __init__(self,langchainLib:LangchainLib):
         self.langchainLib = langchainLib
         self.config = Config()
     def get_memory(self,dbname:str,user_id:str,conversation_id:str):

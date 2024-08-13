@@ -1,9 +1,14 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ylz_utils.langchain import LangchainLib
+
 from langchain_community.document_loaders import RecursiveUrlLoader
 from langchain_community.document_transformers import MarkdownifyTransformer
 from langchain_core.documents import Document
 
 class UrlLib():
-    def __init__(self,langchainLib):
+    def __init__(self,langchainLib:LangchainLib):
         self.langchainLib = langchainLib
     def loader(self, url, max_depth=2, extractor=None, metadata_extractor=None):
         #"./example_data/fake.docx"
