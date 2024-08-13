@@ -14,15 +14,36 @@ class ESLib():
         self.es_host=self.config.get("ES.HOST")
         self.es_user=self.config.get("ES.USER")
         self.es_password=self.config.get("ES.PASSWORD")
-    def init_client(self,host,es_user,es_password):
-        es_connection = create_elasticsearch_client(
+    def init_client(self,host=None,es_user=None,es_password=None,connect_string=None):
+        if connect_string:
+            if connect_string.startswith("es:///"):
+                es_url = self.config.get("ES.HOST")
+                es_username = self.config.get("ES.USER")
+                es_password = self.config.get("ES.PASSWORD")
+                index_name = connect_string.split(':///')[1]
+            else:
+                es_url = f"https://{connect_string.split('@')[1].split('/')[0]}"
+                es_username = connect_string.split('@')[0].split('://')[1].split(":")[0]
+                es_password = connect_string.split('@')[0].split('://')[1].split(":")[1]
+                index_name = connect_string.split('@')[1].split('/')[1]
+            es_connection = create_elasticsearch_client(
+                url=es_url or self.es_host,
+                username=es_username or self.es_user,
+                password=es_password or self.es_password,
+                params = {"verify_certs":False,"ssl_show_warn":False},
+            )
+        else:
+            es_connection = create_elasticsearch_client(
                 url=host or self.es_host,
                 username=es_user or self.es_user,
                 password=es_password or self.es_password,
                 params = {"verify_certs":False,"ssl_show_warn":False},
             )
+            index_name = None
         self.client = es_connection
-    def get_store(self,index_name="langchain_index",embedding=None) -> ElasticsearchStore:
+        return self.client,index_name
+    
+    def get_store(self,index_name="langchain_index",embedding=None) -> ElasticsearchStore:        
         if not embedding:
             embedding = self.langchainLib.get_embedding()
         return ElasticsearchStore(

@@ -22,6 +22,7 @@ class MemoryLib():
                     es_url = self.config.get("ES.HOST")
                     es_username = self.config.get("ES.USER")
                     es_password = self.config.get("ES.PASSWORD")
+                    index_name = dbname.split(':///')[1]
                 else:
                     es_url = f"https://{dbname.split('@')[1].split('/')[0]}"
                     es_username = dbname.split('@')[0].split('://')[1].split(":")[0]
