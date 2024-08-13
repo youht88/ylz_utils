@@ -38,7 +38,7 @@ class GraphLib():
 
         self.llm_with_tools = None
     def set_dbname(self,dbname):
-        "checkpoint.sqlite"
+        # "checkpoint.sqlite"
         self.memory = SqliteSaver.from_conn_string(dbname)
     def set_ragsearch_tool(self,retriever):
         name = "rag_searcher"
@@ -99,7 +99,7 @@ class GraphLib():
             return "human"
         return tools_condition(state)
      
-    def get_graph(self,llm_key=None,llm_model=None):
+    def get_graph(self,llm_key=None,llm_model=None) -> CompiledStateGraph:
         llm = self.langchainLib.get_llm(llm_key,llm_model)
         tools = [
             self.python_repl_tool,
@@ -176,7 +176,8 @@ class GraphLib():
                 elif isinstance(message,HumanMessage):
                     print(f"{Color.BLUE}User:{Color.RESET} {msg_repr}")
                 _printed.add(message.id)
-    def graph_get_state_history(self,graph,thread_id="default-default"):
+                
+    def graph_get_state_history(self,graph:CompiledStateGraph,thread_id="default-default"):
         state_history = graph.get_state_history(config = {"configurable":{"thread_id":thread_id}} )
         for state in state_history:
             print("Num Messages: ", len(state.values["messages"]), "Next: ", state.next)
