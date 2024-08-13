@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from ylz_utils.langchain import LangchainLib
 
@@ -19,6 +20,7 @@ from langgraph.graph.state import CompiledStateGraph
 from ylz_utils.file import FileLib
 from ylz_utils.data import StringLib,Color
 from ylz_utils.langchain.graph.stand_graph import StandGraph
+from ylz_utils.langchain.graph.test_graph import TestGraph
 
 
 
@@ -32,6 +34,7 @@ class GraphLib():
         self.python_repl_tool = langchainLib.get_python_repl_tool()
         self.memory = SqliteSaver.from_conn_string(db_conn_string)
         self.stand_graph = StandGraph(self)
+        self.test_graph = TestGraph(self)
 
     def set_dbname(self,dbname):
         # "checkpoint.sqlite"
@@ -49,9 +52,9 @@ class GraphLib():
             tool_call_id = ai_message.tools_calls[0]["id"]
         )
          
-    def get_graph(self,llm_key=None,llm_model=None,key:Literal['stand_graph']='stand_graph',):
-        if key=='other_graph':
-            pass
+    def get_graph(self,llm_key=None,llm_model=None,key:Literal['stand_graph','test_graph']='stand_graph',):
+        if key=='test_graph':
+            return self.test_graph.get_graph(llm_key=llm_key,llm_model=llm_model)
         else:
             return self.stand_graph.get_graph(llm_key=llm_key,llm_model=llm_model)
 

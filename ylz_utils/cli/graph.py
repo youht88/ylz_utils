@@ -11,7 +11,7 @@ def input_with_readline(prompt):
 def start_graph(langchainLib:LangchainLib,args):
     # # 设置标准输入为 UTF-8 编码
     # sys.stdin = codecs.getreader('utf-8')(sys.stdin.detach())
-
+    graph_key = args.graph or 'stand_graph'
     llm_key = args.llm_key
     llm_model = args.llm_model
     message = args.message
@@ -32,7 +32,7 @@ def start_graph(langchainLib:LangchainLib,args):
         langchainLib.graphLib.set_websearch_tool(websearch_key)
         print("!!!",f"使用搜索工具{websearch_key}")
         
-    graph = langchainLib.get_graph(llm_key=llm_key,llm_model=llm_model)
+    graph = langchainLib.get_graph(llm_key=llm_key,llm_model=llm_model,key=graph_key)
     system_message = \
 """
 请始终使用中文，并确保中文正确。

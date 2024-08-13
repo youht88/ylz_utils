@@ -31,6 +31,7 @@ class ConfigObject:
             
 class Config:
   __config: ConfigObject = None
+  project_name = None
   @classmethod
   def init(cls, project_name, config_path=None):
     """
@@ -48,6 +49,7 @@ class Config:
               #project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
               config_path = os.path.join(home, f'.{project_name}', 'config.yaml')
         cls.__config = ConfigObject(FileLib.loadYaml(config_path))
+        Config.project_name = project_name
     except:
         raise Exception(f"请将config.yaml配置文件拷贝到当前目录或{home}/.{project_name}下,也可以通过--env参数指定正确的config.yaml文件位置")
   @classmethod

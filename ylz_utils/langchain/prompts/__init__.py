@@ -1,15 +1,20 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from ylz_utils.langchain import LangchainLib
     
 from langchain_core.prompts import ChatPromptTemplate,PromptTemplate,SystemMessagePromptTemplate
 from langchain_core.prompt_values import StringPromptValue,ChatPromptValue
+from langchain_core.pydantic_v1 import BaseModel
 
 from ylz_utils.data import StringLib
 
 class PromptLib():
-    def get_prompt(self,system_prompt=None,human_keys={"input":""},outputParser=None,history_messages_key="history",use_chat = False,use_chinese=True) -> ChatPromptTemplate:
+    def get_prompt(self,system_prompt=None,human_keys={"input":""},
+                   outputParser:Optional[BaseModel]=None,
+                   history_messages_key="history",
+                   use_chat = False,
+                   use_chinese=True) -> ChatPromptTemplate:
             if not system_prompt:
                 system_prompt=""
             if use_chinese:
