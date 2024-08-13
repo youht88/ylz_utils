@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ylz_utils.langchain import LangchainLib
+
 from operator import itemgetter
 from typing import Literal,List,Annotated
 from langchain_core.messages import SystemMessage,HumanMessage,AIMessage,BaseMessage,ToolMessage
@@ -6,7 +11,6 @@ from typing_extensions import TypedDict
 from langchain_core.tools import tool,Tool
 from langchain_core.runnables import RunnablePassthrough,RunnableLambda,RunnableParallel
 from langgraph.graph import START,END,StateGraph,MessagesState
-from langgraph.graph.message import add_messages
 from langgraph.checkpoint.sqlite import SqliteSaver
 
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -14,12 +18,12 @@ from langgraph.graph.state import CompiledStateGraph
 
 from ylz_utils.file import FileLib
 from ylz_utils.data import StringLib,Color
-from ylz_utils.langchain.graph.common import State
 from ylz_utils.langchain.graph.stand_graph import StandGraph
-#from ylz_utils.langchain import LangchainLib 
+
+
 
 class GraphLib():
-    def __init__(self,langchainLib,db_conn_string=":memory:"):
+    def __init__(self,langchainLib:LangchainLib,db_conn_string=":memory:"):
         self.langchainLib = langchainLib
         #self.websearch_tool = self.set_websearch_tool(websearch_key)        
         #self.ragsearch_tool = langchainLib.get_ragsearch_tool(retriever)
@@ -27,10 +31,8 @@ class GraphLib():
         self.ragsearch_tool = None
         self.python_repl_tool = langchainLib.get_python_repl_tool()
         self.memory = SqliteSaver.from_conn_string(db_conn_string)
-
-        self.llm_with_tools = None
-
         self.stand_graph = StandGraph(self)
+
     def set_dbname(self,dbname):
         # "checkpoint.sqlite"
         self.memory = SqliteSaver.from_conn_string(dbname)
@@ -41,45 +43,12 @@ class GraphLib():
     def set_websearch_tool(self,websearch_key):
         self.websearch_tool = self.langchainLib.get_websearch_tool(websearch_key)
     
-    def translate_to_en(self,state:State):
-        return state
-        content = state["messages"][-1].content
-        prompt = self.langchainLib.get_prompt(
-"""
-将以下句子翻译成英文,注意不要遗漏任何信息，数字不是整数的话要保留所有整数和小数，不要翻译任何公司或人名
-然后一步一步获得最终答案
-""",
-        use_chat=False)
-        #llm = self.langchainLib.get_llm(model = "llama3-groq-70b-8192-tool-use-preview")
-        #llm = self.langchainLib.get_llm(model = "llama3-70b-8192")
-        llm = self.langchainLib.get_llm(key = "LLM.TOGETHER")
-        chain = prompt | llm
-        response = chain.invoke({"input":content})
-        return {"messages":[response],"ask_human":False}
-    
-    
     def create_response(self, response: str, ai_message: AIMessage):
         return ToolMessage(
             content = response,
             tool_call_id = ai_message.tools_calls[0]["id"]
         )
-    
-    def human_node(self, state: State):
-        new_messages = []
-        if not isinstance(state["messages"][-1],ToolMessage):
-            new_messages.append(
-                self.create_response("No response from human.",state["messages"][-1])
-            )
-        return {
-            "messages": new_messages,
-            "ask_human": False
-        }
-    
-    def select_next_node(self, state:State) -> Literal["human","tools","__end__"]:
-        if state["ask_human"]:
-            return "human"
-        return tools_condition(state)
-     
+         
     def get_graph(self,llm_key=None,llm_model=None,key:Literal['stand_graph']='stand_graph',):
         if key=='other_graph':
             pass
