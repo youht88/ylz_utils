@@ -116,8 +116,8 @@ class LLMLib():
                 else:
                     llms = [item for item in self.llms if item['type']==key]
             key_sets = set([item.get('type') for item in llms])
-            if len(key_sets)!=1:
-                raise Exception(f"请确保可选的llm_key只有一种,然后调用regist_llm注册语言模型")
+            if len(key_sets) > 1:
+                raise Exception(f"请确保可选的llm_key({key_sets})只有一种,然后调用regist_llm注册语言模型")
             if llms:
                 while True:
                     llm = random.choice(llms) 

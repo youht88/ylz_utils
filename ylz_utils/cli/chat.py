@@ -1,5 +1,12 @@
 from ylz_utils.langchain import LangchainLib
 
+def input_with_readline(prompt):
+    try:
+        return input(prompt)
+    except UnicodeDecodeError:
+        print("输入的内容存在编码问题，请确保使用 UTF-8 编码的字符，并不要使用回退键。")
+        return input_with_readline(prompt)
+    
 def start_chat(langchainLib:LangchainLib,args):
     llm_key = args.llm_key
     message = args.message
@@ -16,7 +23,7 @@ def start_chat(langchainLib:LangchainLib,args):
     chain = chat | langchainLib.get_outputParser()
     while True:
         if not message:
-            message=input("USER: ")
+            message=input_with_readline("USER: ")
         else:
             print(f"USER: {message}")
         if message.lower() in ['/quit','/exit','/stop','/bye','/q']:

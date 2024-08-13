@@ -1,7 +1,17 @@
 from ylz_utils.langchain import LangchainLib
 from langchain_core.messages import HumanMessage,ToolMessage
 
+def input_with_readline(prompt):
+    try:
+        return input(prompt)
+    except UnicodeDecodeError:
+        print("输入的内容存在编码问题，请确保使用 UTF-8 编码的字符，并不要使用回退键。")
+        return input_with_readline(prompt)
+    
 def start_graph(langchainLib:LangchainLib,args):
+    # # 设置标准输入为 UTF-8 编码
+    # sys.stdin = codecs.getreader('utf-8')(sys.stdin.detach())
+
     llm_key = args.llm_key
     llm_model = args.llm_model
     message = args.message
@@ -34,7 +44,8 @@ def start_graph(langchainLib:LangchainLib,args):
 """
     while True:
         if not message:
-            message = input("User Input: ")
+            #message = input("User Input: ")
+            message = input_with_readline("User Input: ")
         else:
             print(f"User:{message}")
         if message.lower() in ["/quit", "/exit", "/stop","/q","/bye"]:
@@ -47,7 +58,7 @@ def start_graph(langchainLib:LangchainLib,args):
         if snapshot.next: 
             question = snapshot.values["messages"][-1].tool_calls[0]["args"]["request"]            
             tool_call_id = snapshot.values["messages"][-1].tool_calls[0]["id"]
-            message = input(f"{question}: ")
+            message = input_with_readline("User Input: ")
             if message.strip().lower() != '':
                 tool_message = ToolMessage(tool_call_id=tool_call_id, content=message)
                 langchainLib.graphLib.graph_update_state(graph,thread_id=thread_id, values = {"messages":[tool_message]})
