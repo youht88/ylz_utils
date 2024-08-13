@@ -14,17 +14,9 @@ from langgraph.graph.state import CompiledStateGraph
 
 from ylz_utils.file import FileLib
 from ylz_utils.data import StringLib,Color
-#from ylz_utils.langchain import LangchainLib
-class State(TypedDict):
-    messages: Annotated[list,add_messages]
-    ask_human: bool
-
-class RequestAssistance(BaseModel):
-    """Escalate the conversation to an expert. Use this if you are unable to assist directly or if the user requires support beyond your permissions.
-
-    To use this function, relay the user's 'request' so the expert can provide the right guidance.
-    """
-    request: str    
+from ylz_utils.langchain.graph.common import State
+from ylz_utils.langchain.graph.stand_graph import StandGraph
+#from ylz_utils.langchain import LangchainLib 
 
 class GraphLib():
     def __init__(self,langchainLib,db_conn_string=":memory:"):
@@ -37,6 +29,8 @@ class GraphLib():
         self.memory = SqliteSaver.from_conn_string(db_conn_string)
 
         self.llm_with_tools = None
+
+        self.stand_graph = StandGraph(self)
     def set_dbname(self,dbname):
         # "checkpoint.sqlite"
         self.memory = SqliteSaver.from_conn_string(dbname)
@@ -63,20 +57,7 @@ class GraphLib():
         response = chain.invoke({"input":content})
         return {"messages":[response],"ask_human":False}
     
-    def chatbot(self,state: State):
-        response = self.llm_with_tools.invoke(state["messages"])
-        ask_human = False
-        if response.tool_calls and response.tool_calls[0]["name"] == RequestAssistance.__name__:
-            ask_human = True
-        return {"messages":[response],"ask_human":ask_human}
     
-    def router(self,state:MessagesState)-> Literal["tools","__end__"]:
-            messages = state["messages"]
-            tool_calls = messages[-1].tool_calls
-            if tool_calls:
-                return "tools"
-            else:
-                return END
     def create_response(self, response: str, ai_message: AIMessage):
         return ToolMessage(
             content = response,
@@ -99,44 +80,11 @@ class GraphLib():
             return "human"
         return tools_condition(state)
      
-    def get_graph(self,llm_key=None,llm_model=None) -> CompiledStateGraph:
-        llm = self.langchainLib.get_llm(llm_key,llm_model)
-        tools = [
-            self.python_repl_tool,
-        ]
-        if self.websearch_tool:
-            tools.append(self.websearch_tool)
-        if self.ragsearch_tool:
-            tools.append(self.ragsearch_tool)
-        # tools = [
-        #        Tool(name="websearch",
-        #             description = "the tool when you can not sure,please search from the internet",
-        #             func = websearch
-        #        ),
-        #        Tool(name="python_repl",
-        #             description="when you need to calculation, use python repl tool to execute code ,then return the result to AI.",
-        #             func=self.python_repl_tool)
-        #      ]
-        self.llm_with_tools = llm.bind_tools(tools+[ RequestAssistance ])      
-
-        workflow = StateGraph(State)
-        workflow.add_node("translate",self.translate_to_en)
-        workflow.add_node("chatbot",self.chatbot)
-        workflow.add_node("tools",ToolNode(tools=tools))
-        workflow.add_node("human", self.human_node)
-        
-        workflow.add_conditional_edges("chatbot", self.select_next_node,
-                                       {"human":"human","tools":"tools","__end__":"__end__"})
-        
-        workflow.add_edge(START, "translate")
-        workflow.add_edge("translate","chatbot")
-        workflow.add_edge("tools","chatbot")
-        workflow.add_edge("human","chatbot")
-
-        graph = workflow.compile(checkpointer=self.memory,
-                                 interrupt_before= ["human"])
-
-        return graph    
+    def get_graph(self,llm_key=None,llm_model=None,key:Literal['stand_graph']='stand_graph',):
+        if key=='other_graph':
+            pass
+        else:
+            return self.stand_graph.get_graph(llm_key=llm_key,llm_model=llm_model)
 
     def graph_stream(self,graph,message,thread_id="default-default",system_message=None):    
         messages = []
@@ -153,6 +101,7 @@ class GraphLib():
         _print_set = set()
         for event in events:
             self._print_event(event,_print_set)
+    
     def _print_event(self, event: dict, _printed: set, max_length=1500):
         current_state = event.get("dialog_state")
         if current_state:
