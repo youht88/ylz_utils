@@ -56,10 +56,11 @@ class EmbeddingLib():
                     embeddings = self.embeddings
             else:
                 embeddings = [item for item in self.embeddings if item['type']==key]
+            key_sets = set([item['type'] for item in self.embeddings])
+            if len(key_sets)!=1:
+                raise Exception(f"请确保可选的llm_key只有一种,然后调用regist_llm注册语言模型")
             if embeddings:
                 #embedding = random.choice(embeddings)    
-                if len(embeddings)!=1:
-                    raise Exception("基于安全的考虑，必须指定embedding的key! 比如key=EMBEDDING.HF")
                 embedding = embeddings[0]
                 if not embedding.get('embedding'):
                     embed_type = embedding['type']
