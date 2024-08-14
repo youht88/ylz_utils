@@ -21,6 +21,7 @@ from ylz_utils.file import FileLib
 from ylz_utils.data import StringLib,Color
 from ylz_utils.langchain.graph.stand_graph import StandGraph
 from ylz_utils.langchain.graph.test_graph import TestGraph
+from ylz_utils.langchain.graph.engineer_graph import EngineerGraph
 
 
 
@@ -35,6 +36,7 @@ class GraphLib():
         self.memory = SqliteSaver.from_conn_string(db_conn_string)
         self.stand_graph = StandGraph(self)
         self.test_graph = TestGraph(self)
+        self.engineer_graph = EngineerGraph(self)
 
     def set_dbname(self,dbname):
         # "checkpoint.sqlite"
@@ -52,9 +54,11 @@ class GraphLib():
             tool_call_id = ai_message.tools_calls[0]["id"]
         )
          
-    def get_graph(self,llm_key=None,llm_model=None,key:Literal['stand_graph','test_graph']='stand_graph',):
-        if key=='test_graph':
+    def get_graph(self,llm_key=None,llm_model=None,key:Literal['stand','test','engineer']='stand',):
+        if key=='test':
             return self.test_graph.get_graph(llm_key=llm_key,llm_model=llm_model)
+        elif key=='engineer':
+            return self.engineer_graph.get_graph(llm_key=llm_key,llm_model=llm_model)
         else:
             return self.stand_graph.get_graph(llm_key=llm_key,llm_model=llm_model)
 

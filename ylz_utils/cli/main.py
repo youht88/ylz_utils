@@ -48,7 +48,7 @@ def main():
      
     
     start_parser.add_argument("--size",type=int,help="文档分隔的size") 
-    start_parser.add_argument("--graph",type=str,choices=["stand_graph","test_graph"],help="内置graph的类型") 
+    start_parser.add_argument("--graph",type=str,choices=["stand","test","engineer"],help="内置graph的类型") 
      
 
     # start_parser.add_argument("--only_download",type=bool,default=False,help="仅下载网页html,不进行翻译。默认:False (json模式该参数不起作用)")

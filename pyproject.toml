@@ -53,19 +53,22 @@ pillow-heif = "^0.18.0"
 matplotlib = "^3.9.0"
 unstructured-inference = "^0.7.36"
 
-torch = { version = "^2.4.0", extras = ["cpu"] }
-
 langchain-huggingface = "^0.0.3"
 yfinance = "^0.2.41"
 elasticsearch-dsl = "^8.14.0"
 langchain-elasticsearch = "^0.2.2"
+
+torch = { version = "2.0.0", extras = ["cpu"] }
+elastic-transport = "^8.15.0"
+
+
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 
-# [[tool.poetry.source]]
-# name = "tsinghua"
-# url = "https://pypi.tuna.tsinghua.edu.cn/simple"
-# priority = "default"
+[[tool.poetry.source]]
+name = "tsinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+priority = "primary"
