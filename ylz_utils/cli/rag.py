@@ -18,7 +18,7 @@ def start_rag(langchainLib:LangchainLib,args):
         return
 
     if embedding_key or embedding_model:
-        embedding = langchainLib.get_embedding(embedding_key,embedding_model)
+        embedding = langchainLib.get_embedding(embedding_key,embedding_model,fake_size=100)
     else:
         embedding = None
 

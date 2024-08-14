@@ -54,7 +54,7 @@ class LLMLib():
     def set_dbname(self,dbname):
         self.chat_dbname = dbname
     def get_user_session_history(self, user_id: str, conversation_id: str):
-        return self.langchainLib.memoryLib.getMemory(self.chat_dbname,user_id,conversation_id)
+        return self.langchainLib.memoryLib.get_memory(self.chat_dbname,user_id,conversation_id)
     def set_quantization_config(self,load_in_8bit: bool = False,
                         load_in_4bit: bool = False,
                         llm_int8_threshold: float = 6.0,
@@ -234,7 +234,7 @@ class LLMLib():
                       {"model":"moonshot-v1-8k","temperature":0.3},
                     "LLM.DEEPBRICKS":
                       {"model":"gpt-4o-mini","temperature":0.3}, 
-                    "LLM.HF":
+                    "LLM.HF": 
                       {"model":"HuggingFaceH4/zephyr-7b-beta","temperature":0.3},                        
                   }
         for key in defaults:
