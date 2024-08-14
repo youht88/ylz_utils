@@ -24,7 +24,6 @@ from ylz_utils.langchain.graph.test_graph import TestGraph
 from ylz_utils.langchain.graph.engineer_graph import EngineerGraph
 
 
-
 class GraphLib():
     def __init__(self,langchainLib:LangchainLib,db_conn_string=":memory:"):
         self.langchainLib = langchainLib
@@ -53,14 +52,21 @@ class GraphLib():
             content = response,
             tool_call_id = ai_message.tools_calls[0]["id"]
         )
-         
-    def get_graph(self,llm_key=None,llm_model=None,key:Literal['stand','test','engineer']='stand',):
-        if key=='test':
-            return self.test_graph.get_graph(llm_key=llm_key,llm_model=llm_model)
-        elif key=='engineer':
-            return self.engineer_graph.get_graph(llm_key=llm_key,llm_model=llm_model)
+    def set_graph_node_llms(self,graph_key,node_llms):
+        if graph_key=='stand':
+            self.stand_graph.set_node_llms(node_llms)
+        elif graph_key=='test':
+            self.test_graph.set_node_llms(node_llms)
+        elif graph_key=='engineer':
+            self.engineer_graph.set_node_llms(node_llms)
+
+    def get_graph(self,graph_key:Literal['stand','test','engineer']='stand',llm_key=None,llm_model=None):
+        if graph_key=='test':
+            return self.test_graph.get_graph(llm_key,llm_model)
+        elif graph_key=='engineer':
+            return self.engineer_graph.get_graph(llm_key,llm_model)
         else:
-            return self.stand_graph.get_graph(llm_key=llm_key,llm_model=llm_model)
+            return self.stand_graph.get_graph(llm_key,llm_model)
 
     def graph_stream(self,graph,message,thread_id="default-default",system_message=None):    
         messages = []
@@ -72,7 +78,7 @@ class GraphLib():
         else:
             values = None
         events = graph.stream( values,
-                                config = {"configurable":{"thread_id":thread_id}},
+                                config = {"configurable":{"thread_id":thread_id,"graphLib":self}},
                                 stream_mode = "values")
         _print_set = set()
         for event in events:
@@ -94,8 +100,10 @@ class GraphLib():
                     if message.tool_calls:
                         print(f"{Color.LBLUE}AI:{Color.RESET}",f'使用{Color.GREEN}{message.tool_calls[0]["name"]}{Color.RESET},调用参数:{Color.GREEN}{message.tool_calls[0]["args"]}{Color.RESET}')
                     else:
+                        response_metadata = message.response_metadata 
                         print(f"{Color.LBLUE}AI:{Color.RESET}",msg_repr,
-                              f'[model:{Color.LYELLOW}{message.response_metadata.get("model_name")}{Color.RESET},token:{Color.LYELLOW}{message.usage_metadata["total_tokens"]}{Color.RESET}]')
+                            f'[model:{Color.LYELLOW}{message.response_metadata.get("model_name")}\
+                                {Color.RESET},token:{Color.LYELLOW}{message.response_metadata.get("token_usage",{}).get("total_tokens")}{Color.RESET}]')
                 elif isinstance(message,ToolMessage):
                     print(f"    {Color.BLUE}Tool:{Color.RESET}",msg_repr)
                 elif isinstance(message,HumanMessage):

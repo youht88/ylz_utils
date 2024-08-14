@@ -10,9 +10,9 @@ from langchain_core.messages import SystemMessage,HumanMessage,AIMessage,BaseMes
 
 from langchain_core.pydantic_v1 import BaseModel,Field
 
-class State(TypedDict):
-    messages: Annotated[list,add_messages]
+class State(MessagesState):
     ask_human: bool
+
 class Output(BaseModel):
     originText:str = Field(description="原始文本")
     targetText:str = Field(description="翻译后的文本")
@@ -26,19 +26,21 @@ class TestGraph():
     def get_graph(self,llm_key,llm_model):
         self.llm_key = llm_key
         self.llm_model = llm_model
-        graph_builder = StateGraph(State)
-        graph_builder.add_node("robot",self.robot)
-        graph_builder.add_edge(START,"robot")
-        graph_builder.add_edge("robot",END)
-        graph = graph_builder.compile(self.graphLib.memory)
+        workflow = StateGraph(State)
+        workflow.add_node("robot",self.robot)
+        workflow.add_edge(START,"robot")
+        workflow.add_edge("robot",END)
+        graph = workflow.compile(self.graphLib.memory)
         return graph        
     def robot(self,state:State):
-        outputParser = self.graphLib.langchainLib.get_outputParser(Output)
-        prompt = self.graphLib.langchainLib.get_prompt("把以下文本翻译成中文",outputParser = outputParser)
+        #outputParser = self.graphLib.langchainLib.get_outputParser(Output)
+        #prompt = self.graphLib.langchainLib.get_prompt("把以下文本翻译成中文",outputParser = outputParser)
+        prompt = self.graphLib.langchainLib.get_prompt("把以下文本翻译成中文")      
         llm = self.graphLib.langchainLib.get_llm(self.llm_key,self.llm_model)
-        chain =  llm.with_structured_output(Output)
+        chain =  prompt | llm.with_structured_output(Output)
         message = state["messages"][-1]         
-        translate_dict = chain.invoke(message.content)
-        print(translate_dict.originText,type(translate_dict))
-        return {"messages":[AIMessage(content = str(translate_dict.originText))],"ask_human":False}
+        translate_dict = chain.invoke({"input":message.content})
+        print(translate_dict)
+        
+        return {"messages":[AIMessage(content = str(translate_dict.targetText))],"ask_human":False}
     

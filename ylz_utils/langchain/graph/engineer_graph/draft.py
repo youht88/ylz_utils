@@ -1,6 +1,6 @@
-from langgraph_engineer.loader import load_github_file
-from langgraph_engineer.model import _get_model
-from langgraph_engineer.state import AgentState
+from .loader import load_github_file
+from .llm import _get_llm
+from .state import AgentState
 
 prompt = """You are tasked with answering questions about LangGraph functionality and bugs.
 Here is a long unit test file for LangGraph. This should contain a lot (but possibly not all) \
@@ -37,6 +37,6 @@ def draft_answer(state: AgentState, config):
         {"role": "system", "content": prompt.format(file=file_contents)},
                    {"role": "user", "content": state.get('requirements')}
     ] + state['messages']
-    model = _get_model(config, "openai", "draft_model")
+    model = _get_llm(config,"draft_answer")
     response = model.invoke(messages)
     return {"messages": [response]}

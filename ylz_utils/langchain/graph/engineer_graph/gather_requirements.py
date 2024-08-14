@@ -1,5 +1,5 @@
-from langgraph_engineer.model import _get_model
-from langgraph_engineer.state import AgentState
+from .llm import _get_llm
+from .state import AgentState
 from typing import TypedDict
 from langchain_core.messages import RemoveMessage
 
@@ -26,7 +26,7 @@ def gather_requirements(state: AgentState, config):
     messages = [
        {"role": "system", "content": gather_prompt}
    ] + state['messages']
-    model = _get_model(config, "openai", "gather_model").bind_tools([Build])
+    model = _get_llm(config,"gather_requirements").bind_tools([Build])
     response = model.invoke(messages)
     if len(response.tool_calls) == 0:
         return {"messages": [response]}

@@ -1,6 +1,6 @@
-from langgraph_engineer.loader import load_github_file
-from langgraph_engineer.model import _get_model
-from langgraph_engineer.state import AgentState
+from .loader import load_github_file
+from .llm import _get_llm
+from .state import AgentState
 from langchain_core.messages import AIMessage
 from langchain_core.pydantic_v1 import BaseModel
 
@@ -41,7 +41,7 @@ def critique(state: AgentState, config):
                    {"role": "assistant", "content": state.get('requirements')},
 
                ] + _swap_messages(state['messages'])
-    model = _get_model(config, "openai", "critique_model").with_structured_output(Accept)
+    model = _get_llm(config,"critique").with_structured_output(Accept)
     response = model.invoke(messages)
     accepted = response.accept
     if accepted:
