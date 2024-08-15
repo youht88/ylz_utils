@@ -56,6 +56,7 @@ EMBEDDING:
     HF:
         API_KEYS: ${HF_API_KEYS}
         MODEL: ${HF_EMBEDDING_MODEL}
+        PIPELINE: false
 SEARCH_TOOLS:
     TAVILY:
         API_KEYS: ${TAVILY_API_KEYS}

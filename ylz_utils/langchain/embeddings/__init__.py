@@ -13,7 +13,9 @@ from langchain_together import TogetherEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_ollama import OllamaEmbeddings
 
-from langchain_huggingface import HuggingFaceEndpointEmbeddings,HuggingFaceEmbeddings
+from langchain_huggingface.embeddings import HuggingFaceEndpointEmbeddings,HuggingFaceEmbeddings
+#from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
+from huggingface_hub import login as huggingface_login
 
 from langchain_core.embeddings import DeterministicFakeEmbedding,Embeddings
 
@@ -46,7 +48,7 @@ class EmbeddingLib():
             self.fake_size = size
         else:
             self.fake_size = 0
-    def get_embedding(self,key=None,model=None, full=False, fake_size: Optional[int]=None) :
+    def get_embedding(self,key=None,model=None, full=False, fake_size: Optional[int]=None) -> Embeddings :
         if full:
             return self.embeddings
         if fake_size:
@@ -65,8 +67,12 @@ class EmbeddingLib():
             if len(key_sets) > 1:
                 raise Exception(f"请确保可选的llm_key({key_sets})只有一种,然后调用regist_llm注册语言模型")
             if embeddings:
-                #embedding = random.choice(embeddings)    
-                embedding = embeddings[0]
+                embedding = random.choice(embeddings)    
+                if not model and embedding['embedding']==None:
+                    embedding['model'] = embedding['default_model']
+                elif model and model != embedding.get('model'):
+                    embedding['model'] = model
+                    embedding['embedding'] = None 
                 if not embedding.get('embedding'):
                     embed_type = embedding['type']
                     if  embed_type == 'EMBEDDING.TOGETHER':
@@ -76,9 +82,15 @@ class EmbeddingLib():
                     elif embed_type == 'EMBEDDING.OLLAMA':
                         embedding['embedding'] = OllamaEmbeddings(model=embedding.get('model'))
                     elif embed_type == 'EMBEDDING.HF':
-                        embedding['embedding'] = HuggingFaceEmbeddings(model_name=embedding.get('model'),
-                                                                       model_kwargs = {'device': 'cpu'},
-                                                                       encode_kwargs = {'normalize_embeddings': False})
+                        if embedding.get('pipeline'): 
+                            huggingface_login(embedding.get('api_key'))
+                            # embedding['embedding'] = HuggingFaceEmbeddings(model_name=embedding.get('model'),
+                            #                                            model_kwargs = {'device': 'cpu'},
+                            #                                            encode_kwargs = {'normalize_embeddings': False})
+                            embedding['embedding'] = HuggingFaceEmbeddings()
+                        else:
+                            #embedding['embedding'] = HuggingFaceInferenceAPIEmbeddings(api_key=embedding.get('api_key'), model_name=embedding.get('model'))
+                            embedding['embedding'] = HuggingFaceEndpointEmbeddings(huggingfacehub_api_token=embedding.get('api_key'))
                     else:
                         raise Exception(f"目前不支持{embedding['type']}嵌入模型")
                 embedding['used'] = embedding.get('used',0) + 1 
@@ -96,7 +108,7 @@ class EmbeddingLib():
                       "EMBEDDING.TOGETHER": {"model":"BAAI/bge-large-en-v1.5"},
                       "EMBEDDING.GEMINI": {"model":"models/embedding-001"},
                       "EMBEDDING.OLLAMA": {"model":"mxbai-embed-large"},
-                      "EMBEDDING.HF": {"model":"BAAI/bge-large-en"}  #"sentence-transformers/all-mpnet-base-v2"
+                      "EMBEDDING.HF": {"model":"Alibaba-NLP/gte-large-en-v1.5"}  #"sentence-transformers/all-mpnet-base-v2" #"BAAI/bge-large-en"
                   }
         for key in defaults:
             default = defaults[key]
@@ -108,6 +120,7 @@ class EmbeddingLib():
             api_keys = self.langchainLib.split_keys(api_keys)
 
             model= embed.get("MODEL") if embed.get("MODEL") else default['model']
+            pipeline = embed.get("PIPELINE")
             for api_key in api_keys:
                 self.embeddings.append({
                     "embedding": None,
@@ -115,6 +128,8 @@ class EmbeddingLib():
                     "base_url": base_url,
                     "api_key":api_key,
                     "model":model,
+                    "default_model":model,
+                    "pipeline":pipeline,
                     "used":0,
                     "last_used": 0 
                 })
