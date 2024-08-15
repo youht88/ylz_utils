@@ -41,7 +41,7 @@ LLM:
     HF:
         API_KEYS: ${HF_API_KEYS}
         MODEL: ${HF_LLM_MODEL}
-        PIPELINE: true
+        PIPELINE: false
 EMBEDDING:
     DEFAULT: EMBEDDING.TOGETHER
     TOGETHER: 

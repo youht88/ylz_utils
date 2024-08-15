@@ -11,14 +11,14 @@ def start_rag(langchainLib:LangchainLib,args):
     pdf = args.pdf
     glob = args.glob
     message = args.message
-    
+    fake_size = args.fake_size
     
     if (not url and not pptx and not docx and not pdf and not glob) and  (not message):
         print(f"1、指定url/pptx/docx:系统将文档下载切片后向量化到{rag_dbname}数据库\n2、指定message:系统将从{rag_dbname}数据库中搜索相关的两条记录。\n您需要至少指定url和message中的一个参数.")
         return
 
-    if embedding_key or embedding_model:
-        embedding = langchainLib.get_embedding(embedding_key,embedding_model,fake_size=100)
+    if embedding_key or embedding_model or fake_size:
+        embedding = langchainLib.get_embedding(embedding_key,embedding_model,fake_size=fake_size)
     else:
         embedding = None
 
@@ -57,7 +57,7 @@ def start_rag(langchainLib:LangchainLib,args):
         # langchainLib.vectorstoreLib.faissLib.save("test.faiss",vectorestore)
         
         vectorstore = langchainLib.vectorstoreLib.faissLib.load(rag_dbname,embedding)
-        print("v--->",langchainLib.vectorstoreLib.faissLib.search(message,vectorstore,k=2))
+        print("v--->",langchainLib.vectorstoreLib.faissLib.search_with_score(message,vectorstore,k=4))
     
     ###### have bug when poetry add sentence_transformers   
     #v1 = langchainLib.get_huggingface_embedding()
