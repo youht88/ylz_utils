@@ -39,7 +39,11 @@ def start_rag(langchainLib:LangchainLib,args):
                     vectorstore = langchainLib.vectorstoreLib.esLib.get_store(index_name,embedding)
                     ids = langchainLib.vectorstoreLib.esLib.create_from_docs(vectorstore,blocks)                    
                 else:
-                    vectorstore,ids = langchainLib.vectorstoreLib.faissLib.create_from_docs(blocks,embedding)
+                    try:
+                        vectorstore = langchainLib.vectorstoreLib.faissLib.load(rag_dbname,embedding)
+                    except:
+                        vectorstore = langchainLib.vectorstoreLib.faissLib.new_vectorstore(embedding)
+                    ids = langchainLib.vectorstoreLib.faissLib.add_docs_to_vectorstore(vectorstore,blocks)
                     langchainLib.vectorstoreLib.faissLib.save(rag_dbname,vectorstore)
                 print("ids:",ids)
         else:
@@ -48,7 +52,11 @@ def start_rag(langchainLib:LangchainLib,args):
                     vectorstore = langchainLib.vectorstoreLib.esLib.get_store(index_name,embedding)
                     ids = langchainLib.vectorstoreLib.esLib.create_from_docs(vectorstore,docs)   
                 else:
-                    vectorstore,ids = langchainLib.vectorstoreLib.faissLib.create_from_docs(docs,embedding)
+                    try:
+                        vectorstore = langchainLib.vectorstoreLib.faissLib.load(rag_dbname,embedding)
+                    except:
+                        vectorstore = langchainLib.vectorstoreLib.faissLib.new_vectorstore(embedding)
+                    ids = langchainLib.vectorstoreLib.faissLib.add_docs_to_vectorstore(vectorstore,blocks)
                     langchainLib.vectorstoreLib.faissLib.save(rag_dbname,vectorstore)
                 print("ids:",ids)
     if message and rag_dbname:   

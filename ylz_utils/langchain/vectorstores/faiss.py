@@ -14,8 +14,7 @@ from uuid import uuid4
 class FaissLib():
     def __init__(self,langchainLib:LangchainLib):
         self.langchainLib = langchainLib
-
-    def create_from_docs(self,docs,embedding=None) -> Tuple[FAISS,list[str]]:
+    def new_vectorstore(self,embedding=None) -> FAISS:
         if not embedding:
             embedding = self.langchainLib.get_embedding()
         index = faiss.IndexFlatL2(len(embedding.embed_query("hello world")))
@@ -25,7 +24,11 @@ class FaissLib():
             docstore=InMemoryDocstore(),
             index_to_docstore_id={},
         )
-        #vectorstore = FAISS.from_documents(docs,embedding=embedding)
+        return vector_store
+    def create_from_docs(self,docs,embedding=None) -> Tuple[FAISS,list[str]]:
+        if not embedding:
+            embedding = self.langchainLib.get_embedding()
+        vector_store = self.new_vectorstore(embedding)
         all_ids = vector_store.add_documents(documents=docs)
         # with tqdm(total= len(docs)) as pbar:
         #     for index,doc in enumerate(docs):
@@ -35,17 +38,11 @@ class FaissLib():
         #         pbar.update(1)
         return vector_store,all_ids
     
-    def create_from_texts(self,texts,embedding=None) -> FAISS:
+    def create_from_texts(self,texts,embedding=None) -> Tuple[FAISS,list[str]]:
         if not embedding:
             embedding = self.langchainLib.get_embedding()
-        index = faiss.IndexFlatL2(len(embedding.embed_query("hello world")))
-        vector_store = FAISS(
-            embedding_function=embedding,
-            index=index,
-            docstore=InMemoryDocstore(),
-            index_to_docstore_id={},
-        )
-        all_ids = vector_store.add_texts([texts],embedding=embedding)
+        vector_store = self.new_vectorstore(embedding)
+        all_ids = vector_store.add_texts(texts)
         # with tqdm(total= len(texts)) as pbar:
         #     for idx,text in enumerate(texts):
         #         if text:
@@ -53,6 +50,14 @@ class FaissLib():
         #             all_ids.extend(ids)
         #         pbar.update(1)
         return vector_store,all_ids
+    
+    def add_docs_to_vectorstore(self,vector_store: FAISS,docs) -> list[str]:
+        all_ids = vector_store.add_documents(docs)
+        return all_ids
+
+    def add_texts_to_vectorstore(self,vector_store: FAISS,texts) -> list[str]:
+        all_ids = vector_store.add_texts(texts)
+        return all_ids
     
     def delete(self,vectorstore: FAISS,ids: List[str] | None = None):
         return vectorstore.delete(ids) 
