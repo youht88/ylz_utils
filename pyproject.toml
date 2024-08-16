@@ -58,7 +58,9 @@ yfinance = "^0.2.41"
 elasticsearch-dsl = "^8.14.0"
 langchain-elasticsearch = "^0.2.2"
 
-torch = { version = "2.0.0", extras = ["cpu"] }
+#torch = { version = "2.0.0", extras = ["cpu"] }
+torch = "^2.4.0"
+
 elastic-transport = "^8.15.0"
 
 
