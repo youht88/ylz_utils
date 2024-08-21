@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ylz-utils"
-version = "0.1.31"
+version = "0.1.32"
 description = "ylz 工具类"
 authors = ["youht88"]
 readme = "README.md"
@@ -58,7 +58,9 @@ yfinance = "^0.2.41"
 elasticsearch-dsl = "^8.14.0"
 langchain-elasticsearch = "^0.2.2"
 
-torch = { version = "2.0.0", extras = ["cpu"] }
+#torch = { version = "2.0.0", extras = ["cpu"] }
+torch = "^2.4.0"
+
 elastic-transport = "^8.15.0"
 
 

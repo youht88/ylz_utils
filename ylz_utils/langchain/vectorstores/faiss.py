@@ -1,44 +1,63 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
     from ylz_utils.langchain import LangchainLib
 
+import faiss
 from langchain_community.vectorstores import FAISS
+from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_core.documents import Document
 from tqdm import tqdm
 from typing import List
+from uuid import uuid4
 
 class FaissLib():
     def __init__(self,langchainLib:LangchainLib):
         self.langchainLib = langchainLib
+    def new_vectorstore(self,embedding=None) -> FAISS:
+        if not embedding:
+            embedding = self.langchainLib.get_embedding()
+        index = faiss.IndexFlatL2(len(embedding.embed_query("hello world")))
+        vector_store = FAISS(
+            embedding_function=embedding,
+            index=index,
+            docstore=InMemoryDocstore(),
+            index_to_docstore_id={},
+        )
+        return vector_store
+    def create_from_docs(self,docs,embedding=None) -> Tuple[FAISS,list[str]]:
+        if not embedding:
+            embedding = self.langchainLib.get_embedding()
+        vector_store = self.new_vectorstore(embedding)
+        all_ids = vector_store.add_documents(documents=docs)
+        # with tqdm(total= len(docs)) as pbar:
+        #     for index,doc in enumerate(docs):
+        #         if doc.page_content:
+        #             ids = vectorstore.add_documents([doc],embedding=embedding)
+        #             all_ids.extend(ids)
+        #         pbar.update(1)
+        return vector_store,all_ids
+    
+    def create_from_texts(self,texts,embedding=None) -> Tuple[FAISS,list[str]]:
+        if not embedding:
+            embedding = self.langchainLib.get_embedding()
+        vector_store = self.new_vectorstore(embedding)
+        all_ids = vector_store.add_texts(texts)
+        # with tqdm(total= len(texts)) as pbar:
+        #     for idx,text in enumerate(texts):
+        #         if text:
+        #             ids = vectorstore.add_texts([text],embedding=embedding)
+        #             all_ids.extend(ids)
+        #         pbar.update(1)
+        return vector_store,all_ids
+    
+    def add_docs_to_vectorstore(self,vector_store: FAISS,docs) -> list[str]:
+        all_ids = vector_store.add_documents(docs)
+        return all_ids
 
-    def create_from_docs(self,docs,embedding=None) -> FAISS:
-        if not embedding:
-            embedding = self.langchainLib.get_embedding()
-        #vectorstore = FAISS.from_documents(docs,embedding=embedding)
-        vectorstore = FAISS.from_documents([Document(" ")],embedding) 
-        #vectorstore.add_documents(docs,embedding=embedding)
-        all_ids = []
-        with tqdm(total= len(docs)) as pbar:
-            for index,doc in enumerate(docs):
-                if doc.page_content:
-                    ids = vectorstore.add_documents([doc],embedding=embedding)
-                    all_ids.extend(ids)
-                pbar.update(1)
-        return vectorstore,all_ids
-    def create_from_texts(self,texts,embedding=None) -> FAISS:
-        if not embedding:
-            embedding = self.langchainLib.get_embedding()
-        #vectorstore = FAISS.from_texts(textes, embedding=embedding)
-        vectorstore = FAISS.from_texts([" "],embedding) 
-        all_ids = []
-        with tqdm(total= len(texts)) as pbar:
-            for idx,text in enumerate(texts):
-                if text:
-                    ids = vectorstore.add_texts([text],embedding=embedding)
-                    all_ids.extend(ids)
-                pbar.update(1)
-        return vectorstore,all_ids
+    def add_texts_to_vectorstore(self,vector_store: FAISS,texts) -> list[str]:
+        all_ids = vector_store.add_texts(texts)
+        return all_ids
     
     def delete(self,vectorstore: FAISS,ids: List[str] | None = None):
         return vectorstore.delete(ids) 
