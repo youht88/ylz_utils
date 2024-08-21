@@ -24,7 +24,7 @@ class GradeDocumentsNode():
             ]
         )
 
-        retrieval_grader = grade_prompt | self.self_rag_graph.structured_llm_grader
+        retrieval_grader = grade_prompt | self.self_rag_graph.normal_llm_grader
         #question = "agent memory"
         #docs = self.self_rag_graph.retriever.get_relevant_documents(question)
         #doc_txt = docs[1].page_content

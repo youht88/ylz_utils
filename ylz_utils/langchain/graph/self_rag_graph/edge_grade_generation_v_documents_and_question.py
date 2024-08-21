@@ -22,7 +22,7 @@ class GradeGenerationVDocumentsAndQuestionEdge():
             ]
         )
 
-        hallucination_grader = hallucination_prompt | self.self_rag_graph.structured_llm_grader
+        hallucination_grader = hallucination_prompt | self.self_rag_graph.hallucinations_llm_grader
         #hallucination_grader.invoke({"documents": docs, "generation": generation})
         return hallucination_grader
 
@@ -37,7 +37,7 @@ class GradeGenerationVDocumentsAndQuestionEdge():
             ]
         )
 
-        answer_grader = answer_prompt | self.self_rag_graph.structured_llm_grader
+        answer_grader = answer_prompt | self.self_rag_graph.answer_llm_grader
         #answer_grader.invoke({"question": question, "generation": generation})
         return answer_grader
     

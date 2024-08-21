@@ -23,4 +23,5 @@ class RetrieveNode():
 
         # Retrieval
         documents = self.self_rag_graph.retriever.get_relevant_documents(question)
+
         return {"documents": documents, "question": question}

@@ -76,7 +76,6 @@ class GraphLib():
             return self.db_graph.get_graph(llm_key,llm_model)
         elif graph_key=='selfrag':
             self.self_rag_graph.set_retriever()
-            self.self_rag_graph.set_llm(llm_key,llm_model)
             return self.self_rag_graph.get_graph(llm_key,llm_model)
         else:
             return self.stand_graph.get_graph(llm_key,llm_model)

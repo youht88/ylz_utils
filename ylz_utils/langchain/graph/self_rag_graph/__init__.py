@@ -8,7 +8,7 @@ from langgraph.graph import StateGraph, START,END, MessagesState
 from langchain_core.messages import AIMessage
 from langgraph.graph.state import CompiledStateGraph
 
-from .state import GraphState,GradeDocuments
+from .state import GraphState,GradeDocuments,GradeHallucinations,GradeAnswer
 
 from .node_grade_documents import GradeDocumentsNode
 from .node_retrieve import RetrieveNode
@@ -25,7 +25,8 @@ from langchain_openai import OpenAIEmbeddings
 class SelfRagGraph():
     retriever = None
     llm = None
-    structured_llm_grader = None
+    normal_llm_grader = None
+    hallucinations_llm_grader = None
     def __init__(self,graphLib:GraphLib):
         self.graphLib = graphLib
         self.retrieve = RetrieveNode(self).retrieve
@@ -47,21 +48,28 @@ class SelfRagGraph():
                 docs = self.graphLib.langchainLib.documentLib.url.load_and_split(url=url,max_depth=1,chunk_size=256,chunk_overlap=0)
                 print(f"there is {len(docs)} docs to be add to {dbname}.")
                 # Add to vectorDB
+                print(docs)
                 vectorstore, _= self.graphLib.langchainLib.vectorstoreLib.faissLib.create_from_docs(docs)
                 vectorstore.save_local(dbname)
             self.retriever = vectorstore.as_retriever()
 
     def set_llm(self,llm_key,llm_model):
         self.llm = self.graphLib.langchainLib.get_llm(llm_key,llm_model)
-        self.structured_llm_grader = self.llm.with_structured_output(GradeDocuments)
+        self.normal_llm_grader = self.llm.with_structured_output(GradeDocuments)
+        self.hallucinations_llm_grader = self.llm.with_structured_output(GradeHallucinations)
+        self.answer_llm_grader = self.llm.with_structured_output(GradeAnswer)
 
     def _check(self):
         if not self.retriever:
             raise Exception("先调用set_retriever(retriever)")
-        if not self.llm or not self.structured_llm_grader:
+        if not self.llm or not self.normal_llm_grader or \
+           not self.hallucinations_llm_grader or \
+           not self.answer_llm_grader:
             raise Exception("先调用self.set_llm(llm_key,llm_model)")
 
-    def get_graph(self):
+    def get_graph(self,llm_key,llm_model):
+        self.set_llm(llm_key,llm_model)
+        self._check()
         workflow = StateGraph(GraphState)
 
         # Define the nodes
