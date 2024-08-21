@@ -28,21 +28,27 @@ class SelfRagGraph():
     structured_llm_grader = None
     def __init__(self,graphLib:GraphLib):
         self.graphLib = graphLib
-        self.retrieve = RetrieveNode().retrieve
-        self.grade_documents = GradeDocumentsNode().grade_documents
-        self.generate = GenerateNode().generate
-        self.transform_query = TransformQueryNode().transform_query
-        self.decide_to_generate = DecideToGenerateEdge().decide_to_generate
-        self.grade_generation_v_documents_and_question = GradeGenerationVDocumentsAndQuestionEdge().grade_generation_v_documents_and_question
+        self.retrieve = RetrieveNode(self).retrieve
+        self.grade_documents = GradeDocumentsNode(self).grade_documents
+        self.generate = GenerateNode(self).generate
+        self.transform_query = TransformQueryNode(self).transform_query
+        self.decide_to_generate = DecideToGenerateEdge(self).decide_to_generate
+        self.grade_generation_v_documents_and_question = GradeGenerationVDocumentsAndQuestionEdge(self).grade_generation_v_documents_and_question
     
     def set_retriever(self,retriever=None):
         if retriever:
             self.retriever = retriever
         else:
-            url = "https://langchain-ai.github.io/langgraph/how-tos/"
-            docs = self.graphLib.langchainLib.documentLib.url.load_and_split(url=url,chunk_size=256,chunk_overlap=0)
-            # Add to vectorDB
-            vectorstore, _= self.graphLib.langchainLib.vectorstoreLib.faissLib.create_from_docs(docs)
+            dbname = "langgraph1.faiss"
+            try:
+                vectorstore = self.graphLib.langchainLib.vectorstoreLib.faissLib.load(dbname)
+            except:
+                url = "https://langchain-ai.github.io/langgraph/how-tos/"
+                docs = self.graphLib.langchainLib.documentLib.url.load_and_split(url=url,max_depth=1,chunk_size=256,chunk_overlap=0)
+                print(f"there is {len(docs)} docs to be add to {dbname}.")
+                # Add to vectorDB
+                vectorstore, _= self.graphLib.langchainLib.vectorstoreLib.faissLib.create_from_docs(docs)
+                vectorstore.save_local(dbname)
             self.retriever = vectorstore.as_retriever()
 
     def set_llm(self,llm_key,llm_model):

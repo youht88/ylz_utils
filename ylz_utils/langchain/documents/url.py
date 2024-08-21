@@ -49,7 +49,7 @@ class UrlLib():
                        metadata_extractor=None, 
                        chunk_size=1000,
                        chunk_overlap=0) -> list[Document]:
-        res = self.load_and_split_markdown(url,mac_depth=max_depth,
+        res = self.load_and_split_markdown(url,max_depth=max_depth,
                                            extractor=extractor,
                                            metadata_extractor=metadata_extractor,
                                            chunk_size = chunk_size,
