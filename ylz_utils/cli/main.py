@@ -48,7 +48,7 @@ def main():
      
     
     start_parser.add_argument("--size",type=int,help="文档分隔的size") 
-    start_parser.add_argument("--graph",type=str,choices=["stand","test","engineer"],help="内置graph的类型") 
+    start_parser.add_argument("--graph",type=str,choices=["stand","test","engineer","db"],help="内置graph的类型") 
     start_parser.add_argument("--fake_size",type=int,help="使用fake embeding的size，当fake_size>0是使用fake embeding，并且维度为fake_size") 
      
 

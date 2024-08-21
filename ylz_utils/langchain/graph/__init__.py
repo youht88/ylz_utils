@@ -22,6 +22,7 @@ from ylz_utils.data import StringLib,Color
 from ylz_utils.langchain.graph.stand_graph import StandGraph
 from ylz_utils.langchain.graph.test_graph import TestGraph
 from ylz_utils.langchain.graph.engineer_graph import EngineerGraph
+from ylz_utils.langchain.graph.db_graph import DbGraph
 
 
 class GraphLib():
@@ -36,6 +37,7 @@ class GraphLib():
         self.stand_graph = StandGraph(self)
         self.test_graph = TestGraph(self)
         self.engineer_graph = EngineerGraph(self)
+        self.db_graph = DbGraph(self)
 
     def set_dbname(self,dbname):
         # "checkpoint.sqlite"
@@ -60,11 +62,17 @@ class GraphLib():
         elif graph_key=='engineer':
             self.engineer_graph.set_node_llms(node_llms)
 
-    def get_graph(self,graph_key:Literal['stand','test','engineer']='stand',llm_key=None,llm_model=None):
+    def get_graph(self,graph_key:Literal['stand','test','engineer','db']='stand',llm_key=None,llm_model=None):
         if graph_key=='test':
             return self.test_graph.get_graph(llm_key,llm_model)
         elif graph_key=='engineer':
             return self.engineer_graph.get_graph(llm_key,llm_model)
+        elif graph_key=='db':
+            #self.db_graph.set_db("sqlite:///Chinook.db")
+            self.db_graph.set_db("sqlite:///person.db")
+            self.db_graph.set_llm(llm_key,llm_model)
+            self.db_graph.set_toolkit()
+            return self.db_graph.get_graph(llm_key,llm_model)
         else:
             return self.stand_graph.get_graph(llm_key,llm_model)
 
