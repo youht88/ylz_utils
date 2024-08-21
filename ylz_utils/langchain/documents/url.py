@@ -27,7 +27,13 @@ class UrlLib():
         )
         return loader
 
-    def load_and_split_markdown(self, url, max_depth=2, extractor=None, metadata_extractor=None, chunk_size=1000,chunk_overlap=0):
+    def load_and_split_markdown(self, 
+                                url,
+                                max_depth=2,
+                                extractor=None, 
+                                metadata_extractor=None, 
+                                chunk_size=1000,
+                                chunk_overlap=0) -> list[dict[str,any]]:
         loader = self.loader(url,max_depth=max_depth,extractor=extractor,metadata_extractor=metadata_extractor)
         docs = loader.load()
         transformer = MarkdownifyTransformer()
@@ -38,7 +44,11 @@ class UrlLib():
             result.append({"doc":doc,"blocks":splited_docs,"metadata":doc.metadata})
         return result
     
-    def load_and_split(self,url,max_depth=2, extractor=None, metadata_extractor=None, chunk_size=1000,chunk_overlap=0):
+    def load_and_split(self,url,max_depth=2, 
+                       extractor=None, 
+                       metadata_extractor=None, 
+                       chunk_size=1000,
+                       chunk_overlap=0) -> list[Document]:
         res = self.load_and_split_markdown(url,mac_depth=max_depth,
                                            extractor=extractor,
                                            metadata_extractor=metadata_extractor,

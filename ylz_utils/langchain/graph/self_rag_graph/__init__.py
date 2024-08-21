@@ -1,0 +1,91 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ylz_utils.langchain.graph import GraphLib
+
+from langgraph.graph import StateGraph, START,END, MessagesState
+from langchain_core.messages import AIMessage
+from langgraph.graph.state import CompiledStateGraph
+
+from .state import GraphState,GradeDocuments
+
+from .node_grade_documents import GradeDocumentsNode
+from .node_retrieve import RetrieveNode
+from .node_generate import GenerateNode
+from .node_transform_query import TransformQueryNode
+from .edge_decide_to_generate import DecideToGenerateEdge
+from .edge_grade_generation_v_documents_and_question import GradeGenerationVDocumentsAndQuestionEdge
+
+
+from langchain_community.document_loaders import WebBaseLoader
+from langchain_community.vectorstores import Chroma
+from langchain_openai import OpenAIEmbeddings
+
+class SelfRagGraph():
+    retriever = None
+    llm = None
+    structured_llm_grader = None
+    def __init__(self,graphLib:GraphLib):
+        self.graphLib = graphLib
+        self.retrieve = RetrieveNode().retrieve
+        self.grade_documents = GradeDocumentsNode().grade_documents
+        self.generate = GenerateNode().generate
+        self.transform_query = TransformQueryNode().transform_query
+        self.decide_to_generate = DecideToGenerateEdge().decide_to_generate
+        self.grade_generation_v_documents_and_question = GradeGenerationVDocumentsAndQuestionEdge().grade_generation_v_documents_and_question
+    
+    def set_retriever(self,retriever=None):
+        if retriever:
+            self.retriever = retriever
+        else:
+            url = "https://langchain-ai.github.io/langgraph/how-tos/"
+            docs = self.graphLib.langchainLib.documentLib.url.load_and_split(url=url,chunk_size=256,chunk_overlap=0)
+            # Add to vectorDB
+            vectorstore, _= self.graphLib.langchainLib.vectorstoreLib.faissLib.create_from_docs(docs)
+            self.retriever = vectorstore.as_retriever()
+
+    def set_llm(self,llm_key,llm_model):
+        self.llm = self.graphLib.langchainLib.get_llm(llm_key,llm_model)
+        self.structured_llm_grader = self.llm.with_structured_output(GradeDocuments)
+
+    def _check(self):
+        if not self.retriever:
+            raise Exception("先调用set_retriever(retriever)")
+        if not self.llm or not self.structured_llm_grader:
+            raise Exception("先调用self.set_llm(llm_key,llm_model)")
+
+    def get_graph(self):
+        workflow = StateGraph(GraphState)
+
+        # Define the nodes
+        workflow.add_node("retrieve", self.retrieve)  # retrieve
+        workflow.add_node("grade_documents", self.grade_documents)  # grade documents
+        workflow.add_node("generate", self.generate)  # generatae
+        workflow.add_node("transform_query", self.transform_query)  # transform_query
+
+        # Build graph
+        workflow.add_edge(START, "retrieve")
+        workflow.add_edge("retrieve", "grade_documents")
+        workflow.add_conditional_edges(
+            "grade_documents",
+            self.decide_to_generate,
+            {
+                "transform_query": "transform_query",
+                "generate": "generate",
+            },
+        )
+        workflow.add_edge("transform_query", "retrieve")
+        workflow.add_conditional_edges(
+            "generate",
+            self.grade_generation_v_documents_and_question,
+            {
+                "not supported": "generate",
+                "useful": END,
+                "not useful": "transform_query",
+            },
+        )
+
+        graph = workflow.compile(self.graphLib.memory)
+        
+        return graph

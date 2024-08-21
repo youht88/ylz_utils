@@ -195,7 +195,8 @@ class DbGraph():
         if not self.llm:
             self.llm = self.graphLib.langchainLib.get_llm(llm_key,llm_model)
         self._check()
-
+        self.set_toolkit()
+        
         workflow = StateGraph(State)
         workflow.add_node("first_tool_call", self.first_tool_call)
         workflow.add_node(
