@@ -20,7 +20,7 @@ class RetrieveNode():
         """
         print("---RETRIEVE---")
         question = state["question"]
-
+        print(state)
         # Retrieval
         documents = self.self_rag_graph.retriever.get_relevant_documents(question)
 

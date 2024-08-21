@@ -42,6 +42,10 @@ LLM:
         API_KEYS: ${HF_API_KEYS}
         MODEL: ${HF_LLM_MODEL}
         PIPELINE: false
+    DASHSCOPE:
+        API_KEYS: ${DASHSCOPE_API_KEYS}
+        BASH_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
+        MODEL: ${DASHSCOPE_LLM_MODEL}
 EMBEDDING:
     DEFAULT: EMBEDDING.TOGETHER
     TOGETHER: 

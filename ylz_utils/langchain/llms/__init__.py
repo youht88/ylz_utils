@@ -236,7 +236,9 @@ class LLMLib():
                       {"model":"gpt-4o-mini","temperature":0.3}, 
                     "LLM.HF": 
                       {"model":"HuggingFaceH4/zephyr-7b-beta","temperature":0.3},                        
-                  }
+                    "LLM.DASHSCOPE":
+                      {"model":"llama3.1-405b-instruct","temperature":0}
+                      }
         for key in defaults:
             default = defaults[key]
             llm = self.config.get(key)

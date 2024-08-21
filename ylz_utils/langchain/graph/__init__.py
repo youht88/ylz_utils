@@ -86,7 +86,7 @@ class GraphLib():
             messages.append(SystemMessage(content=system_message))
         if message:
             messages.append(HumanMessage(content=message))
-            values = {"messages":messages}          
+            values = {"messages":messages,"question":message}          
         else:
             values = None
         events = graph.stream( values,
