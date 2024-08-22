@@ -12,7 +12,7 @@ from ylz_utils import Config
 from langchain_together import TogetherEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_ollama import OllamaEmbeddings
-
+from langchain_community.embeddings.dashscope import DashScopeEmbeddings
 from langchain_huggingface.embeddings import HuggingFaceEndpointEmbeddings,HuggingFaceEmbeddings
 #from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
 from huggingface_hub import login as huggingface_login
@@ -79,6 +79,9 @@ class EmbeddingLib():
                         embedding['embedding'] = TogetherEmbeddings(api_key = embedding.get('api_key'),model=embedding.get('model'))
                     elif embed_type == "EMBEDDING.GEMINI" :
                         embedding['embedding'] = GoogleGenerativeAIEmbeddings(model=embedding.get('model'),google_api_key=embedding.get('api_key'))
+                    elif embed_type == "EMBEDDING.DASHSCOPE" :
+                        embedding['embedding'] = DashScopeEmbeddings(model=embedding.get('model'),
+                                                                     dashscope_api_key=embedding.get('api_key'))
                     elif embed_type == 'EMBEDDING.OLLAMA':
                         embedding['embedding'] = OllamaEmbeddings(model=embedding.get('model'))
                     elif embed_type == 'EMBEDDING.HF':
@@ -108,7 +111,8 @@ class EmbeddingLib():
                       "EMBEDDING.TOGETHER": {"model":"BAAI/bge-large-en-v1.5"},
                       "EMBEDDING.GEMINI": {"model":"models/embedding-001"},
                       "EMBEDDING.OLLAMA": {"model":"mxbai-embed-large"},
-                      "EMBEDDING.HF": {"model":"Alibaba-NLP/gte-large-en-v1.5"}  #"sentence-transformers/all-mpnet-base-v2" #"BAAI/bge-large-en"
+                      "EMBEDDING.HF": {"model":"Alibaba-NLP/gte-large-en-v1.5"},  #"sentence-transformers/all-mpnet-base-v2" #"BAAI/bge-large-en"
+                      "EMBEDDING.DASHSCOPE": {"model":"text-embedding-v2"}  
                   }
         for key in defaults:
             default = defaults[key]

@@ -15,6 +15,7 @@ import random
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.chat_models import QianfanChatEndpoint
+from langchain_community.chat_models import ChatTongyi
 from langchain_ollama import ChatOllama
 from langchain_huggingface import HuggingFaceEndpoint,HuggingFacePipeline,ChatHuggingFace
 from huggingface_hub import login as huggingface_login
@@ -156,6 +157,14 @@ class LLMLib():
                                     temperature = temperature or llm.get('temperature'))
                             except:
                                 raise Exception(f"请确保{llm_type}_API_KEYS和{llm_type}_SEC_KEYS环境变量被正确设置")
+                        elif llm_type == 'LLM.DASHSCOPE':
+                            try:
+                                llm['llm'] = ChatTongyi(
+                                    api_key= llm.get('api_key'),
+                                    model= llm.get('model'),
+                                    temperature = temperature or llm.get('temperature'))
+                            except:
+                                raise Exception(f"请确保{llm_type}_API_KEYS和{llm_type}_SEC_KEYS环境变量被正确设置")
                         elif llm_type == 'LLM.OLLAMA':
                             try:
                                 StringLib.logging_in_box(f"ollama_api_key={llm.get('api_key')},model={llm.get('model')}")
@@ -237,7 +246,7 @@ class LLMLib():
                     "LLM.HF": 
                       {"model":"HuggingFaceH4/zephyr-7b-beta","temperature":0.3},                        
                     "LLM.DASHSCOPE":
-                      {"model":"llama3.1-405b-instruct","temperature":0}
+                      {"model":"qwen-max","temperature":0}
                       }
         for key in defaults:
             default = defaults[key]
