@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from ylz_utils.langchain import LangchainLib
+    from ylz_utils.langchain.vectorstores import VectorstoreLib
 
 from langchain_elasticsearch import ElasticsearchStore,DenseVectorStrategy
 from langchain_elasticsearch.client import create_elasticsearch_client
@@ -13,9 +13,9 @@ from typing import List
 from ylz_utils.config import Config
 
 class ESLib():
-    def __init__(self,langchainLib:LangchainLib):
+    def __init__(self,vectorstoreLib:VectorstoreLib):
         self.config = Config()
-        self.langchainLib = langchainLib
+        self.vectorstoreLib = vectorstoreLib
         self.client = None
         self.es_host=self.config.get("ES.HOST")
         self.es_user=self.config.get("ES.USER")
@@ -51,7 +51,7 @@ class ESLib():
     
     def get_store(self,index_name="langchain_index",embedding=None) -> ElasticsearchStore:        
         if not embedding:
-            embedding = self.langchainLib.get_embedding()
+            embedding = self.vectorstoreLib.langchainLib.get_embedding()
         return ElasticsearchStore(
                     es_connection=self.client,
                     index_name=index_name,
@@ -65,23 +65,18 @@ class ESLib():
             allow_no_indices=True
         )
             
-    def create_from_docs(self,vectorstore:ElasticsearchStore,docs) -> List[str]:
-        all_ids = []
-        with tqdm(total= len(docs)) as pbar:
-            for idx,doc in enumerate(docs):
-                if doc.page_content:
-                    ids = vectorstore.add_documents([doc])
-                    all_ids.extend(ids)
-                pbar.update(1)
+    def create_from_docs(self,vector_store:ElasticsearchStore,docs,batch:int=1) -> List[str]:
+        all_ids = self.vectorstoreLib._split_batch_and_add(docs,batch,vector_store.add_documents)
         return all_ids
-    def create_from_texts(self,vectorstore:ElasticsearchStore,texts) -> List[str]:
-        all_ids = []
-        with tqdm(total= len(texts)) as pbar:
-            for idx,text in enumerate(texts):
-                if text:
-                    ids = vectorstore.add_texts([text])
-                    all_ids.extend(ids)
-                pbar.update(1)
+    def create_from_texts(self,vector_store:ElasticsearchStore,texts,batch:int=1) -> List[str]:
+        all_ids = self.vectorstoreLib._split_batch_and_add(texts,batch,vector_store.add_texts)
+        return all_ids
+    def add_docs_to_vectorstore(self,vector_store: ElasticsearchStore,docs,batch:int=1) -> list[str]:
+        all_ids = self.vectorstoreLib._split_batch_and_add(docs,batch,vector_store.add_documents)
+        return all_ids
+
+    def add_texts_to_vectorstore(self,vector_store: ElasticsearchStore,texts,batch:int=1) -> list[str]:
+        all_ids = self.vectorstoreLib._split_batch_and_add(texts,batch,vector_store.add_texts)
         return all_ids
         
     def delete(self,vectorstore: ElasticsearchStore,ids: List[str] | None = None):

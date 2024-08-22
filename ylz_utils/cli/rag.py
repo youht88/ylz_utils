@@ -27,6 +27,7 @@ def start_rag(langchainLib:LangchainLib,args):
         print("#"*60)
         if not docs:
             return
+        batch = 10
         if url and rag_dbname:
             ##### create vectorestore
             # url = "https://python.langchain.com/v0.2/docs/concepts/#tools"
@@ -43,7 +44,7 @@ def start_rag(langchainLib:LangchainLib,args):
                         vectorstore = langchainLib.vectorstoreLib.faissLib.load(rag_dbname,embedding)
                     except:
                         vectorstore = langchainLib.vectorstoreLib.faissLib.new_vectorstore(embedding)
-                    ids = langchainLib.vectorstoreLib.faissLib.add_docs_to_vectorstore(vectorstore,blocks)
+                    ids = langchainLib.vectorstoreLib.faissLib.add_docs_to_vectorstore(vectorstore,blocks,batch=batch)
                     langchainLib.vectorstoreLib.faissLib.save(rag_dbname,vectorstore)
                 print("ids:",ids)
         else:
@@ -56,7 +57,7 @@ def start_rag(langchainLib:LangchainLib,args):
                         vectorstore = langchainLib.vectorstoreLib.faissLib.load(rag_dbname,embedding)
                     except:
                         vectorstore = langchainLib.vectorstoreLib.faissLib.new_vectorstore(embedding)
-                    ids = langchainLib.vectorstoreLib.faissLib.add_docs_to_vectorstore(vectorstore,docs)
+                    ids = langchainLib.vectorstoreLib.faissLib.add_docs_to_vectorstore(vectorstore,docs,batch=batch)
                     langchainLib.vectorstoreLib.faissLib.save(rag_dbname,vectorstore)
                 print("ids:",ids)
     if message and rag_dbname:   
