@@ -43,7 +43,7 @@ class VectorstoreLib():
                 start = end
         print(f"size = {len(docs)},parts = {[len(item) for item in batch_items]}")
         all_ids = []
-        with tqdm(total= len(batch_items)) as pbar:
+        with tqdm(total= len(batch_items),desc="文档片段",colour="#9999ff") as pbar:
             for index,items in enumerate(batch_items):
                 ids = func(items)
                 all_ids.extend(ids)

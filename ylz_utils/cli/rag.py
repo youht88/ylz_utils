@@ -1,4 +1,5 @@
 from langchain_community.document_loaders import UnstructuredFileLoader
+from tqdm import tqdm
 from ylz_utils import LangchainLib
 
 def start_rag(langchainLib:LangchainLib,args):
@@ -33,7 +34,7 @@ def start_rag(langchainLib:LangchainLib,args):
             # url = "https://python.langchain.com/v0.2/docs/concepts/#tools"
             # faiss_dbname = "langchain_docs.faiss"
             print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks'])} for doc in docs])
-            for doc in docs:
+            for doc in tqdm(docs,desc="页面",colour="#6666ff"):
                 blocks = doc['blocks']
                 if rag_dbname.startswith("es:///"):
                     _,index_name  =langchainLib.vectorstoreLib.esLib.init_client(connect_string=rag_dbname)
