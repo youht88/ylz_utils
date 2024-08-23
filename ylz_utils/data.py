@@ -4,6 +4,31 @@ import textwrap
 from typing import List, Dict, Any, Literal, Tuple
 import re
 from urllib.parse import urlparse, urlunparse
+import sys
+import time
+import itertools
+import threading
+
+class Spinner():
+    def __init__(self):
+        self.stop_event = threading.Event()
+    def spinning_cursor(self,duration, stop_event):
+                spinner = itertools.cycle(['|', '/', '-', '\\'])
+                end_time = time.time() + duration
+                while time.time() < end_time:
+                    if stop_event.is_set():
+                        break
+                    sys.stdout.write(next(spinner))
+                    sys.stdout.flush()
+                    sys.stdout.write('\b')  # 删除上一个字符
+                    time.sleep(0.1)  # 控制动画的速度   
+    def start(self):
+        self.spinner_thread = threading.Thread(target=self.spinning_cursor, args=(float('inf'), self.stop_event))
+        self.spinner_thread.start()
+    
+    def end(self):
+        self.stop_event.set()
+        self.spinner_thread.join()
 
 class Color: 
     BLACK = '\033[30m'
@@ -141,7 +166,7 @@ class StringLib:
 
         # 打印下边框
         print_func(char * border_length)
-
+    
 class UrlLib:
     @classmethod
     def urlify(cls, address) -> tuple[str,str]:

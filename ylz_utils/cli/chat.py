@@ -1,5 +1,5 @@
 from ylz_utils.langchain import LangchainLib
-from ylz_utils.data import StringLib
+from ylz_utils.data import Spinner, StringLib
 
 from langchain_core.messages import HumanMessage
 
@@ -61,8 +61,11 @@ def start_chat(langchainLib:LangchainLib,args):
         if message.lower().startswith('/flux'):
             image_message = message.split(" ")[1]
             if image_message:
+                spinner = Spinner()
+                spinner.start()
                 file_name = langchainLib.fluxLib.gen(image_message)
                 response = f"已生成图像{file_name},请查看"
+                spinner.end()
                 print(StringLib.color(response,["blue"]))
             message = ""
             continue
