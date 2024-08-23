@@ -238,7 +238,10 @@ def start(args):
         print(StringLib.yellow("args="),args)
         print(StringLib.yellow("llms--->:"),[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_llm(full=True)])
         print(StringLib.yellow("embeddings---->:"),[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_embedding(full=True)])
-        return
+        #return 
+        langchainLib.ttsLib.tts_save("你好呀","tts.wav")
+        langchainLib.ttsLib.tts_play("祝你有愉快的一天")
+        
         #loader = langchainLib.documentLib.pptx.loader("30335320.pptx")
         #docs = loader.load()
         #print(docs)

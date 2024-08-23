@@ -34,6 +34,7 @@ from ylz_utils.langchain.prompts import PromptLib
 from ylz_utils.langchain.output_parsers import OutputParserLib
 from ylz_utils.langchain.splitters import SplitterLib
 from ylz_utils.langchain.tools import ToolLib
+from ylz_utils.langchain.tts import TTSLib
 from ylz_utils.langchain.vectorstores import VectorstoreLib
 
 from ylz_utils.file import FileLib
@@ -97,6 +98,8 @@ class LangchainLib():
 
         self.graphLib = GraphLib(self)
         self.get_graph = self.graphLib.get_graph
+        
+        self.ttsLib = TTSLib(self)
         
     def add_plugins(self,debug=False):
         plugins = [{"class":ChatOpenAI,"func":ChatOpenAI.invoke},
