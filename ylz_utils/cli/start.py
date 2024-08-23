@@ -12,6 +12,7 @@ from langchain.output_parsers import OutputFixingParser
 
 from langchain_core.tools import tool
 from langchain_core.runnables import RunnablePassthrough,RunnableLambda,RunnableParallel
+from langchain_core.messages import HumanMessage
 
 from ylz_utils.cli.chat import start_chat
 from ylz_utils.cli.graph import start_graph
@@ -234,9 +235,10 @@ def start(args):
     elif args.mode == 'agent':
         __agent(langchainLib,args)
     else:
-        print("args=",args)
-        print("llms--->:",[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_llm(full=True)])
-        print("embeddings---->:",[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_embedding(full=True)])
+        print(StringLib.yellow("args="),args)
+        print(StringLib.yellow("llms--->:"),[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_llm(full=True)])
+        print(StringLib.yellow("embeddings---->:"),[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_embedding(full=True)])
+        return
         #loader = langchainLib.documentLib.pptx.loader("30335320.pptx")
         #docs = loader.load()
         #print(docs)
@@ -251,10 +253,27 @@ def start(args):
         # res = langchainLib.vectorstoreLib.esLib.search_with_score("我是谁？",store)
         # print(res)
 
-        embed = langchainLib.embeddingLib.get_embedding(fake_size=3)
-        print(embed.embed_documents(["hello world","I am fine!","我们正在学习langchain"]))
+        # embed = langchainLib.embeddingLib.get_embedding(fake_size=3)
+        # print(embed.embed_documents(["hello world","I am fine!","我们正在学习langchain"]))
+        
+        # images = [
+        #     {"image":"file://smoke.jpg"}
+        # ]
+        # res = langchainLib.get_llm("LLM.DASHSCOPE").invoke([HumanMessage(content=["图片中的文字是什么?"]+images)])
+        
+        image_message = {
+                #"image": "file:///Users/youht/source/python/ylz_utils/tests/smoke.jpg",
+                "image": "https://developer.qcloudimg.com/http-save/yehe-170434/6ac5c23a5efe1dfe00726f845eca9521.png",
+            }
+        text_message = {
+            "text": "用中文详细解释这张图片的每一个细节,特别是每一个流程图的含义",
+        }
+        message = HumanMessage(content=[text_message, image_message])
+        res = langchainLib.llmLib.get_llm(model="qwen-vl-max").invoke([message])
+        print(StringLib.color("content=",style=["italic","bold","cyan","red"]),res.content)
 
-        return
+        return 
+
         loader = langchainLib.documentLib.pptx.newer("test.pptx")
         loader.add_slide(0).set_title("Hello World","gogogo").add_text("youht",10,10,60,40)
         tab = [{"name":"youht","age":20},{"name":"jinli","age":10}] 

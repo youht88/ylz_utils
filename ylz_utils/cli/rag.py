@@ -27,7 +27,7 @@ def start_rag(langchainLib:LangchainLib,args):
         print("#"*60)
         if not docs:
             return
-        batch = 10
+        batch = args.batch
         if url and rag_dbname:
             ##### create vectorestore
             # url = "https://python.langchain.com/v0.2/docs/concepts/#tools"

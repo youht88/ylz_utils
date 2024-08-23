@@ -1,4 +1,7 @@
 from ylz_utils.langchain import LangchainLib
+from ylz_utils.data import StringLib
+
+from langchain_core.messages import HumanMessage
 
 def input_with_readline(prompt):
     try:
@@ -21,18 +24,59 @@ def start_chat(langchainLib:LangchainLib,args):
         langchainLib.llmLib.set_dbname(dbname)
     chat = langchainLib.get_chat(llm,prompt)
     chain = chat | langchainLib.get_outputParser()
+    images=[]
     while True:
         if not message:
-            message=input_with_readline("USER: ")
+            message=input_with_readline(f"{user_id}用户: ")
         else:
             print(f"USER: {message}")
+        message = message.strip()
+        if message.lower() == '/h':
+            print(StringLib.lyellow("/q:"),"退出",end=',')
+            print(StringLib.lyellow("/c:"),"清空记录",end=',')
+            print(StringLib.lyellow("/u <userid>:"),"设置用户id",end=',')
+            print(StringLib.lyellow("/m <image_url>:"),"增加图片")
+            message = ""
+            continue
         if message.lower() in ['/quit','/exit','/stop','/bye','/q']:
             print("Good bye!!")
             break
-        res = chain.stream({"input":message}, {'configurable': {'user_id': user_id,'conversation_id': conversation_id}} )
-        message = ""
-        print("AI: ",end="")
-        for chunk in res:
-            print(chunk,end="")
-        print("\n")
+        if message.lower() == '/c':
+            prompt = langchainLib.get_prompt(use_chat=True)
+            message = ""
+            continue
+        if message.lower().startswith('/u'):
+            new_user_id = message.split(" ")[1]
+            if new_user_id:
+                user_id = new_user_id
+            message=""
+            continue
+        if message.lower().startswith('/m'):
+            image_url = message.split(" ")[1]
+            if image_url:
+                images.append({"image":image_url})
+            message = ""
+            continue
+        if images:
+            humanMessage = HumanMessage(content = images + [{"text":message}])
+            res = llm.stream([humanMessage],{'configurable': {'user_id': user_id,'conversation_id': conversation_id}})
+            print("AI: ",end="")
+            try:
+                for chunk in res:
+                    print(chunk.content[0]['text'],end="")
+            except:
+                print("error!!!!")
+                print(type(chunk))
+                print(chunk)
+            images = []
+            message = ""
+            print("\n")        
+        else:
+            res = chain.stream({"input":message}, {'configurable': {'user_id': user_id,'conversation_id': conversation_id}} )
+            images = []
+            message = ""
+            print("AI: ",end="")
+            for chunk in res:
+                print(chunk,end="")
+            print("\n")
     print("\n",langchainLib.get_llm(full=True))

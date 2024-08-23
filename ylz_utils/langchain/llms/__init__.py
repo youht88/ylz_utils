@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 if TYPE_CHECKING:
     from ylz_utils.langchain import LangchainLib
 
@@ -106,7 +106,8 @@ class LLMLib():
                 ]
         )
 
-    def get_llm(self,key=None, model=None, temperature=None, full=False, delay=10)->ChatOpenAI | ChatOllama:
+    def get_llm(self,key=None, model=None, temperature=None, full=False, delay=10) -> \
+              Union[ChatOpenAI, ChatOllama , ChatTongyi]:
         if full:
             return self.llms
         if self.llms:

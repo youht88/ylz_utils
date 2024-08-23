@@ -50,6 +50,7 @@ def main():
     start_parser.add_argument("--size",type=int,help="文档分隔的size") 
     start_parser.add_argument("--graph",type=str,choices=["stand","test","engineer","db","selfrag"],help="内置graph的类型") 
     start_parser.add_argument("--fake_size",type=int,help="使用fake embeding的size，当fake_size>0是使用fake embeding，并且维度为fake_size") 
+    start_parser.add_argument("--batch",type=int,default=10,help="使用生成embeding时的以batch为度量显示进度，默认分隔为10批") 
      
 
     # start_parser.add_argument("--only_download",type=bool,default=False,help="仅下载网页html,不进行翻译。默认:False (json模式该参数不起作用)")

@@ -1,7 +1,7 @@
 from enum import Enum
 import logging
 import textwrap
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Literal, Tuple
 import re
 from urllib.parse import urlparse, urlunparse
 
@@ -26,50 +26,67 @@ class Color:
     ITALIC = '\033[3m'
     UNDERLINE = '\033[4m'
     DELETE = '\033[9m'
-
+ColorMap = {
+    "black":Color.BLACK,"white":Color.WHITE,
+    "red":Color.RED,"lred":Color.LRED,
+    "green":Color.GREEN,"lgreen":Color.LGREEN,
+    "blue":Color.BLUE,"lblue":Color.LBLUE,
+    "magenta":Color.MAGENTA,"lmagenta":Color.LMAGENTA,
+    "cyan":Color.CYAN,"lcyan":Color.LCYAN,
+    "reset":Color.RESET,"bold":Color.BOLD,"dark":Color.DARK,"italic":Color.ITALIC,
+    "underline":Color.UNDERLINE,"delete":Color.DELETE
+}
 class MathLib:
     pass
 
 class StringLib:
     def black(text):
-        return f"{Color.BLACK}text{Color.RESET}"
+        return f"{Color.BLACK}{text}{Color.RESET}"
     def white(text):
-        return f"{Color.WHITE}text{Color.RESET}"
+        return f"{Color.WHITE}{text}{Color.RESET}"
     def red(text):
-        return f"{Color.RED}text{Color.RESET}"
+        return f"{Color.RED}{text}{Color.RESET}"
     def green(text):
-        return f"{Color.GREEN}text{Color.RESET}"
+        return f"{Color.GREEN}{text}{Color.RESET}"
     def yellow(text):
-        return f"{Color.YELLOW}text{Color.RESET}"
+        return f"{Color.YELLOW}{text}{Color.RESET}"
     def blue(text):
-        return f"{Color.BLUE}text{Color.RESET}"
+        return f"{Color.BLUE}{text}{Color.RESET}"
     def magenta(text):
-        return f"{Color.MAGENTA}text{Color.RESET}"
+        return f"{Color.MAGENTA}{text}{Color.RESET}"
     def cyan(text):
-        return f"{Color.CYAN}text{Color.RESET}"
+        return f"{Color.CYAN}{text}{Color.RESET}"
     def lred(text):
-        return f"{Color.LRED}text{Color.RESET}"
+        return f"{Color.LRED}{text}{Color.RESET}"
     def lgreen(text):
-        return f"{Color.LGREEN}text{Color.RESET}"
+        return f"{Color.LGREEN}{text}{Color.RESET}"
     def lyellow(text):
-        return f"{Color.LYELLOW}text{Color.RESET}"
+        return f"{Color.LYELLOW}{text}{Color.RESET}"
     def lblue(text):
-        return f"{Color.LBLUE}text{Color.RESET}"
+        return f"{Color.LBLUE}{text}{Color.RESET}"
     def lmagenta(text):
-        return f"{Color.LMAGENTA}text{Color.RESET}"
+        return f"{Color.LMAGENTA}{text}{Color.RESET}"
     def lcyan(text):
-        return f"{Color.LCYAN}text{Color.RESET}"
+        return f"{Color.LCYAN}{text}{Color.RESET}"
     def bold(text):
-        return f"{Color.BOLD}text{Color.RESET}"
+        return f"{Color.BOLD}{text}{Color.RESET}"
     def dark(text):
-        return f"{Color.DARK}text{Color.RESET}"
+        return f"{Color.DARK}{text}{Color.RESET}"
     def italic(text):
-        return f"{Color.ITALIC}text{Color.RESET}"
+        return f"{Color.ITALIC}{text}{Color.RESET}"
     def underline(text):
-        return f"{Color.UNDERLINE}text{Color.RESET}"
+        return f"{Color.UNDERLINE}{text}{Color.RESET}"
     def delete(text):
-        return f"{Color.DELETE}text{Color.RESET}"
-
+        return f"{Color.DELETE}{text}{Color.RESET}"
+    def color(text,style:\
+              List[Literal["black","white","red","lred","green","lgreen","yellow","lyellow",\
+                           "blue","lblue","magenta","lmagenta","cyan","lcyan", \
+                           "bold","dark","italic","underline","delete"]]):
+        if not style:
+            return text
+        for item in style:
+            text = f"{ColorMap[item]}{text}{Color.RESET}"
+        return text
     def logging_in_box(text, char="=", console_width:int=80, print_func = logging.info):
         """
         将传入的字符串用“=”字符串框起来在console打印出来，支持多行文本，= 对齐，
