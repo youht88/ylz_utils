@@ -41,9 +41,11 @@ class GraphLib():
         self.db_graph = DbGraph(self)
         self.self_rag_graph = SelfRagGraph(self)
 
-    def set_dbname(self,dbname):
+    def set_chat_dbname(self,dbname):
         # "checkpoint.sqlite"
         self.memory = SqliteSaver.from_conn_string(dbname)
+    def set_query_dbname(self,dbname):
+        self.query_dbname = dbname
     def set_ragsearch_tool(self,retriever):
         name = "rag_searcher"
         description = "一个有用的工具用来从本地知识库中获取信息。你总是利用这个工具优先从本地知识库中搜索有用的信息"
@@ -70,8 +72,8 @@ class GraphLib():
         elif graph_key=='engineer':
             return self.engineer_graph.get_graph(llm_key,llm_model)
         elif graph_key=='db':
-            #self.db_graph.set_db("sqlite:///Chinook.db")
-            self.db_graph.set_db("sqlite:///person.db")
+            self.db_graph.set_db(f"sqlite:///{self.query_dbname}")
+            #self.db_graph.set_db("sqlite:///person.db")
             self.db_graph.set_llm(llm_key,llm_model)
             return self.db_graph.get_graph(llm_key,llm_model)
         elif graph_key=='selfrag':

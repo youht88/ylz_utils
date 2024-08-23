@@ -1,3 +1,4 @@
+from ylz_utils.data import StringLib
 from ylz_utils.langchain import LangchainLib
 from langchain_core.messages import HumanMessage,ToolMessage
 
@@ -17,17 +18,25 @@ def start_graph(langchainLib:LangchainLib,args):
     message = args.message
     chat_dbname = args.chat_dbname
     rag_dbname = args.rag_dbname
+    query_dbname = args.query_dbname
     user = args.user or 'default'
     conversation = args.conversation or 'default'
     thread_id = f"{user}-{conversation}"
     websearch_key = args.websearch
     if chat_dbname:                                  
-        langchainLib.graphLib.set_dbname(chat_dbname)
+        langchainLib.graphLib.set_chat_dbname(chat_dbname)
         print("!!!",f"使用对话数据库{chat_dbname}")
     if rag_dbname:
         retriever = langchainLib.vectorstoreLib.faiss.load(rag_dbname).as_retriever()
         langchainLib.graphLib.set_ragsearch_tool(retriever)
         print("!!!",f"使用知识库{rag_dbname}")
+    if query_dbname:
+        if query_dbname=="Chinook.db":
+            print(StringLib.color(
+                "执行wget https://storage.googleapis.com/benchmarks-artifacts/chinook/Chinook.db,确保Chinook.db在当前目录。",
+                ["lmagenta","underline"]))
+        langchainLib.graphLib.set_query_dbname(query_dbname)
+        print("!!!",f"使用查询数据库{query_dbname}")
     if websearch_key:
         langchainLib.graphLib.set_websearch_tool(websearch_key)
         print("!!!",f"使用搜索工具{websearch_key}")

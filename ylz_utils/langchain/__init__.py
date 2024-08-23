@@ -25,6 +25,7 @@ from langgraph.graph import START,END,MessageGraph,StateGraph
 from langgraph.prebuilt import ToolNode
 
 from ylz_utils.langchain.agents import AgentLib
+from ylz_utils.langchain.flux import FluxLib
 from ylz_utils.langchain.graph import GraphLib
 from ylz_utils.langchain.llms import LLMLib
 from ylz_utils.langchain.embeddings import EmbeddingLib
@@ -100,6 +101,7 @@ class LangchainLib():
         self.get_graph = self.graphLib.get_graph
         
         self.ttsLib = TTSLib(self)
+        self.fluxLib = FluxLib(self)
         
     def add_plugins(self,debug=False):
         plugins = [{"class":ChatOpenAI,"func":ChatOpenAI.invoke},

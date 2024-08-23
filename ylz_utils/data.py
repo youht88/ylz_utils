@@ -40,45 +40,65 @@ class MathLib:
     pass
 
 class StringLib:
-    def black(text):
+    @classmethod
+    def black(cls,text):
         return f"{Color.BLACK}{text}{Color.RESET}"
-    def white(text):
+    @classmethod
+    def white(cls,text):
         return f"{Color.WHITE}{text}{Color.RESET}"
-    def red(text):
+    @classmethod
+    def red(cls,text):
         return f"{Color.RED}{text}{Color.RESET}"
-    def green(text):
+    @classmethod
+    def green(cls,text):
         return f"{Color.GREEN}{text}{Color.RESET}"
-    def yellow(text):
+    @classmethod
+    def yellow(cls,text):
         return f"{Color.YELLOW}{text}{Color.RESET}"
-    def blue(text):
+    @classmethod
+    def blue(cls,text):
         return f"{Color.BLUE}{text}{Color.RESET}"
-    def magenta(text):
+    @classmethod
+    def magenta(cls,text):
         return f"{Color.MAGENTA}{text}{Color.RESET}"
-    def cyan(text):
+    @classmethod
+    def cyan(cls,text):
         return f"{Color.CYAN}{text}{Color.RESET}"
-    def lred(text):
+    @classmethod
+    def lred(cls,text):
         return f"{Color.LRED}{text}{Color.RESET}"
-    def lgreen(text):
+    @classmethod
+    def lgreen(cls,text):
         return f"{Color.LGREEN}{text}{Color.RESET}"
-    def lyellow(text):
+    @classmethod
+    def lyellow(cls,text):
         return f"{Color.LYELLOW}{text}{Color.RESET}"
-    def lblue(text):
+    @classmethod
+    def lblue(cls,text):
         return f"{Color.LBLUE}{text}{Color.RESET}"
-    def lmagenta(text):
+    @classmethod
+    def lmagenta(cls,text):
         return f"{Color.LMAGENTA}{text}{Color.RESET}"
-    def lcyan(text):
+    @classmethod
+    def lcyan(cls,text):
         return f"{Color.LCYAN}{text}{Color.RESET}"
-    def bold(text):
+    @classmethod
+    def bold(cls,text):
         return f"{Color.BOLD}{text}{Color.RESET}"
-    def dark(text):
+    @classmethod
+    def dark(cls,text):
         return f"{Color.DARK}{text}{Color.RESET}"
-    def italic(text):
+    @classmethod
+    def italic(cls,text):
         return f"{Color.ITALIC}{text}{Color.RESET}"
-    def underline(text):
+    @classmethod
+    def underline(cls,text):
         return f"{Color.UNDERLINE}{text}{Color.RESET}"
-    def delete(text):
+    @classmethod
+    def delete(cls,text):
         return f"{Color.DELETE}{text}{Color.RESET}"
-    def color(text,style:\
+    @classmethod
+    def color(cls,text,style:\
               List[Literal["black","white","red","lred","green","lgreen","yellow","lyellow",\
                            "blue","lblue","magenta","lmagenta","cyan","lcyan", \
                            "bold","dark","italic","underline","delete"]]):
@@ -87,7 +107,8 @@ class StringLib:
         for item in style:
             text = f"{ColorMap[item]}{text}{Color.RESET}"
         return text
-    def logging_in_box(text, char="=", console_width:int=80, print_func = logging.info):
+    @classmethod
+    def logging_in_box(cls,text, char="=", console_width:int=80, print_func = logging.info):
         """
         将传入的字符串用“=”字符串框起来在console打印出来，支持多行文本，= 对齐，
         并考虑了字符串在控制台中的实际显示宽度。

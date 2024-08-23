@@ -8,7 +8,6 @@ from dashscope.audio.tts import SpeechSynthesizer
 
 import dashscope
 import sys
-import pyaudio
 from dashscope.api_entities.dashscope_response import SpeechSynthesisResponse
 from dashscope.audio.tts import ResultCallback, SpeechSynthesizer, SpeechSynthesisResult
 
@@ -28,6 +27,7 @@ class TTSLib():
 
     def tts_save(self,text:str,filename:str):
         self.init()
+        import pyaudio
         result = SpeechSynthesizer.call(model=self.model,
                                         text=text,
                                         sample_rate=48000)
@@ -37,6 +37,7 @@ class TTSLib():
     def tts_play(self,text:str):
         self.init()
         callback = TTS_Callback()
+        import pyaudio
         SpeechSynthesizer.call(model='sambert-zhichu-v1',
                        text=text,
                        sample_rate=48000,

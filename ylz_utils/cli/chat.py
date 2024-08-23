@@ -35,7 +35,8 @@ def start_chat(langchainLib:LangchainLib,args):
             print(StringLib.lyellow("/q:"),"退出",end=',')
             print(StringLib.lyellow("/c:"),"清空记录",end=',')
             print(StringLib.lyellow("/u <userid>:"),"设置用户id",end=',')
-            print(StringLib.lyellow("/m <image_url>:"),"增加图片")
+            print(StringLib.lyellow("/m <image_url>:"),"增加图片",end=',')
+            print(StringLib.lyellow("/flux <描述想要生成的图像>:"),"生成图片")
             message = ""
             continue
         if message.lower() in ['/quit','/exit','/stop','/bye','/q']:
@@ -55,6 +56,14 @@ def start_chat(langchainLib:LangchainLib,args):
             image_url = message.split(" ")[1]
             if image_url:
                 images.append({"image":image_url})
+            message = ""
+            continue
+        if message.lower().startswith('/flux'):
+            image_message = message.split(" ")[1]
+            if image_message:
+                file_name = langchainLib.fluxLib.gen(image_message)
+                response = f"已生成图像{file_name},请查看"
+                print(StringLib.color(response,["blue"]))
             message = ""
             continue
         if images:
