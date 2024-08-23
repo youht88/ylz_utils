@@ -63,6 +63,7 @@ torch = "2.2.0"
 
 elastic-transport = "^8.15.0"
 dashscope = "^1.20.4"
+ipfs-toolkit = "^0.5.24"
 
 
 
