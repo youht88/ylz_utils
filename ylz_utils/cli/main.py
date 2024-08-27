@@ -5,6 +5,7 @@ import argparse
 
 from ylz_utils.cli.init import init
 
+from ylz_utils.cli.neo4j import neo4j_test
 from ylz_utils.cli.reset import reset
 from ylz_utils.cli.start import start
 from ylz_utils.cli.serve import serve
@@ -13,7 +14,19 @@ def run():
     main()
 
 def main():
-    parser = argparse.ArgumentParser(description = "测试工具")
+    usage= \
+"""
+    examples:
+        # 初始化配置信息 
+        ylz_utils reset 
+
+        # 启动大语言模型对话
+        ylz_utils start --mode chat
+        
+        # 测试neo4j
+        ylz_utils neo4j 
+"""
+    parser = argparse.ArgumentParser(description = "测试工具",usage=usage)
     parser.add_argument("--project_name",type=str,default="ylz_utils",help="project名称")
     parser.add_argument("--config_name",type=str,default="config.yaml",help="config名称")
     parser.add_argument("--log_level",type=str,default="INFO",choices=["INFO","DEBUG"],help="日志级别,默认:INFO")
@@ -23,6 +36,11 @@ def main():
     
     reset_parser = subparsers.add_parser("reset", help="执行初始化")
     custom_service_parser = subparsers.add_parser("custom_service", help="客服example")
+    
+    neo4j_parser = subparsers.add_parser("neo4j", help="测试neo4j")
+    neo4j_parser.add_argument("--user",type=str,help="user")
+    neo4j_parser.add_argument("--password",type=str,help="password")
+    neo4j_parser.add_argument("--host",type=str,help="host")
 
     start_parser = subparsers.add_parser("start", help="启动测试")
     start_parser.add_argument("--mode",type=str,
@@ -81,6 +99,8 @@ def main():
         start(args)
     elif args.command == "serve":
         serve(args)
+    elif args.command == "neo4j":
+        neo4j_test(args)
     elif args.command == "custom_service":
         import ylz_utils.cli.custom_service
 
