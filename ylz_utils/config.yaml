@@ -127,4 +127,10 @@ VECTORSTORE:
         HOST: localhost
         PORT: 8089
         DB_FILE: rag.chroma
+NEO4J:
+    HOST: neo4j+s://68994948.databases.neo4j.io
+    #HOST: bolt://localhost:7687
+    USER: neo4j
+    PASSWORD: ${NEO4J_PASSWORD}
+
 

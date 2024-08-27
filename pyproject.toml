@@ -65,6 +65,7 @@ elastic-transport = "^8.15.0"
 dashscope = "^1.20.4"
 ipfs-toolkit = "^0.5.24"
 langchain-chroma = "^0.1.3"
+neo4j = "^5.23.1"
 
 
 
