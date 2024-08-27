@@ -20,7 +20,7 @@ class TTSLib():
         api_keys = self.config.get('TTS.DASHSCOPE.API_KEYS')        
         self.model = self.config.get('TTS.DASHSCOPE.MODEL') or 'sambert-zhichu-v1'
         if api_keys:
-            api_key = api_keys.split(',')[0]
+            api_key = self.langchainLib.split_keys(api_keys)[0]
             dashscope.api_key=api_key
         else:
             raise Exception("请先设置TTS.DASHSCOPE.API_KEYS")

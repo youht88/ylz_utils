@@ -146,10 +146,13 @@ class LangchainLib():
             func_name = func.__name__
             cls = item["class"]
             setattr(cls,func_name,get_wrapper(func))
-    def split_keys(self,keys_str):
+    def split_keys(self,keys_str: str | list[str]):
         keys = []
+
         if keys_str:
-            keys = keys_str.split(",")
-            if not keys[-1]:
-                keys.pop()
+            new_keys_str = keys_str
+            if isinstance(new_keys_str,list):
+                new_keys_str = filter(lambda x:x,new_keys_str)
+                new_keys_str = ",".join(new_keys_str)
+            keys = list(set(filter(lambda x:x,new_keys_str.split(","))))
         return keys        

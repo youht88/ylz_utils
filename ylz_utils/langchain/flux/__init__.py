@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING, Union
+if TYPE_CHECKING:
+    from ylz_utils.langchain import LangchainLib
+
 from http import HTTPStatus
 from urllib.parse import urlparse, unquote
 from pathlib import PurePosixPath
@@ -5,14 +10,14 @@ import requests
 from dashscope import ImageSynthesis
 
 class FluxLib():
-    def __init__(self,langchainLib):
+    def __init__(self,langchainLib:LangchainLib):
         self.langchainLib = langchainLib
         self.config = langchainLib.config
     def init(self):
         api_keys = self.config.get('FLUX.DASHSCOPE.API_KEYS')        
         self.model = self.config.get('FLUX.DASHSCOPE.MODEL') or 'flux-schnell'
         if api_keys:
-            api_key = api_keys.split(',')[0]
+            api_key = self.langchainLib.split_keys(api_keys)[0]
             self.api_key=api_key
         else:
             raise Exception("请先设置FLUX.DASHSCOPE.API_KEYS")

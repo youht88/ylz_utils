@@ -1,25 +1,37 @@
 
 LANGSMITH:
-    API_KEYS: ${LANGSMITH_API_KEYS}
+    API_KEYS: 
+        - ${LANGSMITH_API_KEYS}
+        - ${LANGSMITH_API_KEY}
 LLM:
     DEFAULT: "LLM.GROQ"
     SILICONFLOW:
-        API_KEYS: ${SILICONFLOW_API_KEYS}
+        API_KEYS: 
+            - ${SILICONFLOW_API_KEYS}
+            - ${SILICONFLOW_API_KEY}
         BASE_URL: https://api.siliconflow.cn/v1
         MODEL: ${SILICONFLOW_LLM_MODEL}
     TOGETHER: 
-        API_KEYS: ${TOGETHER_API_KEYS}
+        API_KEYS: 
+            - ${TOGETHER_API_KEYS}
+            - ${TOGETHER_API_KEY}
         BASE_URL: https://api.together.xyz/v1
         MODEL: ${TOGETHER_LLM_MODEL}
     GROQ:
-        API_KEYS: ${GROQ_API_KEYS}
+        API_KEYS: 
+            - ${GROQ_API_KEYS}
+            - ${GROQ_API_KEY}
         BASE_URL: https://api.groq.com/openai/v1
         MODEL: ${GROQ_LLM_MODEL}
     GEMINI:
-        API_KEYS: ${GEMINI_API_KEYS}
+        API_KEYS: 
+            - ${GEMINI_API_KEYS}
+            - ${GEMINI_API_KEY}
         MODEL: ${GEMINI_LLM_MODEL}
     DEEPSEEK:
-        API_KEYS: ${DEEPSEEK_API_KEYS}
+        API_KEYS: 
+            - ${DEEPSEEK_API_KEYS}
+            - ${DEEPSEEK_API_KEY}
         BASE_URL: https://api.deepseek.com/v1
         MODEL: ${DEEPSEEK_LLM_MODEL}
     QIANFAN:
@@ -27,55 +39,81 @@ LLM:
         SEC_KEYS: ${QIANFAN_SEC_KEYS}
         MODEL: ${QIANFAN_LLM_MODEL}
     OLLAMA:
-        API_KEYS: ${OLLAMA_API_KEYS}
+        API_KEYS: 
+            - ${OLLAMA_API_KEYS}
+            - ${OLLAMA_API_KEY}
         MODEL: ${OLLAMA_LLM_MODEL}
         KEEP_ALIVE: -1
     MOONSHOT:
-        API_KEYS: ${MOONSHOT_API_KEYS}
+        API_KEYS: 
+            - ${MOONSHOT_API_KEYS}
+            - ${MOONSHOT_API_KEY}
         BASE_URL: https://api.moonshot.cn/v1
         MODEL: ${MOONSHOT_LLM_MODEL}  
     DEEPBRICKS:
-        API_KEYS: ${DEEPBRICKS_API_KEYS}
+        API_KEYS: 
+            - ${DEEPBRICKS_API_KEYS}
+            - ${DEEPBRICKS_API_KEY}
         BASE_URL: https://api.deepbricks.ai/v1
         MODEL: ${DEEPBRICKS_LLM_MODEL}
     HF:
-        API_KEYS: ${HF_API_KEYS}
+        API_KEYS: 
+            - ${HF_API_KEYS}
+            - ${HF_API_KEY}
         MODEL: ${HF_LLM_MODEL}
         PIPELINE: false
     DASHSCOPE:
-        API_KEYS: ${DASHSCOPE_API_KEYS}
+        API_KEYS: 
+            - ${DASHSCOPE_API_KEYS}
+            - ${DASHSCOPE_API_KEY}
         BASH_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
         MODEL: ${DASHSCOPE_LLM_MODEL}
 EMBEDDING:
     DEFAULT: EMBEDDING.TOGETHER
     TOGETHER: 
-        API_KEYS: ${TOGETHER_API_KEYS}
+        API_KEYS: 
+            - ${TOGETHER_API_KEYS}
+            - ${TOGETHER_API_KEY}
         MODEL: ${TOGETHER_EMBEDDING_MODEL}
     GEMINI:
-        API_KEYS: ${GEMINI_API_KEYS}
+        API_KEYS: 
+            - ${GEMINI_API_KEYS}
+            - ${GEMINI_API_KEY}
         MODEL: ${GEMINI_EMBEDDING_MODEL}
     OLLAMA:
-        API_KEYS: ${OLLAMA_API_KEYS}
+        API_KEYS: 
+            - ${OLLAMA_API_KEYS}
+            - ${OLLAMA_API_KEY}
         MODEL: ${OLLAMA_EMBEDDING_MODEL}
     HF:
-        API_KEYS: ${HF_API_KEYS}
+        API_KEYS: 
+            - ${HF_API_KEYS}
+            - ${HF_API_KEY}
         MODEL: ${HF_EMBEDDING_MODEL}
         PIPELINE: false
     DASHSCOPE:
-        API_KEYS: ${DASHSCOPE_API_KEYS}
+        API_KEYS: 
+            - ${DASHSCOPE_API_KEYS}
+            - ${DASHSCOPE_API_KEY}
         MODEL: ${DASHSCOPE_EMBEDDING_MODEL}
 TTS:
     DASHSCOPE:
-        API_KEYS: ${DASHSCOPE_API_KEYS}
+        API_KEYS: 
+            - ${DASHSCOPE_API_KEYS}
+            - ${DASHSCOPE_API_KEY}
         MODEL: ${DASHSCOPE_TTS_MODEL}
 FLUX:
     DASHSCOPE:
-        API_KEYS: ${DASHSCOPE_API_KEYS}
+        API_KEYS: 
+            - ${DASHSCOPE_API_KEYS}
+            - ${DASHSCOPE_API_KEY}
         MODEL: ${DASHSCOPE_FLUX_MODEL}
 
 SEARCH_TOOLS:
     TAVILY:
-        API_KEYS: ${TAVILY_API_KEYS}
+        API_KEYS: 
+            - ${TAVILY_API_KEYS}
+            - ${TAVILY_API_KEY}
 ES:
     HOST: https://localhost:9200
     USER: elastic
