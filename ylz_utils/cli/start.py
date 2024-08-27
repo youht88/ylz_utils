@@ -239,7 +239,27 @@ def start(args):
         print(StringLib.yellow("llms--->:"),[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_llm(full=True)])
         print(StringLib.yellow("embeddings---->:"),[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_embedding(full=True)])
         #return
-        
+        from ylz_utils.database import Neo4jLib
+        neo4jLib = Neo4jLib()
+        # 定义Person数据
+        objects = [
+            {"name": "Alice", "age": 30},
+            {"name": "Bob", "age": 25},
+            {"name": "Charlie", "age": 35}
+        ]
+        subjects = [
+            {"name": "Alice", "age": 30},
+            {"name": "Bob", "age": 25},
+            {"name": "Charlie", "age": 35}
+        ]
+
+        # 定义关系数据
+        relationships = [
+            {"object": "Alice", "subject": "Bob","type":"朋友"},
+            {"object": "Alice", "subject": "Charlie","type":"领导"},
+            {"object": "Bob", "subject": "Charlie","type":"同事"}
+        ]
+        neo4jLib.create_relationships(objects,subjects,relationships,object_label='Person',subject_label='Person',key='name')
         return
         #langchainLib.ttsLib.tts_save("你好呀","tts.wav")
         #langchainLib.ttsLib.tts_play("祝你有愉快的一天")
