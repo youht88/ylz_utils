@@ -55,6 +55,7 @@ ColorMap = {
     "black":Color.BLACK,"white":Color.WHITE,
     "red":Color.RED,"lred":Color.LRED,
     "green":Color.GREEN,"lgreen":Color.LGREEN,
+    "yellow":Color.YELLOW,"lyellow":Color.LYELLOW,
     "blue":Color.BLUE,"lblue":Color.LBLUE,
     "magenta":Color.MAGENTA,"lmagenta":Color.LMAGENTA,
     "cyan":Color.CYAN,"lcyan":Color.LCYAN,
@@ -126,7 +127,7 @@ class StringLib:
     def color(cls,text,style:\
               List[Literal["black","white","red","lred","green","lgreen","yellow","lyellow",\
                            "blue","lblue","magenta","lmagenta","cyan","lcyan", \
-                           "bold","dark","italic","underline","delete"]]):
+                           "bold","dark","italic","underline","delete"]] = ["yellow"]):
         if not style:
             return text
         for item in style:
