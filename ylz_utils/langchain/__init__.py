@@ -55,12 +55,10 @@ class LangchainLib():
         else:
             trace = True        
         if trace:        
-            langsmith_api_key = os.environ.get("LANGSMITH_API_KEY")
-            if not langsmith_api_key:
-                langsmith_api_keys = self.config.get('LANGSMITH.API_KEYS')
-                if langsmith_api_keys:
-                    langsmith_api_key = langsmith_api_keys.split(",")[0]
-                    os.environ["LANGSMITH_API_KEY"]=langsmith_api_key
+            langsmith_api_keys = self.config.get('LANGSMITH.API_KEYS')
+            langsmith_api_keys = self.split_keys(langsmith_api_keys)
+            if langsmith_api_keys:
+                os.environ["LANGSMITH_API_KEY"]=langsmith_api_keys[0]
         print("smith_tracing=",os.environ.get("LANGSMITH_TRACING_V2"))
         print("smith_api_key=",os.environ.get("LANGSMITH_API_KEY"))
         print("project_name=",os.environ["LANGCHAIN_PROJECT"])

@@ -5,7 +5,7 @@ from ylz_utils import LangchainLib
 def start_rag(langchainLib:LangchainLib,args):
     embedding_key = args.embedding_key
     embedding_model = args.embedding_model
-    rag_dbname = args.rag_dbname or "rag.faiss"
+    rag_dbname = args.rag_dbname or "faiss:new_rag.faiss"
     url = args.url
     pptx = args.pptx
     docx = args.docx
@@ -29,6 +29,22 @@ def start_rag(langchainLib:LangchainLib,args):
         if not docs:
             return
         batch = args.batch
+        provider_dbname = rag_dbname.split(":")
+        if len(provider_dbname)==2:
+            provider = provider_dbname[0]
+            dbname = provider_dbname[1]
+        else:
+            provider = None
+            dbname = provider_dbname[0]
+
+        if  provider=='faiss':
+            try:
+                vectorstore = langchainLib.vectorstoreLib.faissLib.load(rag_dbname,embedding)
+            except:
+                vectorstore = langchainLib.vectorstoreLib.faissLib.get_store(embedding)
+        else:    
+            vectorstore = langchainLib.vectorstoreLib.get_store(provider,dbname,embedding)
+        
         if url and rag_dbname:
             ##### create vectorestore
             # url = "https://python.langchain.com/v0.2/docs/concepts/#tools"
@@ -36,38 +52,17 @@ def start_rag(langchainLib:LangchainLib,args):
             print("result:",[{"doc_len":len(doc['doc'].page_content),"doc_blocks":len(doc['blocks'])} for doc in docs])
             for doc in tqdm(docs,desc="页面",colour="#6666ff"):
                 blocks = doc['blocks']
-                if rag_dbname.startswith("es:///"):
-                    _,index_name  =langchainLib.vectorstoreLib.esLib.init_client(connect_string=rag_dbname)
-                    vectorstore = langchainLib.vectorstoreLib.esLib.get_store(index_name,embedding)
-                    ids = langchainLib.vectorstoreLib.esLib.create_from_docs(vectorstore,blocks)                    
-                else:
-                    try:
-                        vectorstore = langchainLib.vectorstoreLib.faissLib.load(rag_dbname,embedding)
-                    except:
-                        vectorstore = langchainLib.vectorstoreLib.faissLib.new_vectorstore(embedding)
-                    ids = langchainLib.vectorstoreLib.faissLib.add_docs_to_vectorstore(vectorstore,blocks,batch=batch)
-                    langchainLib.vectorstoreLib.faissLib.save(rag_dbname,vectorstore)
+                ids = langchainLib.vectorstoreLib.add_docs(vectorstore,blocks,batch=batch)                    
                 print("ids:",ids)
         else:
-                if rag_dbname.startswith("es:///"):
-                    _,index_name = langchainLib.vectorstoreLib.esLib.init_client(connect_string=rag_dbname)
-                    vectorstore = langchainLib.vectorstoreLib.esLib.get_store(index_name,embedding)
-                    ids = langchainLib.vectorstoreLib.esLib.create_from_docs(vectorstore,docs)   
-                else:
-                    try:
-                        vectorstore = langchainLib.vectorstoreLib.faissLib.load(rag_dbname,embedding)
-                    except:
-                        vectorstore = langchainLib.vectorstoreLib.faissLib.new_vectorstore(embedding)
-                    ids = langchainLib.vectorstoreLib.faissLib.add_docs_to_vectorstore(vectorstore,docs,batch=batch)
-                    langchainLib.vectorstoreLib.faissLib.save(rag_dbname,vectorstore)
-                print("ids:",ids)
-    if message and rag_dbname:   
-        # docs = [Document("I am a student"),Document("who to go to china"),Document("this is a table")]
-        # vectorestore = langchainLib.vectorstoreLib.faissLib.create_from_docs(docs)
-        # langchainLib.vectorstoreLib.faissLib.save("test.faiss",vectorestore)
-        
-        vectorstore = langchainLib.vectorstoreLib.faissLib.load(rag_dbname,embedding)
-        print("v--->",langchainLib.vectorstoreLib.faissLib.search_with_score(message,vectorstore,k=4))
+            ids = langchainLib.vectorstoreLib.add_docs(vectorstore,docs,batch=batch)                    
+            print("ids:",ids)   
+    
+        if provider=='faiss':
+            langchainLib.vectorstoreLib.faissLib.save(rag_dbname,vectorstore)
+
+        if message and rag_dbname:           
+            print("v--->",langchainLib.vectorstoreLib.search_with_score(message,vectorstore,k=4))
     
     ###### have bug when poetry add sentence_transformers   
     #v1 = langchainLib.get_huggingface_embedding()

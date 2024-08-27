@@ -1,6 +1,6 @@
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, Optional
 
 if TYPE_CHECKING:
     from ylz_utils.langchain import LangchainLib
@@ -9,14 +9,46 @@ from tqdm import tqdm
 
 from ylz_utils.langchain.vectorstores.elasticsearch import ESLib
 from ylz_utils.langchain.vectorstores.faiss import FaissLib
+from ylz_utils.langchain.vectorstores.chroma import ChromaLib
 
 
 class VectorstoreLib():
-    def __init__(self,langchainLib:LangchainLib):
+    def __init__(self,langchainLib:LangchainLib,provider:Optional[Literal['es','faiss','chroma']]=None):
         self.langchainLib = langchainLib
+        self.config = langchainLib.config
         self.faissLib = FaissLib(self)
         self.esLib = ESLib(self)
+        self.chromaLib = ChromaLib(self)
+        if provider:
+            self.provider = provider
+        else:
+            self.provider = self.config.get("VECTORSTORE.DEFAULT")
+
+    def get_store(self,provider:Optional[Literal['es','faiss','chroma']],collection_name=None,embedding=None):
+        if not provider:
+            provider = self.provider
+        if not provider:
+            raise Exception("请设置vectorstore provider")
         
+        if provider=='es':
+            return self.esLib.get_store(collection_name,embedding)
+        elif provider == 'faiss':
+            return self.faissLib.get_store(collection_name,embedding)
+        elif provider == 'chroma':
+            return self.chromaLib.get_store(collection_name,embedding)
+        else:
+            return None
+    def add_docs(self,vector_store,docs,batch=1) -> list[str]:
+        return self._split_batch_and_add(docs,batch,vector_store.add_documents)
+    def add_texts(self,vector_store,texts,batch=1) -> list[str]:
+        return self._split_batch_and_add(texts,batch,vector_store.add_texts)
+    
+    def search(self,query,vectorstore,k=10,filter={}):
+        return vectorstore.similarity_search(query,k=k,filter=filter)
+    
+    def search_with_score(self,query,vectorstore,k=10,filter={}):
+        return vectorstore.similarity_search_with_score(query,k=k,filter=filter)
+    
     def _split_batch_and_add(self,docs,batch,func) ->  list[list]:
         # ["a","b","c","d","e"] -> [["a","b"],["c","d"],["e"]] when batch is 3
         batch_items = []

@@ -114,7 +114,15 @@ SEARCH_TOOLS:
         API_KEYS: 
             - ${TAVILY_API_KEYS}
             - ${TAVILY_API_KEY}
-ES:
-    HOST: https://localhost:9200
-    USER: elastic
-    PASSWORD: ${ES_PASSWORD}
+VECTORSTORE:
+    DEFAULT: chroma
+    ES:
+        HOST: https://localhost:9200
+        USER: elastic
+        PASSWORD: ${ES_PASSWORD}
+    CHROMA:
+        HOST: localhost
+        PORT: 8090
+        DBNAME: chroma.db
+
+

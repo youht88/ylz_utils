@@ -14,7 +14,10 @@ from uuid import uuid4
 class FaissLib():
     def __init__(self,vectorstoreLib:VectorstoreLib):
         self.vectorstoreLib = vectorstoreLib
-    def new_vectorstore(self,embedding=None) -> FAISS:
+        self.collection_name = "index"
+    def get_store(self,collection_name=None,embedding=None) -> FAISS:
+        if collection_name:
+            self.collection_name = collection_name
         if not embedding:
             embedding = self.vectorstoreLib.langchainLib.get_embedding()
         index = faiss.IndexFlatL2(len(embedding.embed_query("hello world")))
@@ -26,38 +29,28 @@ class FaissLib():
         )
         return vector_store
             
-    def create_from_docs(self,docs,embedding=None,batch:int=1) -> Tuple[FAISS,list[str]]:
-        if not embedding:
-            embedding = self.vectorstoreLib.langchainLib.get_embedding()
-        vector_store = self.new_vectorstore(embedding)
-        all_ids = self.vectorstoreLib._split_batch_and_add(docs,batch,vector_store.add_documents)
-        return vector_store,all_ids
-    
-    def create_from_texts(self,texts,embedding=None,batch:int=1) -> Tuple[FAISS,list[str]]:
-        if not embedding:
-            embedding = self.vectorstoreLib.langchainLib.get_embedding()
-        vector_store = self.new_vectorstore(embedding)
-        all_ids = self.vectorstoreLib._split_batch_and_add(texts,batch,vector_store.add_texts)
-        return vector_store,all_ids
-    
-    def add_docs_to_vectorstore(self,vector_store: FAISS,docs,batch:int=1) -> list[str]:
+    def add_docs(self,vector_store:FAISS,docs,batch:int=1) -> list[str]:
         all_ids = self.vectorstoreLib._split_batch_and_add(docs,batch,vector_store.add_documents)
         return all_ids
-
-    def add_texts_to_vectorstore(self,vector_store: FAISS,texts,batch:int=1) -> list[str]:
+    
+    def add_texts(self,vector_store:FAISS,texts,batch:int=1) -> list[str]:
         all_ids = self.vectorstoreLib._split_batch_and_add(texts,batch,vector_store.add_texts)
         return all_ids
     
     def delete(self,vectorstore: FAISS,ids: List[str] | None = None):
         return vectorstore.delete(ids) 
       
-    def save(self,  db_file:str, vectorstore: FAISS,index_name:str = "index"):
-        vectorstore.save_local(db_file,index_name)
+    def save(self,  db_file:str, vectorstore: FAISS,collection_name:str = None):
+        if not collection_name:
+            collection_name = self.collection_name
+        vectorstore.save_local(db_file,collection_name)
 
-    def load(self, db_file:str ,embedding=None, index_name:str = "index") -> FAISS:
+    def load(self, db_file:str ,embedding=None, collection_name:str = None) -> FAISS:
+        if not collection_name:
+            collection_name = self.collection_name
         if not embedding:
             embedding = self.vectorstoreLib.langchainLib.get_embedding()
-        vectorestore = FAISS.load_local(db_file, embeddings=embedding, index_name=index_name, allow_dangerous_deserialization=True)
+        vectorestore = FAISS.load_local(db_file, embeddings=embedding, index_name=collection_name, allow_dangerous_deserialization=True)
         return vectorestore
     
     def search(self,query,vectorstore: FAISS,k=10,filter={}):

@@ -38,7 +38,7 @@ def main():
     start_parser.add_argument("--conversation",type=str,help="conversation_id,example: 123") 
     start_parser.add_argument("--url",type=str,help="仅rag,loader使用,下载的URL地址")    
     start_parser.add_argument("--depth",type=int,default=1,help="仅rag使用,下载的深度，默认为1")
-    start_parser.add_argument("--rag_dbname",type=str,help="保存的向量数据库") 
+    start_parser.add_argument("--rag_dbname",type=str,help="保存的向量数据库,格式为<es|faiss|chroma>:<dbname>") 
     start_parser.add_argument("--chat_dbname",type=str,help="保存的对话数据库") 
     start_parser.add_argument("--query_dbname",default='Chinook.db',type=str,help="测试查询的数据库，默认Chinook.db") 
     start_parser.add_argument("--docx",type=str,help="docx文档文件名") 
