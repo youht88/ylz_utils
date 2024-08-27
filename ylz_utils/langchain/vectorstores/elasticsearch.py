@@ -17,9 +17,9 @@ class ESLib():
         self.config = Config()
         self.vectorstoreLib = vectorstoreLib
         self.client = None
-        self.es_host=self.config.get("ES.HOST")
-        self.es_user=self.config.get("ES.USER")
-        self.es_password=self.config.get("ES.PASSWORD")
+        self.es_host=self.config.get("VECTORSTORE.ES.HOST")
+        self.es_user=self.config.get("VECTORSTORE.ES.USER")
+        self.es_password=self.config.get("VECTORSTORE.ES.PASSWORD")
     def init_client(self,host=None,es_user=None,es_password=None):
         es_connection = create_elasticsearch_client(
             url=host or self.es_host,

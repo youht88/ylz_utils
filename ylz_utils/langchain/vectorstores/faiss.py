@@ -14,6 +14,8 @@ from uuid import uuid4
 class FaissLib():
     def __init__(self,vectorstoreLib:VectorstoreLib):
         self.vectorstoreLib = vectorstoreLib
+        self.config = self.vectorstoreLib.langchainLib.config
+        self.db_file = self.config.get("VECTORSTORE.FAISS.DB_FILE")
         self.collection_name = "index"
     def get_store(self,collection_name=None,embedding=None) -> FAISS:
         if collection_name:
@@ -40,12 +42,16 @@ class FaissLib():
     def delete(self,vectorstore: FAISS,ids: List[str] | None = None):
         return vectorstore.delete(ids) 
       
-    def save(self,  db_file:str, vectorstore: FAISS,collection_name:str = None):
+    def save(self,  vectorstore: FAISS,*,db_file:str=None,collection_name:str = None):
+        if not db_file:
+            db_file = self.db_file
         if not collection_name:
             collection_name = self.collection_name
         vectorstore.save_local(db_file,collection_name)
 
-    def load(self, db_file:str ,embedding=None, collection_name:str = None) -> FAISS:
+    def load(self, db_file:str=None , *, embedding=None, collection_name:str = None) -> FAISS:
+        if not db_file:
+            db_file = self.db_file
         if not collection_name:
             collection_name = self.collection_name
         if not embedding:

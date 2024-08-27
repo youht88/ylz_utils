@@ -4,7 +4,7 @@ if TYPE_CHECKING:
     from ylz_utils.langchain.vectorstores import VectorstoreLib
 
 import chromadb
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_core.documents import Document
 
@@ -15,15 +15,14 @@ class ChromaLib():
     def __init__(self,vectorstoreLib:VectorstoreLib):
         self.vectorstoreLib = vectorstoreLib
         self.config = vectorstoreLib.langchainLib.config
-        self.host = self.config.get("CHROMA.HOST")
-        self.port = self.config.get("CHROMA.PORT")
-        self.dbname = self.config.get("CHROMA.DBNAME")
-        if self.host and self.dbname :
-            raise Exception("请指定host(SERVER模式)或dbname(本地模式)其中的一种模式")   
+        self.host = self.config.get("VECTORSTORE.CHROMA.HOST")
+        self.port = self.config.get("VECTORSTORE.CHROMA.PORT")
+        self.db_file = self.config.get("VECTORSTORE.CHROMA.DB_FILE")
+        self.server = self.config.get("VECTORSTORE.CHROMA.SERVER")
     def get_store(self,collection_name=None,embedding=None) -> Chroma:
         if not embedding:
             embedding = self.vectorstoreLib.langchainLib.get_embedding()
-        if self.host:
+        if self.server:
             client = chromadb.HttpClient(host=self.host,port=self.port)
             vector_store = Chroma(
                 collection_name=collection_name,
@@ -34,7 +33,7 @@ class ChromaLib():
             vector_store = Chroma(
                 collection_name=collection_name,
                 embedding_function=embedding,
-                persist_directory=self.dbname,  # Where to save data locally, remove if not neccesary
+                persist_directory=self.db_file,  # Where to save data locally, remove if not neccesary
             )
         return vector_store
             

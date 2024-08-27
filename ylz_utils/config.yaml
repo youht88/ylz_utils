@@ -116,13 +116,15 @@ SEARCH_TOOLS:
             - ${TAVILY_API_KEY}
 VECTORSTORE:
     DEFAULT: chroma
+    FAISS:
+        DB_FILE: rag.faiss
     ES:
         HOST: https://localhost:9200
         USER: elastic
         PASSWORD: ${ES_PASSWORD}
     CHROMA:
+        SERVER: false
         HOST: localhost
-        PORT: 8090
-        DBNAME: chroma.db
-
+        PORT: 8089
+        DB_FILE: rag.chroma
 

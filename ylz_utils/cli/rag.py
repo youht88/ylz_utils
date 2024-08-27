@@ -5,7 +5,7 @@ from ylz_utils import LangchainLib
 def start_rag(langchainLib:LangchainLib,args):
     embedding_key = args.embedding_key
     embedding_model = args.embedding_model
-    rag_dbname = args.rag_dbname or "faiss:new_rag.faiss"
+    rag_indexname = args.rag_indexname or "faiss:index"
     url = args.url
     pptx = args.pptx
     docx = args.docx
@@ -15,7 +15,7 @@ def start_rag(langchainLib:LangchainLib,args):
     fake_size = args.fake_size
     
     if (not url and not pptx and not docx and not pdf and not glob) and  (not message):
-        print(f"1、指定url/pptx/docx:系统将文档下载切片后向量化到{rag_dbname}数据库\n2、指定message:系统将从{rag_dbname}数据库中搜索相关的两条记录。\n您需要至少指定url和message中的一个参数.")
+        print(f"1、指定url/pptx/docx:系统将文档下载切片后向量化到{rag_indexname}数据表\n2、指定message:系统将从{rag_indexname}数据表中搜索相关的两条记录。\n您需要至少指定url和message中的一个参数.")
         return
 
     if embedding_key or embedding_model or fake_size:
@@ -29,23 +29,23 @@ def start_rag(langchainLib:LangchainLib,args):
         if not docs:
             return
         batch = args.batch
-        provider_dbname = rag_dbname.split(":")
-        if len(provider_dbname)==2:
-            provider = provider_dbname[0]
-            dbname = provider_dbname[1]
+        provider_indexname = rag_indexname.split(":")
+        if len(provider_indexname)==2:
+            provider = provider_indexname[0]
+            indexname = provider_indexname[1]
         else:
             provider = None
-            dbname = provider_dbname[0]
+            indexname = provider_indexname[0]
 
         if  provider=='faiss':
             try:
-                vectorstore = langchainLib.vectorstoreLib.faissLib.load(rag_dbname,embedding)
+                vectorstore = langchainLib.vectorstoreLib.faissLib.load(embedding=embedding,collection_name=rag_indexname,)
             except:
-                vectorstore = langchainLib.vectorstoreLib.faissLib.get_store(embedding)
+                vectorstore = langchainLib.vectorstoreLib.faissLib.get_store(collection_name=indexname,embedding=embedding)
         else:    
-            vectorstore = langchainLib.vectorstoreLib.get_store(provider,dbname,embedding)
+            vectorstore = langchainLib.vectorstoreLib.get_store(provider,indexname,embedding)
         
-        if url and rag_dbname:
+        if url and rag_indexname:
             ##### create vectorestore
             # url = "https://python.langchain.com/v0.2/docs/concepts/#tools"
             # faiss_dbname = "langchain_docs.faiss"
@@ -59,9 +59,9 @@ def start_rag(langchainLib:LangchainLib,args):
             print("ids:",ids)   
     
         if provider=='faiss':
-            langchainLib.vectorstoreLib.faissLib.save(rag_dbname,vectorstore)
+            langchainLib.vectorstoreLib.faissLib.save(vectorstore)
 
-        if message and rag_dbname:           
+        if message and rag_indexname:           
             print("v--->",langchainLib.vectorstoreLib.search_with_score(message,vectorstore,k=4))
     
     ###### have bug when poetry add sentence_transformers   
