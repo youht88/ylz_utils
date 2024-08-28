@@ -33,11 +33,15 @@ class Neo4jLib():
                 logging.error(e)
                 raise e
     
-    def query(self,query:str,**kwargs):
+    def query(self,query:str,only_data=False,**kwargs):
         if not self.driver:
             self.get_driver()
         try:
-            return self.driver.execute_query(query,database_="neo4j",**kwargs)    
+            records,summary,keys = self.driver.execute_query(query,database_="neo4j",**kwargs) 
+            if only_data :
+                return [ record.data() for record in records]
+            else:
+                return records,summary,keys   
         except Exception as e:
             logging.error(e)
             raise e
