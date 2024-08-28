@@ -239,29 +239,29 @@ def start(args):
         print(StringLib.yellow("llms--->:"),[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_llm(full=True)])
         print(StringLib.yellow("embeddings---->:"),[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_embedding(full=True)])
         #return
-        from ylz_utils.database import Neo4jLib
-        neo4jLib = Neo4jLib()
-        # 定义Person数据
-        objects = [
-            {"name": "Alice", "age": 30},
-            {"name": "Bob", "age": 25},
-            {"name": "Charlie", "age": 35}
-        ]
-        subjects = [
-            {"name": "Alice", "age": 30},
-            {"name": "Bob", "age": 25},
-            {"name": "Charlie", "age": 35},
-            {"name": "关羽", "age": 44 }
-        ]
+        # from ylz_utils.database import Neo4jLib
+        # neo4jLib = Neo4jLib()
+        # # 定义Person数据
+        # objects = [
+        #     {"name": "Alice", "age": 30},
+        #     {"name": "Bob", "age": 25},
+        #     {"name": "Charlie", "age": 35}
+        # ]
+        # subjects = [
+        #     {"name": "Alice", "age": 30},
+        #     {"name": "Bob", "age": 25},
+        #     {"name": "Charlie", "age": 35},
+        #     {"name": "关羽", "age": 44 }
+        # ]
 
-        # 定义关系数据
-        relationships = [
-            {"object": "Alice", "subject": "Bob","type":"朋友","other":"a","grade":1},
-            {"object": "Alice", "subject": "Charlie","type":"同事","grade":3},
-            {"object": "Bob", "subject": "Charlie","type":"同事","grade":7},
-            {"object": "Bob", "subject": "关羽","type":"崇拜","other":"b","grade":9},
-        ]
-        neo4jLib.create_relationships(objects=objects,subjects=subjects,relationships=relationships,object_label='Person',key='name')
+        # # 定义关系数据
+        # relationships = [
+        #     {"object": "Alice", "subject": "Bob","type":"朋友","other":"a","grade":1},
+        #     {"object": "Alice", "subject": "Charlie","type":"同事","grade":3},
+        #     {"object": "Bob", "subject": "Charlie","type":"同事","grade":7},
+        #     {"object": "Bob", "subject": "关羽","type":"崇拜","other":"b","grade":9},
+        # ]
+        # neo4jLib.create_relationships(objects=objects,subjects=subjects,relationships=relationships,object_label='Person',key='name')
         return
         #langchainLib.ttsLib.tts_save("你好呀","tts.wav")
         #langchainLib.ttsLib.tts_play("祝你有愉快的一天")

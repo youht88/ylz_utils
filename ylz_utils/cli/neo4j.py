@@ -32,16 +32,51 @@ def neo4j_test(args):
         query = input(f'{StringLib.color(f"输入语句{idx}: ")}')
         if query.strip().lower().startswith('/'):
             command =  query.strip().lower().split(" ")[0]
-            if command not in ["/q","/set","/get","/list","/clear","/load","/query"]:
+            if command not in ["/q","/set","/get","/list","/clear","/load","/query","/import"]:
                 print(
 """
 usage:
+    <CQL> 执行CQL语句
     /set <key>=<value> 设置变量
     /get <key> 查看key变量
     /list 变量列表
     /clear 清除变量
     /load <file name> as <key> 读取文件内容设置为变量key
     /query <key>=<CQL查询语句> 将查询语句的结果设置为变量key
+    /import <import.json> 批量创建object/subject节点，以及他们直接的relationship
+        创建主体节点(objects)和客体节点(subjects),主体和客体节点可以重复,以key为唯一标识。
+          - 如果objects存在则merge方式创建objects
+          - 如果subjects存在则merge方式创建subjects
+          - objects与subjects的第一行属性作为节点属性,每一行都应保持同样的结构
+          - object_label必须指定
+          - 如果subject_label未指定则默认与object_label相同
+        创建关系根据relationships,为(object)-[type]->(subject)关系表
+          - 如果relationships存在则merge方式创建relation
+          - 每一行结构必须包含object,subject,type字段，分别代表主体，客体和关系
+          - 第一行属性(除object,subject,type外)作为关系属性，相同type的每一行都应保持同样的结构
+      import.json模版:
+      {
+        "objects":[
+              {"name": "Alice", "age": 30},
+              {"name": "Bob", "age": 25},
+              {"name": "Charlie", "age": 35}
+            ],
+        "subjects":[
+              {"name": "Alice", "age": 30},
+              {"name": "Bob", "age": 25},
+              {"name": "Charlie", "age": 35},
+              {"name": "关羽", "age": 44 }
+            ],
+        "relationships":[
+            {"object": "Alice", "subject": "Bob","type":"朋友","other":"a","grade":1},
+            {"object": "Alice", "subject": "Charlie","type":"同事","grade":3},
+            {"object": "Bob", "subject": "Charlie","type":"同事","grade":7},
+            {"object": "Bob", "subject": "关羽","type":"崇拜","other":"b","grade":9}
+            ],
+        "object_label": "Person",
+        "subject_label": "Person",
+        "key": "name"
+      }
     /q 退出
 """
                 )
@@ -90,6 +125,23 @@ usage:
             except Exception as e:
                 print(StringLib.lred("ERROR ON LOAD:"),e)
             continue
+        if query.strip().startswith('/import'):
+            try:
+                filename = query.strip().replace('/import',"").strip()
+                with open(filename,"r") as f:
+                    importer = json.load(f)
+                    objects = importer.get("objects")
+                    subjects = importer.get("subjects")
+                    relationships = importer.get("relationships")
+                    object_label = importer.get("object_label")
+                    subject_label = importer.get("subject_label")
+                    relation_key = importer.get("key")
+                    neo4jLib.create_relationships(objects=objects,subjects=subjects,relationships=relationships,
+                                                  object_label=object_label,subject_label=subject_label,
+                                                  key=relation_key)
+            except Exception as e:
+                print(StringLib.lred("ERROR ON IMPORT:"),e)
+            continue 
         try:
             records,summary,keys = query_neo4j(neo4jLib,vars,query,False)
             # Records
