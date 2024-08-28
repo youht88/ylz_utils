@@ -250,16 +250,18 @@ def start(args):
         subjects = [
             {"name": "Alice", "age": 30},
             {"name": "Bob", "age": 25},
-            {"name": "Charlie", "age": 35}
+            {"name": "Charlie", "age": 35},
+            {"name": "关羽", "age": 44 }
         ]
 
         # 定义关系数据
         relationships = [
-            {"object": "Alice", "subject": "Bob","type":"朋友"},
-            {"object": "Alice", "subject": "Charlie","type":"领导"},
-            {"object": "Bob", "subject": "Charlie","type":"同事"}
+            {"object": "Alice", "subject": "Bob","type":"朋友","other":"a","grade":1},
+            {"object": "Alice", "subject": "Charlie","type":"同事","grade":3},
+            {"object": "Bob", "subject": "Charlie","type":"同事","grade":7},
+            {"object": "Bob", "subject": "关羽","type":"崇拜","other":"b","grade":9},
         ]
-        neo4jLib.create_relationships(objects,subjects,relationships,object_label='Person',subject_label='Person',key='name')
+        neo4jLib.create_relationships(objects=objects,subjects=subjects,relationships=relationships,object_label='Person',key='name')
         return
         #langchainLib.ttsLib.tts_save("你好呀","tts.wav")
         #langchainLib.ttsLib.tts_play("祝你有愉快的一天")
