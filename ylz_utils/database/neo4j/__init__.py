@@ -1,18 +1,19 @@
 from typing import Optional,Union,Literal
 from ylz_utils.config import Config
 import logging
-
-from neo4j import GraphDatabase, Result
+import re
+from neo4j import GraphDatabase, Result,EagerResult,Record
 from neo4j.graph import Node,Relationship
 
 from ylz_utils.data import StringLib
 
 class Neo4jLib():
-    def __init__(self,host:str=None,user:str=None ,password:str=None):
+    def __init__(self,host:str=None,user:str=None ,password:str=None,database:str='neo4j'):
         self.config = Config()
         self.host = host or self.config.get("NEO4J.HOST")
         self.user = user or self.config.get("NEO4J.USER")
         self.password = password or self.config.get("NEO4J.PASSWORD")
+        self.database = database or self.config.get("NEO4J.DATABASE")
         self.get_driver()
 
     def get_driver(self):
@@ -26,32 +27,31 @@ class Neo4jLib():
     def run(self,command:str,**kwargs) -> Result:
         if not self.driver:
             self.driver = self.get_driver()
-        with self.driver.session(database="neo4j") as session:
+        with self.driver.session(database=self.database) as session:
             try:
                 return session.run(command,**kwargs)
             except Exception as e:
                 logging.error(e)
                 raise e
-    
-    def query(self,query:str,only_data=False,**kwargs):
+        
+    def query(self,query:str,**kwargs) -> EagerResult:
         if not self.driver:
             self.get_driver()
         try:
-            records,summary,keys = self.driver.execute_query(query,database_="neo4j",**kwargs) 
-            if only_data :
-                return [ record.data() for record in records]
-            else:
-                return records,summary,keys   
+            result = self.driver.execute_query(query,database_=self.database,**kwargs) 
+            return result   
         except Exception as e:
             logging.error(e)
             raise e
-    def create_relationships(self,*,objects=None,subjects=None,relationships,object_label,subject_label=None,key:str="name"):
-        if not object_label:
-            raise Exception("必须定义object_label!")
-        if not subject_label:
-            subject_label = object_label
-            print(f"when subject_label is None,then subject_label=object_label={{{object_label}}}")
-        '''
+    
+    def get_data(self,records:list[Record] | EagerResult):
+        if isinstance(records,EagerResult):
+            records = records.records
+        return [ record.data() for record in records]
+    
+    def get_schema(self):
+        pass
+    '''
         创建主体节点(objects)和客体节点(subjects),主体和客体节点可以重复,以key为唯一标识。
           - 如果objects存在则merge方式创建objects
           - 如果subjects存在则merge方式创建subjects
@@ -83,41 +83,44 @@ class Neo4jLib():
             {"object": "Bob", "subject": "Charlie","type":"同事"}
         ]
         create_relationships(objects,subjects,relationships,object_label='Person',subject_label='Person',key='name')
-        '''
+    '''
+
+    def create_node_and_relation(self,data:dict):
         with self.driver.session() as session:
-            # 批量创建节点和关系
-            if objects:
-                object_properties = "{" + ",".join([f"{key}:nodea.{key}" for key in objects[0]]) + "}"
-                create_objects = f"""
-                UNWIND $objects AS nodea
-                MERGE (n:{object_label} {object_properties})
-                """
-                print(StringLib.lred(create_objects))
-                session.run(create_objects, objects=objects)
-            if subjects:            
-                subject_properties = "{" + ",".join([f"{key}:nodeb.{key}" for key in subjects[0]]) + "}"
-                create_subjects = f"""
-                UNWIND $subjects AS nodeb
-                MERGE (m:{subject_label} {subject_properties})
-                """
-                print(StringLib.green(create_subjects))
-                session.run(create_subjects,subjects=subjects)
-            
-            if relationships:
-                group_relation_types = set([ item["type"] for item in relationships ])
-                group_relations =[]
-                for relation_type in group_relation_types:
-                    group_relations.append([item for item in relationships if item["type"]==relation_type])
-                
-                for relations in group_relations:
-                    relation_type = relations[0]["type"]
-                    relation_prop = [ key for key in relations[0].keys() if key not in ['object','subject','type']]
-                    relation_properties = "{" + ",".join([f"{key}:rel.{key}" for key in relation_prop]) + "}"
-                    
-                    create_relationships = f"""
-                      UNWIND $relations AS rel
-                      MATCH (a:{object_label} {{{key}: rel.object}}), (b:{subject_label} {{{key}: rel.subject}})
-                      MERGE (a)-[:{relation_type} {relation_properties}]->(b)
+            node_labels = [re.findall(r"(.*)_key",key)[0] for key in data.keys() if re.match(r".*_key",key)] 
+            # merge nodes
+            for node_label in node_labels:
+                nodes = data.get(node_label)
+                if nodes:
+                    node_properties = "{" + ",".join([f"{key}:node.{key}" for key in nodes[0]]) + "}"
+                    create_nodes = f"""
+                        UNWIND $nodes AS node
+                        MERGE (n:{node_label} {node_properties})
+                        """
+                    print(StringLib.green(nodes))
+                    session.run(create_nodes, nodes=nodes)
+            # merge relation
+            relations = data.get('relations',[])
+            for relation in relations:
+                node_from_value = relation.get("from")
+                node_from_label = relation.get("from_label")
+                node_from_key = relation.get("from_key")
+                if not node_from_key:
+                    node_from_key = data[f"{node_from_label}_key"]
+                node_to_value = relation.get("to")
+                node_to_label = relation.get("to_label")
+                node_to_key = relation.get("to_key")
+                if not node_to_key:
+                    node_to_key = data[f"{node_to_label}_key"]
+                relation_type = relation["type"]
+                relation_prop = [ key for key in relation.keys() if key not in ["from","from_label","from_key","to","to_label","to_key"]]
+                relation_properties = "{" + ",".join([f"{key}:rel.{key}" for key in relation_prop]) + "}"
+                           
+                if node_from_value and node_to_value and node_from_label and node_to_label and relation_type:
+                    create_relations = f"""
+                        WITH $relation as rel
+                        MATCH (a:{node_from_label} {{{node_from_key}: "{node_from_value}"}}), (b:{node_to_label} {{{node_to_key}: "{node_to_value}"}})
+                        MERGE (a)-[:{relation_type} {relation_properties}]->(b)
                     """
-                    print(StringLib.yellow(create_relationships))
-                    session.run(create_relationships,relations=relations)
+                    print(StringLib.green(relations))
+                    session.run(create_relations,relation=relation)    
