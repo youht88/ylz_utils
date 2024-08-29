@@ -20,7 +20,7 @@ from langgraph.graph.state import CompiledStateGraph
 from ylz_utils.file import FileLib
 from ylz_utils.data import StringLib,Color
 from ylz_utils.langchain.graph.stand_graph import StandGraph
-from ylz_utils.langchain.graph.test_graph import TestGraph
+from ylz_utils.langchain.graph.life_graph import LifeGraph
 from ylz_utils.langchain.graph.engineer_graph import EngineerGraph
 from ylz_utils.langchain.graph.db_graph import DbGraph
 from ylz_utils.langchain.graph.self_rag_graph import SelfRagGraph
@@ -36,7 +36,7 @@ class GraphLib():
         self.python_repl_tool = langchainLib.get_python_repl_tool()
         self.memory = SqliteSaver.from_conn_string(db_conn_string)
         self.stand_graph = StandGraph(self)
-        self.test_graph = TestGraph(self)
+        self.life_graph = LifeGraph(self)
         self.engineer_graph = EngineerGraph(self)
         self.db_graph = DbGraph(self)
         self.self_rag_graph = SelfRagGraph(self)

@@ -37,7 +37,7 @@ def neo4j_test(args):
     langchainLib.llmLib.set_dbname(dbname)
     chat = langchainLib.get_chat(llm,prompt)
     
-    graph = langchainLib.graphLib.test_graph.get_graph(llm_key)
+    graph = langchainLib.graphLib.life_graph.get_graph(llm_key)
 
     neo4jLib = Neo4jLib(host,user,password)
     print("*"*50,"let's start","*"*50)
