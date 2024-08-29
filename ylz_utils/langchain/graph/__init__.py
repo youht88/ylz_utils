@@ -116,8 +116,7 @@ class GraphLib():
                     else:
                         response_metadata = message.response_metadata 
                         print(f"{Color.LBLUE}AI:{Color.RESET}",msg_repr,
-                            f'[model:{Color.LYELLOW}{message.response_metadata.get("model_name")}\
-                                {Color.RESET},token:{Color.LYELLOW}{message.response_metadata.get("token_usage",{}).get("total_tokens")}{Color.RESET}]')
+                            f'[model:{Color.LYELLOW}{message.response_metadata.get("model_name")}{Color.RESET},token:{Color.LYELLOW}{message.response_metadata.get("token_usage",{}).get("total_tokens")}{Color.RESET}]')
                 elif isinstance(message,ToolMessage):
                     print(f"    {Color.BLUE}Tool:{Color.RESET}",msg_repr)
                 elif isinstance(message,HumanMessage):

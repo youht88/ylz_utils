@@ -2,6 +2,7 @@ import json
 import re
 from ylz_utils.database.neo4j import Neo4jLib
 from ylz_utils.data import StringLib,Spinner
+from ylz_utils.langchain import LangchainLib
 
 def query_neo4j(neo4jLib:Neo4jLib,vars,query):
     spinner = Spinner()
@@ -23,12 +24,28 @@ def neo4j_test(args):
     user = args.user
     password = args.password
     host = args.host
+    user_id = args.user if args.user_id else 'default'
+    conversation_id = args.conversation if args.conversation else 'default'
+    dbname = args.chat_dbname or 'chat.sqlite'
+    llm_key = args.llm_key
+    embedding_key = args.embedding_key
+    langchainLib = LangchainLib()
+    llm = langchainLib.get_llm(llm_key)
+    embedding = langchainLib.get_embedding(embedding_key)
+    
+    prompt = langchainLib.get_prompt(use_chat=True)
+    langchainLib.llmLib.set_dbname(dbname)
+    chat = langchainLib.get_chat(llm,prompt)
+    
+    graph = langchainLib.graphLib.test_graph.get_graph(llm_key)
+
     neo4jLib = Neo4jLib(host,user,password)
     print("*"*50,"let's start","*"*50)
     idx = 0
     vars = {}
     history = []
     query=""
+
     while True:
         idx +=1
         if not query:
@@ -36,7 +53,7 @@ def neo4j_test(args):
         history.append(query)
         if query.strip().lower().startswith('/'):
             command =  query.strip().lower().split(" ")[0]
-            if command not in ["/q","/set","/get","/list","/clear","/load","/query","/import","/history"]:
+            if command not in ["/q","/set","/get","/list","/clear","/load","/query","/import","/history","/llm","/agent"]:
                 print(
 """
 usage:
@@ -56,43 +73,8 @@ usage:
           - 如果relations存在则merge方式创建relation
           - 每一行结构必须包含from,from_label字段和可选的from_key
           - 第一行属性(除from,to,from_label,to_label,from_key,to_key,type外)作为关系属性
-      import.json模版:
-      {
-        "Person":[
-            {"id":1,"name": "youht", "age": 30},
-            {"id":2,"name": "jinli", "age": 25},
-            {"id":3,"name": "youyc", "age": 35}
-            ],
-        "Food":[
-            {"id":1,"name": "香蕉", "kcal": 30},
-            {"id":2,"name": "苹果", "kcal": 25},
-            {"id":3,"name": "牛奶", "kcal": 35},
-            {"id":4,"name": "西红柿炒蛋", "kcal": 44 }
-            ],
-        "Sport":[
-            {"id":1,"name": "跑步", "kcal": 30},
-            {"id":2,"name": "跳绳", "kcal": 25},
-            {"id":3,"name": "打篮球", "kcal": 35},
-            {"id":4,"name": "游泳", "kcal": 44 }
-            ],
-        "Sign":[
-            {"id":1,"name": "心跳", "unit": "次/分"},
-            {"id":2,"name": "血压", "unit": "毫米汞柱"},
-            {"id":3,"name": "身高", "unit": "cm"},
-            {"id":4,"name": "血糖", "unit": "mmol/L" }
-            ],
-        "relations":[
-            {"from": "youht","from_label":"Person","to": "西红柿炒蛋","to_label":"Food","type":"food","sDateTime":"","eDateTime":"","action":"吃","value":1,"unit":"盘"},
-            {"from": "youht","from_label":"Person","to": "苹果","to_label":"Food","type":"food","sDateTime":"","eDateTime":"","action":"吃","value":2,"unit":"个"},
-            {"from": "jinli","from_label":"Person","to": "牛奶","to_label":"Food","type":"food","sDateTime":"","eDateTime":"","action":"喝","value":0.5,"unit":"杯"},
-            {"from": "youht","from_label":"Person","to": "打篮球","to_label":"Sport","type":"运动","sDateTime":"","eDateTime":""},
-            {"from": "youht","from_label":"Person","to": "身高","to_label":"Sign","type":"sign","sDateTime":"","eDateTime":"","value":174,"unit":"cm"}
-            ],
-        "Person_key": "name",
-        "Food_key": "name",
-        "Sport_key": "name",
-        "Sign_key": "name"    
-      }
+    /llm <message> 不带agent的对话
+    /agent <message> 带agent的对话 
     /q 退出
 """
                 )
@@ -181,7 +163,39 @@ usage:
             except Exception as e:
                 print(StringLib.lred("ERROR ON HISTORY:"),e)
             query=""
-            continue     
+            continue
+        if query.strip().startswith('/llm'):
+            spinner = Spinner()
+            try:
+                command = query.strip().replace('/llm',"").strip()
+                spinner.start()
+                res = chat.stream({"input":command}, {'configurable': {'user_id': user_id,'conversation_id': conversation_id}} )
+                spinner.end()
+                print("AI: ",end="")
+                for chunk in res:
+                    print(chunk.content,end='')
+                print("")
+                query = ""
+                continue
+            except Exception as e:
+                spinner.end()
+                print(StringLib.lred("ERROR ON LLM:"),e)
+            query=""
+            continue 
+        if query.strip().startswith('/agent'):
+            spinner = Spinner()
+            try:
+                command = query.strip().replace('/agent',"").strip()
+                spinner.start()
+                res = langchainLib.graphLib.graph_stream(graph,command,thread_id = f"{user_id}-{conversation_id}",system_message="")
+                spinner.end()
+                query = ""
+                continue
+            except Exception as e:
+                spinner.end()
+                print(StringLib.lred("ERROR ON LLM:"),e)
+            query=""
+            continue    
         try:
             records,summary,keys = query_neo4j(neo4jLib,vars,query)
             # Records
