@@ -24,10 +24,11 @@ def neo4j_test(args):
     user = args.user
     password = args.password
     host = args.host
-    user_id = args.user if args.user_id else 'default'
-    conversation_id = args.conversation if args.conversation else 'default'
+    user_id = args.user_id or 'default'
+    conversation_id = args.conversation_id or 'default'
     dbname = args.chat_dbname or 'chat.sqlite'
     llm_key = args.llm_key
+    llm_model =args.llm_model
     embedding_key = args.embedding_key
     langchainLib = LangchainLib()
     llm = langchainLib.get_llm(llm_key)
@@ -37,9 +38,11 @@ def neo4j_test(args):
     langchainLib.llmLib.set_dbname(dbname)
     chat = langchainLib.get_chat(llm,prompt)
     
-    graph = langchainLib.graphLib.life_graph.get_graph(llm_key)
+    graph = langchainLib.graphLib.life_graph.get_graph(llm_key,user_id=user_id,conversation_id=conversation_id)
 
     neo4jLib = Neo4jLib(host,user,password)
+    langchainLib.init_neo4j(neo4jLib)
+
     print("*"*50,"let's start","*"*50)
     idx = 0
     vars = {}

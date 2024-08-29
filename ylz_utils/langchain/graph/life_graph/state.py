@@ -13,11 +13,12 @@ class Tag(BaseModel):
     体重70公斤，身高1.74 -> is_question=false,action=recored,type=sign
     怎样学好数学？ -> is_question=true,action=other,type=other
     练习打羽毛球并没有那么容易 -> is_question=false,action=other,type=sport
+    下午3点打篮球达到6点半 -> is_question=false,action=record,type=sport
     '''
     is_question: bool = Field(description="是否为提问语句")
-    action: Literal["record","plan","schedule","other"] = Field(description="语句意图是记录、计划还是日程安排")
+    action: Literal["record","plan","schedule","other"] = Field(description="语句意图是记录(已经完成)、计划(准备完成的目标)还是日程安排(准备完成的安排),如果都不是则为其他")
     type: Literal["diet","sport","sign","other"] = Field(description="分析句子是关于饮食、运动、体征还是其他")
-    score: int = Field(description="为分类判断的置信度从1-5打分",max=5,min=1)
+    score: int = Field(description="为分类判断的置信度从1-5打分",min=1,max=5)
 
 class State(MessagesState):
     life_tag: Tag
@@ -25,27 +26,28 @@ class State(MessagesState):
 
 class Diet(BaseModel):
     '''解析为饮食的相关数据'''
-    sdt:Optional[str] = Field(description="吃食品的开始时间")
-    edt:Optional[str] = Field(description="吃食品的结束时间")
-    duration: Optional[str] = Field(description="吃食品的时长,如2个小时、3分钟等")
+    sdt:Optional[str] = Field(description="吃食品的开始时间,比如上周末、2个小时前、昨天下午2点等")
+    edt:Optional[str] = Field(description="吃食品的结束时间,比如上周末、2个小时前、昨天下午2点等")
+    duration: Optional[str] = Field(description="吃食品的时长,以分钟单位。如2个小时、3分钟等")
     act:Optional[str] = Field(description="吃食品的动作,例如:吃、喝、口服等")
     place:Optional[str] = Field(description="吃食品的地点")
     name:str = Field(description="食品的名称")
     value:float = Field(description="食品的数量")
-    unit: str = Field(description="食品的数量")
+    unit: str = Field(description="食品的数量的单位")
 
 class Diets(BaseModel):
     foods:List[Diet] = Field(description="一组食品")
 
 class Sport(BaseModel):
     '''解析为运动的数据'''
-    sdt:Optional[str] = Field(description="运动的开始时间")
-    edt:Optional[str] = Field(description="运动的结束时间")
-    duration: Optional[str] = Field(description="运动的时长,如2个小时、3分钟等")
-    act:Optional[str] = Field(description="运动的动作,例如:打、跑、踢、跳等")
+    sdt:Optional[str] = Field(description="运动的开始时间,比如上周末、2个小时前、昨天下午2点等")
+    edt:Optional[str] = Field(description="运动的结束时间,比如上周末、2个小时前、昨天下午2点等")
+    duration: Optional[str] = Field(description="运动的时间间隔,以分钟单位。比如2个小时、3分钟等")
+    act:Optional[str] = Field(description="运动的动作,比如:打、跑、踢、跳等")
     place:Optional[str] = Field(description="运动的地点")
     name:str = Field(description="运动的名称")
-    distance: Optional[float] = Field(description="运动的距离")
+    value: Optional[float] = Field(description="运动的数量,比如300次,150米等")
+    unit: Optional[str] = Field(description="运动的数量的单位")
 
 class Sports(BaseModel):
     sports:List[Sport] = Field(description="一组运动")

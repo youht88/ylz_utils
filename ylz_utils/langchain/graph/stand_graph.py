@@ -26,10 +26,11 @@ class RequestAssistance(BaseModel):
     request: str   
 
 class StandGraph():
+    user_id = 'default'
+    conversation_id = 'default'
     def __init__(self,graphLib:GraphLib):
         self.graphLib = graphLib
         self.llm_with_tools = None
-
     def chatbot(self,state:State):
         response = self.llm_with_tools.invoke(state["messages"])
         ask_human = False
@@ -76,7 +77,9 @@ class StandGraph():
             return "tools"
         else:
             return END
-    def get_graph(self,llm_key=None,llm_model=None) -> CompiledStateGraph:
+    def get_graph(self,llm_key=None,llm_model=None,user_id='default',conversation_id='default') -> CompiledStateGraph:
+        self.user_id = user_id
+        self.conversation_id = conversation_id
         llm = self.graphLib.langchainLib.get_llm(llm_key,llm_model)
         tools = [
             self.graphLib.python_repl_tool,

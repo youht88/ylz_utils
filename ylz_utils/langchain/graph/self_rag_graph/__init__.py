@@ -27,6 +27,8 @@ class SelfRagGraph():
     llm = None
     normal_llm_grader = None
     hallucinations_llm_grader = None
+    user_id='default'
+    conversation_id = 'default'
     def __init__(self,graphLib:GraphLib):
         self.graphLib = graphLib
         self.retrieve = RetrieveNode(self).retrieve
@@ -67,7 +69,11 @@ class SelfRagGraph():
            not self.answer_llm_grader:
             raise Exception("先调用self.set_llm(llm_key,llm_model)")
 
-    def get_graph(self,llm_key,llm_model):
+    def get_graph(self,llm_key,llm_model,user_id='default',conversation_id='default'):
+        self.llm_key = llm_key
+        self.llm_model = llm_model
+        self.user_id = user_id
+        self.conversation_id = conversation_id
         self.set_llm(llm_key,llm_model)
         self._check()
         workflow = StateGraph(GraphState)

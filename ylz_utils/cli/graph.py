@@ -19,9 +19,9 @@ def start_graph(langchainLib:LangchainLib,args):
     chat_dbname = args.chat_dbname
     rag_dbname = args.rag_dbname
     query_dbname = args.query_dbname
-    user = args.user or 'default'
-    conversation = args.conversation or 'default'
-    thread_id = f"{user}-{conversation}"
+    user_id = args.user or 'default'
+    conversation_id = args.conversation or 'default'
+    thread_id = f"{user_id}-{conversation_id}"
     websearch_key = args.websearch
     if chat_dbname:                                  
         langchainLib.graphLib.set_chat_dbname(chat_dbname)
@@ -41,7 +41,7 @@ def start_graph(langchainLib:LangchainLib,args):
         langchainLib.graphLib.set_websearch_tool(websearch_key)
         print("!!!",f"使用搜索工具{websearch_key}")
         
-    graph = langchainLib.get_graph(graph_key=graph_key,llm_key=llm_key,llm_model=llm_model)
+    graph = langchainLib.get_graph(graph_key=graph_key,llm_key=llm_key,llm_model=llm_model,user_id=user_id,conversation_id=conversation_id)
 #     system_message = \
 # """
 # 请始终使用中文，并确保中文正确。

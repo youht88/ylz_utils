@@ -19,6 +19,8 @@ from .router_edge import router
 class LifeGraph():
     llm_key = None
     llm_model= None
+    user_id = 'default'
+    conversation_id = 'default'
     def __init__(self,graphLib:GraphLib):
         self.graphLib = graphLib
         self.tagNode = TagNode(self).tagNode
@@ -27,10 +29,11 @@ class LifeGraph():
         self.agentNode = AgentNode(self).agentNode
         self.router = router
 
-    def get_graph(self,llm_key=None,llm_model=None):
+    def get_graph(self,llm_key=None,llm_model=None,user_id='default',conversation_id='default'):
         self.llm_key = llm_key
         self.llm_model = llm_model
-        
+        self.user_id = user_id
+        self.conversation_id = conversation_id
         workflow = StateGraph(State)
         
         workflow.add_node("tag",self.tagNode)

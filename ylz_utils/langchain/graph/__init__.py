@@ -61,26 +61,26 @@ class GraphLib():
     def set_graph_node_llms(self,graph_key,node_llms):
         if graph_key=='stand':
             self.stand_graph.set_node_llms(node_llms)
-        elif graph_key=='test':
-            self.test_graph.set_node_llms(node_llms)
+        elif graph_key=='life':
+            self.life_graph.set_node_llms(node_llms)
         elif graph_key=='engineer':
             self.engineer_graph.set_node_llms(node_llms)
 
-    def get_graph(self,graph_key:Literal['stand','test','engineer','db','selfrag']='stand',llm_key=None,llm_model=None):
-        if graph_key=='test':
-            return self.test_graph.get_graph(llm_key,llm_model)
+    def get_graph(self,graph_key:Literal['stand','life','engineer','db','selfrag']='stand',llm_key=None,llm_model=None,user_id='default',conversation_id='default'):
+        if graph_key=='life':
+            return self.life_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
         elif graph_key=='engineer':
-            return self.engineer_graph.get_graph(llm_key,llm_model)
+            return self.engineer_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
         elif graph_key=='db':
             self.db_graph.set_db(f"sqlite:///{self.query_dbname}")
             #self.db_graph.set_db("sqlite:///person.db")
             self.db_graph.set_llm(llm_key,llm_model)
-            return self.db_graph.get_graph(llm_key,llm_model)
+            return self.db_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
         elif graph_key=='selfrag':
             self.self_rag_graph.set_retriever()
-            return self.self_rag_graph.get_graph(llm_key,llm_model)
+            return self.self_rag_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
         else:
-            return self.stand_graph.get_graph(llm_key,llm_model)
+            return self.stand_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
 
     def graph_stream(self,graph,message,thread_id="default-default",system_message=None):    
         messages = []

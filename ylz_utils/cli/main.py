@@ -42,9 +42,10 @@ def main():
     neo4j_parser.add_argument("--password",type=str,help="password")
     neo4j_parser.add_argument("--host",type=str,help="host")
     neo4j_parser.add_argument("--llm_key",type=str,help="llm_key")
+    neo4j_parser.add_argument("--llm_model",type=str,help="llm_model")
     neo4j_parser.add_argument("--embedding_key",type=str,help="embedding_key")
     neo4j_parser.add_argument("--user_id",type=str,help="user_id,example: alice")
-    neo4j_parser.add_argument("--conversation",type=str,help="conversation_id,example: 123") 
+    neo4j_parser.add_argument("--conversation_id",type=str,help="conversation_id,example: 123") 
     neo4j_parser.add_argument("--chat_dbname",type=str,help="保存的对话数据库") 
 
     start_parser = subparsers.add_parser("start", help="启动测试")
@@ -72,7 +73,7 @@ def main():
      
     
     start_parser.add_argument("--size",type=int,help="文档分隔的size") 
-    start_parser.add_argument("--graph",type=str,choices=["stand","test","engineer","db","selfrag"],help="内置graph的类型") 
+    start_parser.add_argument("--graph",type=str,choices=["stand","life","engineer","db","selfrag"],help="内置graph的类型") 
     start_parser.add_argument("--fake_size",type=int,help="使用fake embeding的size，当fake_size>0是使用fake embeding，并且维度为fake_size") 
     start_parser.add_argument("--batch",type=int,default=10,help="使用生成embeding时的以batch为度量显示进度，默认分隔为10批") 
      

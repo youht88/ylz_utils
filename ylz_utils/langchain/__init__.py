@@ -24,6 +24,7 @@ from operator import itemgetter
 from langgraph.graph import START,END,MessageGraph,StateGraph
 from langgraph.prebuilt import ToolNode
 
+from ylz_utils.database.neo4j import Neo4jLib
 from ylz_utils.langchain.agents import AgentLib
 from ylz_utils.langchain.flux import FluxLib
 from ylz_utils.langchain.graph import GraphLib
@@ -43,6 +44,7 @@ from ylz_utils.config import Config
 from ylz_utils.data import StringLib,Color
 
 class LangchainLib():
+    neo4jLib =None
     def __init__(self,trace=True):    
         self.config = Config.get()
         os.environ["LANGCHAIN_PROJECT"] = Config.project_name
@@ -100,7 +102,10 @@ class LangchainLib():
         
         self.ttsLib = TTSLib(self)
         self.fluxLib = FluxLib(self)
-        
+
+    def init_neo4j(self,neo4jLib:Neo4jLib):
+        self.neo4jLib = neo4jLib     
+    
     def add_plugins(self,debug=False):
         plugins = [{"class":ChatOpenAI,"func":ChatOpenAI.invoke},
                    {"class":ChatOpenAI,"func":ChatOpenAI.ainvoke},

@@ -27,6 +27,8 @@ class EngineerGraph():
         self.node_llms = None
         self.llm_key = None
         self.llm_model = None
+        self.user_id = "default"
+        self.conversation_id = "default"
     def route_critique(self,state: AgentState) -> Literal["draft_answer", END]:
         if state['accepted']:
             return END
@@ -59,10 +61,12 @@ class EngineerGraph():
         except:            
             return self.graphLib.langchainLib.get_llm(key = self.llm_key, model = self.llm_model)
 
-    def get_graph(self,llm_key=None,llm_model=None) -> CompiledStateGraph:
+    def get_graph(self,llm_key=None,llm_model=None,user_id="default",conversation_id="default") -> CompiledStateGraph:
         # Define a new graph
         self.llm_key = llm_key
         self.llm_model = llm_model
+        self.user_id = user_id
+        self.conversation_id = conversation_id
         workflow = StateGraph(AgentState, input=MessagesState, output=OutputState, config_schema=GraphConfig)
         workflow.add_node(draft_answer)
         workflow.add_node(gather_requirements)

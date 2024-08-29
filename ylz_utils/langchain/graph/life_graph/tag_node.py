@@ -8,7 +8,8 @@ class TagNode(Node):
         llm = self.get_llm("LLM.DEEPBRICKS")
         llm_with_output = llm.with_structured_output(Tag)
         message = state["messages"][-1]
-        tag = llm_with_output.invoke([message])
+        prompt = self.lifeGraph.graphLib.langchainLib.get_prompt()
+        tag = (prompt | llm_with_output).invoke({"input":message.content})
         if isinstance(tag,Tag):
             return {"life_tag":tag}
         else:
