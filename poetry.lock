@@ -2541,6 +2541,53 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 reference = "tsinghua"
 
 [[package]]
+name = "jiojio"
+version = "1.2.6"
+description = "jiojio: a convenient Chinese word segmentation tool"
+optional = false
+python-versions = "*"
+files = [
+    {file = "jiojio-1.2.6-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:e6e42dfb9aa18ca10dfc5c794f80b0f0537c20f5e24cdbef05893faae5dadced"},
+    {file = "jiojio-1.2.6-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:5080574a1b4369d7aad1fd464c9a466aafd0c01a935432bba01dc85a2e079d9a"},
+    {file = "jiojio-1.2.6-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:2546ab9416bc30434c26325026f9980eeacf2c05af1b4fdf5abe1a3d935e7893"},
+    {file = "jiojio-1.2.6-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:4ee43f89d7034b7e99530bb74ceb923953c502f48c9944559ade10bdf5e42a2c"},
+    {file = "jiojio-1.2.6-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:d9a6c9ee64fbde949b1627468a45c9e6f10aa1915f737614b4fe78550374f571"},
+    {file = "jiojio-1.2.6-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:564165bb07fed8a29539aa287a37fd7c82085fb42df5aa43c1a836562135331f"},
+    {file = "jiojio-1.2.6-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:9bce0760137eefcb1b5a30a48c0ad33ed225d2908266b2051e1ec3f5bdedd92a"},
+    {file = "jiojio-1.2.6-py2.py3-none-any.whl", hash = "sha256:efa59fdd2c161b288a311b37faf68b51407e4823bc566055c339dc7d3646b772"},
+]
+
+[package.dependencies]
+numpy = ">=1.16.0"
+pyyaml = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
+name = "jionlp"
+version = "1.5.15"
+description = "Chinese NLP Preprocessing & Parsing"
+optional = false
+python-versions = "*"
+files = [
+    {file = "jionlp-1.5.15-py2.py3-none-any.whl", hash = "sha256:f08f007cf7c732cb27490eb7aed5eaf6eac5147a59708f93da8794754803b517"},
+]
+
+[package.dependencies]
+jiojio = "*"
+numpy = "*"
+requests = "*"
+zipfile36 = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
 name = "jiter"
 version = "0.5.0"
 description = "Fast iterable JSON parser."
@@ -8762,6 +8809,22 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 reference = "tsinghua"
 
 [[package]]
+name = "zipfile36"
+version = "0.1.3"
+description = "Read and write ZIP files - backport of the zipfile module from Python 3.6"
+optional = false
+python-versions = "*"
+files = [
+    {file = "zipfile36-0.1.3-py3-none-any.whl", hash = "sha256:f7e48adf627f75cd74cdb50e7d850623b465f4cf5de913809196e8f3aa57dc4b"},
+    {file = "zipfile36-0.1.3.tar.gz", hash = "sha256:a78a8dddf4fa114f7fe73df76ffcce7538e23433b7a6a96c1c904023f122aead"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
 name = "zipp"
 version = "3.20.1"
 description = "Backport of pathlib-compatible object wrapper for zip files"
@@ -8788,4 +8851,4 @@ reference = "tsinghua"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10,<3.13"
-content-hash = "4f6fa50ae65ef55c7218251d47afac918b67a0a5ab59e436fc5159649d27578f"
+content-hash = "a08eb7e87ba7268775cc5f4563aa39f2e182c1117a6329a3fd2113a3b760caf8"

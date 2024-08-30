@@ -10,10 +10,11 @@ import itertools
 import threading
 
 class Spinner():
-    def __init__(self):
+    def __init__(self,cursor=['|', '/', '-', '\\']):
+        self.cursor = cursor
         self.stop_event = threading.Event()
     def spinning_cursor(self,duration, stop_event):
-                spinner = itertools.cycle(['|', '/', '-', '\\'])
+                spinner = itertools.cycle(self.cursor)
                 end_time = time.time() + duration
                 while time.time() < end_time:
                     if stop_event.is_set():
