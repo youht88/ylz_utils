@@ -52,30 +52,28 @@ class DietNode(Node):
         script = """
             unwind $diets as diet
             match (n:Person{name:$user_id})
-            
-            with diet,n
-            where diet.name is not null
-            merge (m:Food{name:diet.name})
-            
-            with diet,n,m
-            optional match(:Brand{name:diet.brand}) 
-            where diet.brand is not null
-            merge (b:Brand{name:diet.brand})
-
-            with diet,n,m,b
-            where b is not null
-            merge (b)-[r:product]->(m) 
-            
-            with diet,n,m
-            optional match(:Place{name:diet.place})
-            where diet.place is not null
-            merge (p:Place{name:diet.place})
-            
-            with diet,n,m,p
-            where p is not null
-            merge (p)<-[r:at{sdt:diet.sdt,edt:diet.edt}]-(n) 
-
-            with diet,n,m
-            create (n)-[r:diet{sdt:diet.sdt,edt:diet.edt,duration:diet.duration,place:diet.place,act:diet.act,value:diet.value,unit:diet.unit}]->(m)
+            call{            
+                with diet with diet
+                where diet.name is not null
+                merge (f:Food{name:diet.name})
+                return f
+            }
+            call{
+                with diet,f
+                with diet,f
+                where diet.brand is not null
+                merge (b:Brand{name:diet.brand})
+                merge (b)-[r:product]->(f) 
+            }
+            call{
+                with diet,n with diet,n
+                where diet.place is not null
+                merge (p:Place{name:diet.place})
+                create (p)<-[r:at{sdt:diet.sdt,edt:diet.edt}]-(n) 
+            }
+            call{
+                with diet,n,f
+                create (n)-[r:diet{sdt:diet.sdt,edt:diet.edt,duration:diet.duration,place:diet.place,act:diet.act,value:diet.value,unit:diet.unit,buy:diet.buy}]->(f)
+            }
         """
         neo4jLib.run(script,diets=diets_list,user_id=user_id)

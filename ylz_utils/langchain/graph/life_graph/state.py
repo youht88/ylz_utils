@@ -35,7 +35,7 @@ class Diet(BaseModel):
     value:float = Field(description="食品的数量")
     unit: str = Field(description="食品的数量的单位")
     brand: Optional[str] = Field(description="食物的品牌,比如:匹克薯片->brand:匹克,麦当劳汉堡->brand:麦当劳。如果没有指定则为空")
-
+    buy: Optional[float]= Field(description="买食物花的钱，比如：3块5")
 class Diets(BaseModel):
     foods:List[Diet] = Field(description="一组食品")
 
