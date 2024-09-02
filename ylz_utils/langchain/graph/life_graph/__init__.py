@@ -14,6 +14,8 @@ from .tag_node import TagNode
 from .diet_node import DietNode
 from .sport_node import SportNode
 from .sign_node import SignNode
+from .sign_query_node import SignQueryNode
+from .buy_node import BuyNode
 from .agent_node import AgentNode
 from .router_edge import router
 
@@ -28,6 +30,8 @@ class LifeGraph():
         self.dietNode = DietNode(self).dietNode
         self.sportNode = SportNode(self).sportNode
         self.signNode = SignNode(self).signNode
+        self.signQueryNode = SignQueryNode(self).signQueryNode
+        self.buyNode = BuyNode(self).buyNode
         self.agentNode = AgentNode(self).agentNode
         self.router = router
 
@@ -42,14 +46,18 @@ class LifeGraph():
         workflow.add_node("diet",self.dietNode)
         workflow.add_node("sport",self.sportNode)
         workflow.add_node("sign",self.signNode)
+        workflow.add_node("sign_query",self.signQueryNode)
+        workflow.add_node("buy",self.buyNode)
         workflow.add_node("agent",self.agentNode)
         
         workflow.add_edge(START,"tag")
         workflow.add_conditional_edges("diet",self.router)
         workflow.add_conditional_edges("sport",self.router)
         workflow.add_conditional_edges("sign",self.router)
+        workflow.add_conditional_edges("sign_query",self.router)
+        workflow.add_conditional_edges("buy",self.router)
         workflow.add_edge("agent",END)
-        workflow.add_conditional_edges("tag",self.router,{"agent":"agent","diet":"diet","sport":"sport","sign":"sign","__end__":END})
+        workflow.add_conditional_edges("tag",self.router)
         
         graph = workflow.compile(self.graphLib.memory)
         return graph 

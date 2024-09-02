@@ -49,8 +49,12 @@ class Neo4jLib():
             records = records.records
         return [ record.data() for record in records]
     
-    def get_schema(self):
-        pass
+    def get_rel_schema(self):
+        relType = self.get_data(self.query("Call db.schema.relTypeProperties()"))
+        return relType
+    def get_node_schema(self):
+        nodeType = self.get_data(self.query("Call db.schema.nodeTypeProperties()"))
+        return nodeType
     '''
         创建主体节点(objects)和客体节点(subjects),主体和客体节点可以重复,以key为唯一标识。
           - 如果objects存在则merge方式创建objects

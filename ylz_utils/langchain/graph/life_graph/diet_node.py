@@ -49,7 +49,7 @@ class DietNode(Node):
             }
             call{
                 with diet,n,f
-                create (n)-[r:diet{sdt:diet.sdt,edt:diet.edt,duration:diet.duration,place:diet.place,act:diet.act,value:diet.value,unit:diet.unit,buy:diet.buy}]->(f)
+                create (n)-[r:diet{sdt:diet.sdt,edt:diet.edt,duration:diet.duration,place:diet.place,act:diet.act,name:diet.name,value:diet.value,unit:diet.unit,buy:diet.buy}]->(f)
             }
         """
         neo4jLib.run(script,diets=diets_list,user_id=user_id)

@@ -42,7 +42,7 @@ class SportNode(Node):
             }
             call{
                 with sport,n,s
-                create (n)-[r:sport{sdt:sport.sdt,edt:sport.edt,duration:sport.duration,place:sport.place,act:sport.act,value:sport.value,unit:sport.unit,buy:sport.buy}]->(s)
+                create (n)-[r:sport{sdt:sport.sdt,edt:sport.edt,duration:sport.duration,place:sport.place,act:sport.act,name:sport.name,value:sport.value,unit:sport.unit,buy:sport.buy}]->(s)
             }
         """
         neo4jLib.run(script,sports=sports_list,user_id=user_id)
