@@ -3,6 +3,12 @@ from typing import List,Optional,Literal
 
 from langgraph.graph import MessagesState
 
+class SubTag(BaseModel):
+    """
+    拆分句子后得到的类型标记
+    """
+    sub_text: str = Field(description="相关的子句,注意：需要理解原句子的意思，适当的时候对字句补充相关时间、地点、花费的信息")
+    type: Literal["diet","sport","sign","other"] = Field(description="分析句子是关于饮食、运动、体征还是其他")
 class Tag(BaseModel):
     '''
     标记句子的意图及类型并为分类标记确信度
@@ -17,7 +23,7 @@ class Tag(BaseModel):
     '''
     is_question: bool = Field(description="是否为提问语句")
     action: Literal["record","plan","schedule","other"] = Field(description="语句意图是记录(已经完成)、计划(准备完成的目标)还是日程安排(准备完成的安排),如果都不是则为其他")
-    type: Literal["diet","sport","sign","other"] = Field(description="分析句子是关于饮食、运动、体征还是其他")
+    subTags: List[SubTag] = Field(description="拆分语句类型的列表,注意：需要理解原句子的意思，适当的时候对字句补充相关时间、地点、花费的信息")
     score: int = Field(description="为分类判断的置信度从1-5打分",min=1,max=5)
 
 class State(MessagesState):
@@ -49,6 +55,7 @@ class Sport(BaseModel):
     name:str = Field(description="运动的名称")
     value: Optional[float] = Field(description="运动的数量,比如300次,150米等")
     unit: Optional[str] = Field(description="运动的数量的单位")
+    buy: Optional[float]= Field(description="本次运动所花的钱,比如:3块5")
 
 class Sports(BaseModel):
     sports:List[Sport] = Field(description="一组运动")
@@ -63,6 +70,7 @@ class Sign(BaseModel):
     name:str = Field(description="体征的名称")
     value: float = Field(description="体征结果的数值")
     unit: str = Field(description="体征结果数值的单位")
+    buy: Optional[float]= Field(description="本次测量所花的钱,比如:3块5")
 
 class Signs(BaseModel):
     signs:List[Sign] = Field(description="一组体征")

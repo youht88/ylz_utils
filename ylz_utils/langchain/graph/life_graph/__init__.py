@@ -13,6 +13,7 @@ from .state import State
 from .tag_node import TagNode
 from .diet_node import DietNode
 from .sport_node import SportNode
+from .sign_node import SignNode
 from .agent_node import AgentNode
 from .router_edge import router
 
@@ -26,6 +27,7 @@ class LifeGraph():
         self.tagNode = TagNode(self).tagNode
         self.dietNode = DietNode(self).dietNode
         self.sportNode = SportNode(self).sportNode
+        self.signNode = SignNode(self).signNode
         self.agentNode = AgentNode(self).agentNode
         self.router = router
 
@@ -39,13 +41,15 @@ class LifeGraph():
         workflow.add_node("tag",self.tagNode)
         workflow.add_node("diet",self.dietNode)
         workflow.add_node("sport",self.sportNode)
+        workflow.add_node("sign",self.signNode)
         workflow.add_node("agent",self.agentNode)
         
         workflow.add_edge(START,"tag")
-        workflow.add_edge("diet","agent")
-        workflow.add_edge("sport","agent")
+        workflow.add_conditional_edges("diet",self.router)
+        workflow.add_conditional_edges("sport",self.router)
+        workflow.add_conditional_edges("sign",self.router)
         workflow.add_edge("agent",END)
-        workflow.add_conditional_edges("tag",self.router,{"agent":"agent","diet":"diet","sport":"sport","__end__":END})
+        workflow.add_conditional_edges("tag",self.router,{"agent":"agent","diet":"diet","sport":"sport","sign":"sign","__end__":END})
         
         graph = workflow.compile(self.graphLib.memory)
         return graph 
