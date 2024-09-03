@@ -14,7 +14,7 @@ from langchain_core.runnables import RunnablePassthrough,RunnableLambda,Runnable
 from langgraph.graph import START,END,StateGraph,MessagesState
 from langgraph.checkpoint.sqlite import SqliteSaver
 
-from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.prebuilt import ToolExecutor,ToolInvocation, tools_condition
 from langgraph.graph.state import CompiledStateGraph
 
 from ylz_utils.file import FileLib
@@ -40,7 +40,8 @@ class GraphLib():
         self.engineer_graph = EngineerGraph(self)
         self.db_graph = DbGraph(self)
         self.self_rag_graph = SelfRagGraph(self)
-
+        self.tools=[]
+        self.human_in_loop={}
     def set_chat_dbname(self,dbname):
         # "checkpoint.sqlite"
         self.memory = SqliteSaver.from_conn_string(dbname)
@@ -52,6 +53,11 @@ class GraphLib():
         self.ragsearch_tool = self.langchainLib.get_ragsearch_tool(retriever,name,description)
     def set_websearch_tool(self,websearch_key):
         self.websearch_tool = self.langchainLib.get_websearch_tool(websearch_key)
+    
+    def get_tools_executor(self,tools):
+        if not isinstance(tools,(list,tuple)):
+            tools = [tools]
+        return ToolExecutor(tools) 
     
     def create_response(self, response: str, ai_message: AIMessage):
         return ToolMessage(
@@ -137,6 +143,17 @@ class GraphLib():
     def graph_update_state(self,graph:CompiledStateGraph,thread_id,values,as_node = None):
         if not as_node:
             graph.update_state(config = {"configurable":{"thread_id":thread_id}},values=values)
+    
+    def graph_human_in_loop(self,graph,thread_id)->bool:
+        human_in_loop_dict = self.human_in_loop[graph.__hash__]
+        func = human_in_loop_dict['func']
+        graph = human_in_loop_dict['graph']
+        return func(graph,thread_id)
+
+    def regist_human_in_loop(self,graph,func):
+        self.human_in_loop[graph.__hash__] = {"graph":graph,"func":func}
 
     def export_graph(self,graph:CompiledStateGraph):
-        FileLib.writeFile("graph.png",graph.get_graph().draw_mermaid_png(),mode="wb")    
+        FileLib.writeFile("graph.png",graph.get_graph().draw_mermaid_png(),mode="wb")  
+
+    

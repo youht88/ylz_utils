@@ -6,6 +6,7 @@ import glob
 import re
 import yaml
 import logging
+import readline
 
 class FileLib():
     @classmethod
@@ -110,3 +111,30 @@ class FileLib():
         except Exception as e:
             logging.info(f"dump yaml {filename} error.{e}")
             return False
+
+class IOLib():
+    @classmethod
+    def input_with_history(cls,prompt,history=[]):
+        for item in history:
+            readline.add_history(item)
+        while True:
+            try:
+                x = input(prompt)
+            except (EOFError, KeyboardInterrupt):
+                print()
+                return None
+            if x=="" or x=="/":
+                continue
+            if x == "\033[A" and len(history) > 0:
+                # Up arrow
+                i = len(history) - 1
+                print(f"{history[i]}")
+            elif x == "\033[B" and len(history) > 0:
+                # Down arrow
+                i = 0
+                print(f"{history[i]}")
+            else:
+                history.append(x)
+                readline.add_history(x)
+                break
+        return x
