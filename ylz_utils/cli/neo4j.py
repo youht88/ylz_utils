@@ -6,6 +6,8 @@ from ylz_utils.database.neo4j import Neo4jLib
 from ylz_utils.data import StringLib,Spinner
 from ylz_utils.langchain import LangchainLib
 from langchain_core.messages import AIMessage,HumanMessage
+from ylz_utils.langchain.graph.life_graph import LifeGraph
+from ylz_utils.langchain.graph.stand_graph import StandGraph
 
 def query_neo4j(neo4jLib:Neo4jLib,vars,query):
     spinner = Spinner()
@@ -41,11 +43,14 @@ def neo4j_test(args):
     langchainLib.llmLib.set_dbname(dbname)
     chat = langchainLib.get_chat(llm,prompt)
     
-    life_graph = langchainLib.graphLib.life_graph.get_graph(llm_key,user_id=user_id,conversation_id=conversation_id)
-    stand_graph = langchainLib.graphLib.stand_graph.get_graph(llm_key,user_id=user_id,conversation_id=conversation_id)
-
     neo4jLib = Neo4jLib(host,user,password)
     langchainLib.init_neo4j(neo4jLib)
+
+    lifeGraph = LifeGraph(langchainLib)
+    life_graph = lifeGraph.get_graph(llm_key,user_id=user_id,conversation_id=conversation_id)
+    standGraph = StandGraph(langchainLib)
+    stand_graph = standGraph.get_graph(llm_key,user_id=user_id,conversation_id=conversation_id)
+
 
     print("*"*50,"let's start","*"*50)
     idx = 0
@@ -192,7 +197,7 @@ usage:
             try:
                 command = query
                 spinner.start()
-                res = langchainLib.graphLib.graph_stream(life_graph,command,thread_id = f"{user_id}-{conversation_id}",system_message="")
+                res = lifeGraph.graph_stream(life_graph,command,thread_id = f"{user_id}-{conversation_id}",system_message="")
                 spinner.end()
             except Exception as e:
                 spinner.end()
@@ -200,11 +205,15 @@ usage:
         elif mode == 'test' :
             spinner = Spinner()
             try:
-                command = query
+                if query=="@@NONE@@":
+                    command = None
+                else:
+                    command = query
                 spinner.start()
-                res = langchainLib.graphLib.graph_stream(stand_graph,command,thread_id = f"{user_id}-{conversation_id}",system_message="")
+                res = standGraph.graph_stream(stand_graph,command,thread_id = f"{user_id}-{conversation_id}",system_message="")
                 spinner.end()
-                if langchainLib.graphLib.graph_human_in_loop(stand_graph,f"{user_id}-{conversation_id}"):
+                if standGraph.human_action(stand_graph,f"{user_id}-{conversation_id}"):
+                    query = "@@NONE@@"
                     continue
             except Exception as e:
                 spinner.end()

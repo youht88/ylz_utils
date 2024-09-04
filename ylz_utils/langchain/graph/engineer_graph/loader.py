@@ -26,7 +26,7 @@ def time_based_cache(seconds):
 
 
 @time_based_cache(CACHE_DURATION)
-def load_github_file(url):
+def load_github_file(url:str):
     # Convert GitHub URL to raw content URL
     raw_url = url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
 

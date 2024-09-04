@@ -1,8 +1,4 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ylz_utils.langchain.graph import GraphLib
+from ylz_utils.langchain.graph import GraphLib
 
 from langgraph.graph import StateGraph, START,END, MessagesState
 from langchain_core.messages import AIMessage
@@ -34,17 +30,12 @@ class SubmitFinalAnswer(BaseModel):
     """Submit the final answer to the user based on the query results."""
     final_answer: str = Field(..., description="The final answer to the user")
 
-class DbGraph():
+class DbGraph(GraphLib):
     db = None
-    llm = None
-    user_id = 'default'
-    conversation_id = 'default'
-    def __init__(self,graphLib:GraphLib):
-        self.graphLib = graphLib
+    def __init__(self,langchainLib,db_conn_string=":memory:"):
+        super().__init__(langchainLib,db_conn_string)
     def set_db(self,uri:str):
         self.db = SQLDatabase.from_uri(uri)
-    def set_llm(self,llm_key,llm_model):
-        self.llm = self.graphLib.langchainLib.get_llm(llm_key,llm_model)
     def _check(self):
         if not self.db:
             raise Exception("先调用set_db(uri)设置db")
@@ -192,12 +183,9 @@ class DbGraph():
         
     def get_graph(self,llm_key=None,llm_model=None,user_id='default',conversation_id='default') -> CompiledStateGraph:
         # Define a new graph
-        self.llm_key = llm_key
-        self.llm_model = llm_model
+        self.llm = self.set_llm(llm_key,llm_model)
         self.user_id = user_id
         self.conversation_id = conversation_id
-        if not self.llm:
-            self.llm = self.graphLib.langchainLib.get_llm(llm_key,llm_model)
         self._check()
         self.set_toolkit()
         
@@ -232,6 +220,6 @@ class DbGraph():
         workflow.add_edge("correct_query", "execute_query")
         workflow.add_edge("execute_query", "query_gen")
 
-        graph = workflow.compile(checkpointer=self.graphLib.memory)
+        graph = workflow.compile(checkpointer=self.memory)
         return graph 
     

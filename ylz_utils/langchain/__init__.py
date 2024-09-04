@@ -96,9 +96,6 @@ class LangchainLib():
 
         self.agentLib = AgentLib(self)
         self.get_agent = self.agentLib.get_agent
-
-        self.graphLib = GraphLib(self)
-        self.get_graph = self.graphLib.get_graph
         
         self.ttsLib = TTSLib(self)
         self.fluxLib = FluxLib(self)

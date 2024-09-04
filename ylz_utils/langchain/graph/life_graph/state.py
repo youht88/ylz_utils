@@ -29,6 +29,7 @@ class Tag(BaseModel):
     近三天买笔花了多少？ -> is_question=true,action=other,type=buy
     这个礼拜做了哪些运动？-> is_question=true,action=other,type=sport
     这个月平均体重是多少 -> is_question=true,action=other,type=sign 
+    今天体重多少公斤？ -> is_question=true,action=other,type=sign
     '''
     is_question: bool = Field(description="是否为提问语句")
     action: Literal["record","plan","schedule","other"] = Field(description="语句意图是记录(已经完成)、计划(准备完成的目标)还是日程安排(准备完成的安排),如果都不是则为其他")

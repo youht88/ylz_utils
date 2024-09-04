@@ -10,7 +10,7 @@ from langchain_core.pydantic_v1 import BaseModel
 from ylz_utils.data import StringLib
 
 class PromptLib():
-    def get_prompt(self,system_prompt=None,human_keys={"input":""},
+    def get_prompt(self,system_prompt=None,human_keys={"input":"input"},
                    outputParser:Optional[BaseModel]=None,
                    history_messages_key="history",
                    use_chat = False,
@@ -21,8 +21,8 @@ class PromptLib():
                 system_prompt = f"所有问题请用中文回答\n{system_prompt}"
             if not use_chat:
                 human_input_keys = []
+                human_prompt = ""
                 if human_keys:
-                    human_prompt = ""
                     for key in human_keys:
                         human_prompt += f"{human_keys[key]}:{{{key}}}\n" 
                     human_input_keys = human_keys.keys()
@@ -50,9 +50,8 @@ class PromptLib():
                     messages.append(("system",system_prompt))
 
                 messages.append(("placeholder", f"{{{history_messages_key}}}"))
-                
+                human_prompt = ""
                 if human_keys:
-                    human_prompt = ""
                     for key in human_keys:
                         human_prompt += f"{human_keys[key]}:{{{key}}}\n"
                     messages.append(("human",human_prompt))

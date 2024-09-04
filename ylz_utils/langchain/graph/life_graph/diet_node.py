@@ -4,10 +4,11 @@ from .node import Node
 from langchain_core.messages import AIMessage
 class DietNode(Node):
     def dietNode(self,state:State):
+        self.get_neo4jLib()
         llm = self.get_llm()
         llm_with_output = llm.with_structured_output(Diets)
         message = state["messages"][-1]
-        prompt = self.lifeGraph.graphLib.langchainLib.get_prompt()
+        prompt = self.lifeGraph.langchainLib.get_prompt()
         subTag = state["life_tag"].subTags[0]
         state["life_tag"].subTags = state["life_tag"].subTags[1:]
         res = (prompt | llm_with_output).invoke({"input":subTag.sub_text})
@@ -18,7 +19,6 @@ class DietNode(Node):
             return {"messages":[AIMessage(content="抱歉,我无法解析饮食数据")],"life_tag":state["life_tag"]}  
     
     def create_record(self,diets:Diets):
-        neo4jLib = self.lifeGraph.graphLib.langchainLib.neo4jLib
         # 处理时间问题
         for diet in diets.foods:
            diet.sdt ,diet.edt, diet.duration = self.parse_time(diet.sdt,diet.edt,diet.duration) 
@@ -52,4 +52,4 @@ class DietNode(Node):
                 create (n)-[r:diet{sdt:diet.sdt,edt:diet.edt,duration:diet.duration,place:diet.place,act:diet.act,name:diet.name,value:diet.value,unit:diet.unit,buy:diet.buy}]->(f)
             }
         """
-        neo4jLib.run(script,diets=diets_list,user_id=user_id)
+        self.neo4jLib.run(script,diets=diets_list,user_id=user_id)

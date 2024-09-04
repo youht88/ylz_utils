@@ -7,7 +7,7 @@ class SportNode(Node):
         llm = self.get_llm()
         llm_with_output = llm.with_structured_output(Sports)
         message = state["messages"][-1]
-        prompt = self.lifeGraph.graphLib.langchainLib.get_prompt()
+        prompt = self.lifeGraph.langchainLib.get_prompt()
         subTag = state["life_tag"].subTags[0]
         state["life_tag"].subTags = state["life_tag"].subTags[1:]
         res = (prompt | llm_with_output).invoke({"input":subTag.sub_text})
@@ -18,7 +18,6 @@ class SportNode(Node):
             return {"messages":[AIMessage(content="抱歉,我无法解析运动数据")],"life_tag":state["life_tag"]}      
 
     def create_record(self,sports:Sports):
-        neo4jLib = self.lifeGraph.graphLib.langchainLib.neo4jLib
         # 处理时间问题
         for sport in sports.sports:
             sport.sdt ,sport.edt, sport.duration = self.parse_time(sport.sdt,sport.edt,sport.duration) 
@@ -45,4 +44,4 @@ class SportNode(Node):
                 create (n)-[r:sport{sdt:sport.sdt,edt:sport.edt,duration:sport.duration,place:sport.place,act:sport.act,name:sport.name,value:sport.value,unit:sport.unit,buy:sport.buy}]->(s)
             }
         """
-        neo4jLib.run(script,sports=sports_list,user_id=user_id)
+        self.neo4jLib.run(script,sports=sports_list,user_id=user_id)

@@ -1,8 +1,5 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ylz_utils.langchain.graph import GraphLib
+from ylz_utils.langchain.graph import GraphLib
 
 from langgraph.graph import StateGraph, START,END, MessagesState
 from langchain_core.messages import AIMessage
@@ -22,15 +19,12 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
 
-class SelfRagGraph():
+class SelfRagGraph(GraphLib):
     retriever = None
-    llm = None
     normal_llm_grader = None
     hallucinations_llm_grader = None
-    user_id='default'
-    conversation_id = 'default'
-    def __init__(self,graphLib:GraphLib):
-        self.graphLib = graphLib
+    def __init__(self,langchainLib,db_conn_string=":memory:"):
+        super().__init__(langchainLib,db_conn_string)
         self.retrieve = RetrieveNode(self).retrieve
         self.grade_documents = GradeDocumentsNode(self).grade_documents
         self.generate = GenerateNode(self).generate
@@ -44,19 +38,19 @@ class SelfRagGraph():
         else:
             dbname = "langgraph1.faiss"
             try:
-                vectorstore = self.graphLib.langchainLib.vectorstoreLib.faissLib.load(dbname)
+                vectorstore = self.langchainLib.vectorstoreLib.faissLib.load(dbname)
             except:
                 url = "https://langchain-ai.github.io/langgraph/how-tos/"
-                docs = self.graphLib.langchainLib.documentLib.url.load_and_split(url=url,max_depth=1,chunk_size=256,chunk_overlap=0)
+                docs = self.langchainLib.documentLib.url.load_and_split(url=url,max_depth=1,chunk_size=256,chunk_overlap=0)
                 print(f"there is {len(docs)} docs to be add to {dbname}.")
                 # Add to vectorDB
                 print(docs)
-                vectorstore, _= self.graphLib.langchainLib.vectorstoreLib.faissLib.create_from_docs(docs)
+                vectorstore, _= self.langchainLib.vectorstoreLib.faissLib.add_docs(docs)
                 vectorstore.save_local(dbname)
             self.retriever = vectorstore.as_retriever()
 
     def set_llm(self,llm_key,llm_model):
-        self.llm = self.graphLib.langchainLib.get_llm(llm_key,llm_model)
+        self.llm = self.langchainLib.get_llm(llm_key,llm_model)
         self.normal_llm_grader = self.llm.with_structured_output(GradeDocuments)
         self.hallucinations_llm_grader = self.llm.with_structured_output(GradeHallucinations)
         self.answer_llm_grader = self.llm.with_structured_output(GradeAnswer)
@@ -106,6 +100,6 @@ class SelfRagGraph():
             },
         )
 
-        graph = workflow.compile(self.graphLib.memory)
+        graph = workflow.compile(self.memory)
         
         return graph

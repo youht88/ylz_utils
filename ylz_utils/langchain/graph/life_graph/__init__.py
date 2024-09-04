@@ -1,8 +1,5 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING,Literal,TypedDict,Annotated
 
-if TYPE_CHECKING:
-    from ylz_utils.langchain.graph import GraphLib
+from ylz_utils.langchain.graph import GraphLib
 
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.graph.message import add_messages
@@ -19,13 +16,9 @@ from .buy_node import BuyNode
 from .agent_node import AgentNode
 from .router_edge import router
 
-class LifeGraph():
-    llm_key = None
-    llm_model= None
-    user_id = 'default'
-    conversation_id = 'default'
-    def __init__(self,graphLib:GraphLib):
-        self.graphLib = graphLib
+class LifeGraph(GraphLib):
+    def __init__(self,langchainLib,db_conn_string=":memory:"):
+        super().__init__(langchainLib,db_conn_string)
         self.tagNode = TagNode(self).tagNode
         self.dietNode = DietNode(self).dietNode
         self.sportNode = SportNode(self).sportNode
@@ -34,7 +27,10 @@ class LifeGraph():
         self.buyNode = BuyNode(self).buyNode
         self.agentNode = AgentNode(self).agentNode
         self.router = router
-
+    
+    def human_action(self, graph, thread_id):
+        return super().human_action(graph, thread_id)
+    
     def get_graph(self,llm_key=None,llm_model=None,user_id='default',conversation_id='default'):
         self.llm_key = llm_key
         self.llm_model = llm_model
@@ -59,7 +55,7 @@ class LifeGraph():
         workflow.add_edge("agent",END)
         workflow.add_conditional_edges("tag",self.router)
         
-        graph = workflow.compile(self.graphLib.memory)
+        graph = workflow.compile(self.memory)
         return graph 
                
     # def robot(self,state:State):

@@ -9,14 +9,25 @@ import time
 import datetime
 
 class Node():
+    neo4jLib = None
     def __init__(self,lifeGraph:LifeGraph):
         self.lifeGraph = lifeGraph
         self.jionlp = jionlp
+        self.get_neo4jLib()
+        
+    def get_neo4jLib(self):
+        neo4jLib =  self.lifeGraph.langchainLib.neo4jLib
+        if not neo4jLib:
+            raise Exception("请先调用langchainLib.init_neo4j(neo4j)")
+        self.neo4jLib = neo4jLib
+        return neo4jLib
+    
     def get_llm(self,llm_key=None,llm_model=None):
         llm_key = llm_key or self.lifeGraph.llm_key
         llm_model = llm_model or self.lifeGraph.llm_model
         print("LLM to Used:",llm_key,llm_model)
-        return self.lifeGraph.graphLib.langchainLib.get_llm(llm_key,llm_model)
+        return self.lifeGraph.langchainLib.get_llm(llm_key,llm_model)
+    
     def parse_time(self,sdt,edt,duration):
         parse_sdt=None
         parse_edt=None

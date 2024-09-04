@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ylz_utils.langchain import LangchainLib
 
+from abc import ABC,abstractmethod
+
 from operator import itemgetter
 from typing import Literal,List,Annotated
 from langchain_core.messages import SystemMessage,HumanMessage,AIMessage,BaseMessage,ToolMessage
@@ -19,30 +21,31 @@ from langgraph.graph.state import CompiledStateGraph
 
 from ylz_utils.file import FileLib
 from ylz_utils.data import StringLib,Color
-from ylz_utils.langchain.graph.stand_graph import StandGraph
-from ylz_utils.langchain.graph.life_graph import LifeGraph
-from ylz_utils.langchain.graph.engineer_graph import EngineerGraph
-from ylz_utils.langchain.graph.db_graph import DbGraph
-from ylz_utils.langchain.graph.self_rag_graph import SelfRagGraph
 
-
-class GraphLib():
+class GraphLib(ABC):
     def __init__(self,langchainLib:LangchainLib,db_conn_string=":memory:"):
         self.langchainLib = langchainLib
-        #self.websearch_tool = self.set_websearch_tool(websearch_key)        
-        #self.ragsearch_tool = langchainLib.get_ragsearch_tool(retriever)
+        self.node_llms = {}
+        self.llm_key = None
+        self.llm_model = None
+        self.llm = None
+        self.user_id = 'default'
+        self.conversation_id = 'default'
         self.websearch_tool = None
         self.ragsearch_tool = None
         self.python_repl_tool = langchainLib.get_python_repl_tool()
         self.memory = SqliteSaver.from_conn_string(db_conn_string)
-        self.stand_graph = StandGraph(self)
-        self.life_graph = LifeGraph(self)
-        self.engineer_graph = EngineerGraph(self)
-        self.db_graph = DbGraph(self)
-        self.self_rag_graph = SelfRagGraph(self)
+        self.query_dbname = None
         self.tools=[]
-        self.human_in_loop={}
-    def set_chat_dbname(self,dbname):
+        self.tools_executor = None
+
+    def set_llm(self,llm_key,llm_model):
+        self.llm_key = llm_key
+        self.llm_model = llm_model
+        self.llm = self.langchainLib.get_llm(llm_key,llm_model)
+        return self.llm
+
+    def set_chat_db(self,dbname):
         # "checkpoint.sqlite"
         self.memory = SqliteSaver.from_conn_string(dbname)
     def set_query_dbname(self,dbname):
@@ -53,52 +56,92 @@ class GraphLib():
         self.ragsearch_tool = self.langchainLib.get_ragsearch_tool(retriever,name,description)
     def set_websearch_tool(self,websearch_key):
         self.websearch_tool = self.langchainLib.get_websearch_tool(websearch_key)
-    
-    def get_tools_executor(self,tools):
+    def set_tools(self,tools=None):
+        if not tools:
+            tools = [
+                self.python_repl_tool,
+            ]
+            if self.websearch_tool:
+                tools.append(self.websearch_tool)
+            if self.ragsearch_tool:
+                tools.append(self.ragsearch_tool)
+        self.tools = tools
+        return self.tools    
+    def set_tools_executor(self,tools):
         if not isinstance(tools,(list,tuple)):
             tools = [tools]
-        return ToolExecutor(tools) 
-    
+        self.tools_executor = ToolExecutor(tools) 
+        return self.tools_executor
+       
     def create_response(self, response: str, ai_message: AIMessage):
         return ToolMessage(
             content = response,
             tool_call_id = ai_message.tools_calls[0]["id"]
         )
-    def set_graph_node_llms(self,graph_key,node_llms):
-        if graph_key=='stand':
-            self.stand_graph.set_node_llms(node_llms)
-        elif graph_key=='life':
-            self.life_graph.set_node_llms(node_llms)
-        elif graph_key=='engineer':
-            self.engineer_graph.set_node_llms(node_llms)
 
-    def get_graph(self,graph_key:Literal['stand','life','engineer','db','selfrag']='stand',llm_key=None,llm_model=None,user_id='default',conversation_id='default'):
-        if graph_key=='life':
-            return self.life_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
-        elif graph_key=='engineer':
-            return self.engineer_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
-        elif graph_key=='db':
-            self.db_graph.set_db(f"sqlite:///{self.query_dbname}")
-            #self.db_graph.set_db("sqlite:///person.db")
-            self.db_graph.set_llm(llm_key,llm_model)
-            return self.db_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
-        elif graph_key=='selfrag':
-            self.self_rag_graph.set_retriever()
-            return self.self_rag_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
-        else:
-            return self.stand_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
+    def set_node_llms(self,node_llms):
+        self.node_llms = node_llms
 
-    def graph_stream(self,graph,message,thread_id="default-default",system_message=None):    
+    def get_node_llm(self,node_key):
+        try:
+            node_llm:dict = self.node_llms[node_key] 
+            llm_key = node_llm.get("llm_key")
+            llm_model = node_llm.get("llm_model")
+            return self.langchainLib.get_llm(key=llm_key,model=llm_model)
+        except:            
+            return self.langchainLib.get_llm(key = self.llm_key, model = self.llm_model)
+        
+    def tool_node(self,state):
+        if not self.tools_executor:
+            raise Exception("please call set_tools_executor(tools) first!")
+        messages = state["messages"]
+        last_message = messages[-1]
+        tool_call = last_message.tool_calls[0]
+        action = ToolInvocation(
+            tool = tool_call["name"],
+            tool_input = tool_call["args"]
+        )  
+        response = self.tools_executor.invoke(action)
+        tool_message = ToolMessage(
+            content = str(response),
+            name = action.tool,
+            tool_call_id = tool_call["id"]
+        )
+        return {"messages":[tool_message]}
+        
+    @abstractmethod
+    def get_graph(self,llm_key=None,llm_model=None,user_id='default',conversation_id='default') -> CompiledStateGraph:
+        pass
+    # def get_graph(self,graph_key:Literal['stand','life','engineer','db','selfrag']='stand',llm_key=None,llm_model=None,user_id='default',conversation_id='default'):
+    #     if graph_key=='life':
+    #         return self.life_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
+    #     elif graph_key=='engineer':
+    #         return self.engineer_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
+    #     elif graph_key=='db':
+    #         self.db_graph.set_db(f"sqlite:///{self.query_dbname}")
+    #         #self.db_graph.set_db("sqlite:///person.db")
+    #         self.db_graph.set_llm(llm_key,llm_model)
+    #         return self.db_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
+    #     elif graph_key=='selfrag':
+    #         self.self_rag_graph.set_retriever()
+    #         return self.self_rag_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
+    #     else:
+    #         return self.stand_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
+    @abstractmethod
+    def human_action(self,graph,thread_id):
+        pass
+
+    def graph_stream(self,graph:CompiledStateGraph,message,thread_id="default-default",system_message=None):    
         messages = []
         if system_message:
             messages.append(SystemMessage(content=system_message))
         if message:
             messages.append(HumanMessage(content=message))
-            values = {"messages":messages,"question":message}          
+            values = {"messages":messages}          
         else:
             values = None
         events = graph.stream( values,
-                                config = {"configurable":{"thread_id":thread_id,"graphLib":self}},
+                                config = {"configurable":{"thread_id":thread_id}},
                                 stream_mode = "values")
         _print_set = set()
         for event in events:
@@ -141,18 +184,9 @@ class GraphLib():
         return state
     
     def graph_update_state(self,graph:CompiledStateGraph,thread_id,values,as_node = None):
-        if not as_node:
-            graph.update_state(config = {"configurable":{"thread_id":thread_id}},values=values)
+        print("as_node:",as_node,"thread_id:",thread_id,"values",values)
+        graph.update_state(config = {"configurable":{"thread_id":thread_id}},values=values,as_node=as_node)
     
-    def graph_human_in_loop(self,graph,thread_id)->bool:
-        human_in_loop_dict = self.human_in_loop[graph.__hash__]
-        func = human_in_loop_dict['func']
-        graph = human_in_loop_dict['graph']
-        return func(graph,thread_id)
-
-    def regist_human_in_loop(self,graph,func):
-        self.human_in_loop[graph.__hash__] = {"graph":graph,"func":func}
-
     def export_graph(self,graph:CompiledStateGraph):
         FileLib.writeFile("graph.png",graph.get_graph().draw_mermaid_png(),mode="wb")  
 

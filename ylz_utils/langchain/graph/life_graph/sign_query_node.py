@@ -1,11 +1,11 @@
 import datetime
+import re
 from  .state import Signs,State
 from .node import Node
 
 from langchain_core.messages import AIMessage
 class SignQueryNode(Node):
     def signQueryNode(self,state:State):
-        neo4jLib = self.lifeGraph.graphLib.langchainLib.neo4jLib
         llm = self.get_llm()
         llm_with_output = llm.with_structured_output(Signs)
         message = state["messages"][-1]
@@ -18,7 +18,7 @@ class SignQueryNode(Node):
            3、不要使用neo4j不存在的时间函数,使用date(sdt),date(edt)返回日期
         schema:{schema}
         """
-        prompt = self.lifeGraph.graphLib.langchainLib.get_prompt(prompt_template)
+        prompt = self.lifeGraph.langchainLib.get_prompt(prompt_template)
         subTag = state["life_tag"].subTags[0]
         state["life_tag"].subTags = state["life_tag"].subTags[1:]
         schema_description = """
@@ -30,23 +30,24 @@ class SignQueryNode(Node):
            (:Person)-[:sign{{sdt,edt,place,value,unit,buy,duration}}]->(:Sign) 某人测量某项身体指标
            (:Person)-[:at]->(:Place) 某人在某地
         """
-        rel_schema = filter(lambda x:x.get("relType") in [":`sign`",":`at`"],neo4jLib.get_node_schema())
-        node_schema = filter(lambda x:x.get("nodeType") in [":`Person`",":`Sign`",":`Place`"],neo4jLib.get_node_schema())
+        rel_schema = filter(lambda x:x.get("relType") in [":`sign`",":`at`"],self.neo4jLib.get_node_schema())
+        node_schema = filter(lambda x:x.get("nodeType") in [":`Person`",":`Sign`",":`Place`"],self.neo4jLib.get_node_schema())
         schema = f"schema description:\n{schema_description}\nrelationship schema:\n{rel_schema}\nnode schema:\n{node_schema}\n"
         res = (prompt | llm).invoke({"now":datetime.datetime.now(),"schema":schema,"input":subTag.sub_text})
-
-        print("query script---->",res)
-        # if isinstance(res,Signs):
-        #     if state["life_tag"].is_question:
-        #         res = self.query(res)
-        #     else:
-        #         self.create_record(res)    
-        #     return {"messages":[AIMessage(content=str(res))],"life_tag":state["life_tag"]}
-        # else:
-        #     return {"messages":[AIMessage(content="抱歉,我无法解析体征数据")],"life_tag":state["life_tag"]}  
+        print("query script1---->",res)
+        res = re.findall("```cypher(.*)```",res.content.replace("\n",""))
+        if res:
+            res = res[0]
+            print("query script2---->",res)
+            res = self.neo4jLib.query(res)
+            res = self.neo4jLib.get_data(res)
+        print("query script3---->",res)
+        if res:
+            return {"messages":[AIMessage(content=str(res))]}
+        else:
+            return {"messages":[AIMessage(content="抱歉,我没有统计出体征数据")]}  
     
     def query(self,signs:Signs):
-        neo4jLib = self.lifeGraph.graphLib.langchainLib.neo4jLib
         print("query?????",signs)
         # 处理时间问题
         for sign in signs.signs:
@@ -60,10 +61,9 @@ class SignQueryNode(Node):
             match (n)-[r]-(s:Sign) where s.name = sign.name and datetime(sign.sdt) >= datetime(s.sdt) and datetime(sign.edt) <= datetime(s.edt) 
             return r.value
         """
-        res = neo4jLib.query(script,signs=signs_list[0],user_id=user_id)
-        print("RESULT:",neo4jLib.get_data(res))
+        res = self.neo4jLib.query(script,signs=signs_list[0],user_id=user_id)
+        print("RESULT:",self.neo4jLib.get_data(res))
     def create_record(self,signs:Signs):
-        neo4jLib = self.lifeGraph.graphLib.langchainLib.neo4jLib
         # 处理时间问题
         for sign in signs.signs:
            sign.sdt ,sign.edt, sign.duration = self.parse_time(sign.sdt,sign.edt,sign.duration) 
@@ -90,4 +90,4 @@ class SignQueryNode(Node):
                 create (n)-[r:sign{sdt:sign.sdt,edt:sign.edt,duration:sign.duration,place:sign.place,act:sign.act,name:sign.name,value:sign.value,unit:sign.unit,buy:sign.buy}]->(s)
             }
         """
-        neo4jLib.run(script,signs=signs_list,user_id=user_id)
+        self.neo4jLib.run(script,signs=signs_list,user_id=user_id)
