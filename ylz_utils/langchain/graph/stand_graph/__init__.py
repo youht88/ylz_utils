@@ -52,6 +52,7 @@ class StandGraph(GraphLib):
 
 
     def get_graph(self) -> CompiledStateGraph:
+        print("--> create graph:standGraph")
         workflow = StateGraph(State)
         workflow.add_node("scoreNode",ScoreNode(self,"add node:scoreNode"))
         workflow.add_node("chatbotNode",ChatbotNode(self,"add node:chatbotNode"))

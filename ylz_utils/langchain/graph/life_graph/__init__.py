@@ -17,7 +17,6 @@ from .buy_node import BuyNode
 from .agent_node import AgentNode
 
 class LifeGraph(GraphLib):
-    llm = None
     def __init__(self,langchainLib):
         super().__init__(langchainLib)
         self.neo4jLib = self.get_neo4jLib()
@@ -68,14 +67,15 @@ class LifeGraph(GraphLib):
                 return "agent"
     
     def get_graph(self):
+        print("---> create graph:lifeGraph")
         workflow = StateGraph(State)
         
-        workflow.add_node("tag",TagNode(self))
-        workflow.add_node("diet",DietNode(self))
-        workflow.add_node("sport",SportNode(self))
-        workflow.add_node("sign",SignNode(self))
-        workflow.add_node("sign_query",SignQueryNode(self))
-        workflow.add_node("buy",BuyNode(self))
+        workflow.add_node("tag",TagNode(self,"add node:tagNode"))
+        workflow.add_node("diet",DietNode(self,"add node:dietNode"))
+        workflow.add_node("sport",SportNode(self,"add node:sportNode"))
+        workflow.add_node("sign",SignNode(self,"add node:signNode"))
+        workflow.add_node("sign_query",SignQueryNode(self,"add node:signQueryNode"))
+        workflow.add_node("buy",BuyNode(self,"add node:buyNode"))
         workflow.add_node("agent",AgentNode(self,"add node:agentNode"))
         
         workflow.add_edge(START,"tag")

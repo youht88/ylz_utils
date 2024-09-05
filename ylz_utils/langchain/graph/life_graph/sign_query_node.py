@@ -5,16 +5,16 @@ from .node import Node
 
 from langchain_core.messages import AIMessage
 class SignQueryNode(Node):
-    def __init__(self,lifeGraph):
-        super().__init__(lifeGraph)
+    def __init__(self,lifeGraph,msg=None):
+        super().__init__(lifeGraph,msg)
         self.llm = self.graphLib.get_node_llm()
         self.llm_with_output = self.llm.with_structured_output(Signs)
     def __call__(self,state:State):
         message = state["messages"][-1]
         prompt_template = \
-        """"
+        """
         现在时间是:{now}
-        根据neo4j的schema和一步一步生成查询句子，确保生成neo4j查询语句script与查询的目标相关，且可以正确执行。
+        根据neo4j的schema一步一步生成查询句子，确保生成neo4j查询语句script与查询的目标相关，且可以正确执行。
         要求1、仅输出script，不要做任何解释
            2、仅包含相关的节点和关系
            3、不要使用neo4j不存在的时间函数,使用date(sdt),date(edt)返回日期
@@ -35,9 +35,9 @@ class SignQueryNode(Node):
         rel_schema = filter(lambda x:x.get("relType") in [":`sign`",":`at`"],self.graphLib.neo4jLib.get_node_schema())
         node_schema = filter(lambda x:x.get("nodeType") in [":`Person`",":`Sign`",":`Place`"],self.graphLib.neo4jLib.get_node_schema())
         schema = f"schema description:\n{schema_description}\nrelationship schema:\n{rel_schema}\nnode schema:\n{node_schema}\n"
-        res = (prompt | self.graphLib.llm).invoke({"now":datetime.datetime.now(),"schema":schema,"input":subTag.sub_text})
+        res = (prompt | self.llm).invoke({"now":datetime.datetime.now(),"schema":schema,"input":subTag.sub_text})
         print("query script1---->",res)
-        res = re.findall("```cypher(.*)```",res.content.replace("\n",""))
+        res = re.findall("```cypher(.*)```",res.content.replace("\n"," "))
         if res:
             res = res[0]
             print("query script2---->",res)

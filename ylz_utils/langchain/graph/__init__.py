@@ -95,7 +95,7 @@ class GraphLib(ABC):
             else:
                 llm = self.langchainLib.get_llm()
         finally:
-            print("llm=",llm.model_name,llm.openai_api_base)
+            #print("llm=",llm.model_name,llm.openai_api_base)
             return llm
     def set_thread(self,user_id="default",conversation_id="default"):
         self.user_id = user_id
@@ -123,31 +123,14 @@ class GraphLib(ABC):
     @abstractmethod
     def get_graph(self) -> CompiledStateGraph:
         pass
-    # def get_graph(self,graph_key:Literal['stand','life','engineer','db','selfrag']='stand',llm_key=None,llm_model=None,user_id='default',conversation_id='default'):
-    #     if graph_key=='life':
-    #         return self.life_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
-    #     elif graph_key=='engineer':
-    #         return self.engineer_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
-    #     elif graph_key=='db':
-    #         self.db_graph.set_db(f"sqlite:///{self.query_dbname}")
-    #         #self.db_graph.set_db("sqlite:///person.db")
-    #         self.db_graph.set_llm(llm_key,llm_model)
-    #         return self.db_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
-    #     elif graph_key=='selfrag':
-    #         self.self_rag_graph.set_retriever()
-    #         return self.self_rag_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
-    #     else:
-    #         return self.stand_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
     @abstractmethod
     def human_action(self,graph,thread_id=None):
         pass
 
-    def graph_stream(self,graph:CompiledStateGraph,message,thread_id=None,system_message=None):    
+    def graph_stream(self,graph:CompiledStateGraph,message,thread_id=None):    
         if not thread_id:
             thread_id = self.thread_id
         messages = []
-        if system_message:
-            messages.append(SystemMessage(content=system_message))
         if message:
             messages.append(HumanMessage(content=message))
             values = {"messages":messages}          

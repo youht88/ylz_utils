@@ -10,7 +10,7 @@ from langchain_core.pydantic_v1 import BaseModel
 from ylz_utils.data import StringLib
 
 class PromptLib():
-    def get_prompt(self,system_prompt=None,human_keys={"input":"input"},
+    def get_prompt(self,system_prompt=None,human_prompt="{input}",human_keys={},
                    outputParser:Optional[BaseModel]=None,
                    history_messages_key="history",
                    use_chat = False,
@@ -20,11 +20,12 @@ class PromptLib():
             if use_chinese:
                 system_prompt = f"所有问题请用中文回答\n{system_prompt}"
             if not use_chat:
+                if human_prompt==None:
+                    human_prompt=""
                 human_input_keys = []
-                human_prompt = ""
                 if human_keys:
                     for key in human_keys:
-                        human_prompt += f"{human_keys[key]}:{{{key}}}\n" 
+                        human_prompt += f"\n{human_keys[key]}:{{{key}}}\n" 
                     human_input_keys = human_keys.keys()
                 if outputParser:
                     prompt = PromptTemplate(
@@ -36,7 +37,8 @@ class PromptLib():
                     prompt =  PromptTemplate(
                         template=f"{system_prompt}\n{human_prompt}",
                         input_variables=human_input_keys,
-                    ) 
+                    )
+                StringLib.logging_in_box(str(prompt),console_width=160,print_func=print) 
             else:
                 messages = []
                 if outputParser:
@@ -50,10 +52,12 @@ class PromptLib():
                     messages.append(("system",system_prompt))
 
                 messages.append(("placeholder", f"{{{history_messages_key}}}"))
-                human_prompt = ""
+                if human_prompt==None:
+                    human_prompt = ""
                 if human_keys:
                     for key in human_keys:
-                        human_prompt += f"{human_keys[key]}:{{{key}}}\n"
+                        human_prompt += f"\n{human_keys[key]}:{{{key}}}\n"
+                if human_prompt:
                     messages.append(("human",human_prompt))
                 StringLib.logging_in_box(str(messages),console_width=160,print_func=print)
                 prompt = ChatPromptTemplate.from_messages(messages)

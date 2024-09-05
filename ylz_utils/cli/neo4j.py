@@ -31,6 +31,7 @@ def neo4j_test(args):
     host = args.host
     user_id = args.user_id or 'default'
     conversation_id = args.conversation_id or 'default'
+    thread_id = f"{user_id}-{conversation_id}"
     dbname = args.chat_dbname or 'chat.sqlite'
     llm_key = args.llm_key
     llm_model =args.llm_model
@@ -46,22 +47,16 @@ def neo4j_test(args):
     neo4jLib = Neo4jLib(host,user,password)
     langchainLib.init_neo4j(neo4jLib)
 
-    lifeGraph = LifeGraph(langchainLib)
-    lifeGraph.set_nodes_llm_config((llm_key,None))
-    lifeGraph.set_thread(user_id,conversation_id)
-    life_graph = lifeGraph.get_graph()
-    
-    standGraph = StandGraph(langchainLib)
-    standGraph.set_nodes_llm_config((llm_key,None))
-    standGraph.set_thread(user_id,conversation_id)
-    stand_graph = standGraph.get_graph()
-
+    lifeGraph = None
+    life_graph = None
+    standGraph = None
+    stand_graph = None
 
     print("*"*50,"let's start","*"*50)
     idx = 0
     vars = {}
     history = []
-    mode:Literal['neo4j','llm','life','test'] = 'neo4j'
+    mode:Literal['neo4j','llm','life','stand','test'] = 'neo4j'
     query=""
 
     while True:
@@ -91,10 +86,11 @@ usage:
             - 如果relations存在则merge方式创建relation
             - 每一行结构必须包含from,from_label字段和可选的from_key
             - 第一行属性(除from,to,from_label,to_label,from_key,to_key,type外)作为关系属性
-    /mode <neo4j|llm|life|test >  
+    /mode <neo4j|llm|life|stand|test >  
         - neo4j Neo4j REPL
         - llm <message> 不带graph的对话
         - life 带life_graph的对话 
+        - stand 带stand_graph的对话
         - test 测试graph对话
     /q 退出
 """
@@ -198,16 +194,28 @@ usage:
                 print(StringLib.lred("ERROR ON LLM:"),e)
 
         elif mode == 'life':
+            if not life_graph:
+                lifeGraph = LifeGraph(langchainLib)
+                lifeGraph.set_nodes_llm_config((llm_key,None))
+                lifeGraph.set_thread(user_id,conversation_id)
+                life_graph = lifeGraph.get_graph()
+
             spinner = Spinner()
             try:
                 command = query
                 spinner.start()
-                res = lifeGraph.graph_stream(life_graph,command,thread_id = f"{user_id}-{conversation_id}",system_message="")
+                res = lifeGraph.graph_stream(life_graph,command,thread_id = thread_id)
                 spinner.end()
             except Exception as e:
                 spinner.end()
                 print(StringLib.lred("ERROR ON LLM:"),e)
-        elif mode == 'test' :
+        elif mode == 'stand' :
+            if not stand_graph:
+                standGraph = StandGraph(langchainLib)
+                standGraph.set_nodes_llm_config((llm_key,None))
+                standGraph.set_thread(user_id,conversation_id)
+                stand_graph = standGraph.get_graph()
+
             spinner = Spinner()
             try:
                 if query=="@@NONE@@":
@@ -215,9 +223,9 @@ usage:
                 else:
                     command = query
                 spinner.start()
-                res = standGraph.graph_stream(stand_graph,command,thread_id = f"{user_id}-{conversation_id}",system_message="")
+                res = standGraph.graph_stream(stand_graph,command,thread_id = thread_id)
                 spinner.end()
-                if standGraph.human_action(stand_graph,f"{user_id}-{conversation_id}"):
+                if standGraph.human_action(stand_graph,thread_id):
                     query = "@@NONE@@"
                     continue
             except Exception as e:

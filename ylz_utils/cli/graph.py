@@ -62,16 +62,6 @@ def start_graph(langchainLib:LangchainLib,args):
     graphLib.set_nodes_llm_config((llm_key,llm_model))
     graphLib.set_thread(user_id,conversation_id)
     graph = graphLib.get_graph()
-#     system_message = \
-# """
-# 请始终使用中文，并确保中文正确。
-# 要求如下：
-#  - 一步一步解决问题，过程中进行反思以达到最佳回复
-#  - 只有计算和时间问题才使用python_repl工具,使用python_repl工具时要记得用print函数返回结果。陈述事实的时候请不要使用工具
-#  - 不要产生幻觉，不知道的问题优先从互联网查询，关于用户自己的问题可以向用户询问。
-#  - 当碰到需要需要用户来确认的问题或你需要用户告诉你的问题时，请使用使用human工具向用户询问。注意，询问时请提出询问的具体问题，不要重复我提出的问题
-# """
-    system_message = None
     while True:
         if not message:
             #message = input("User Input: ")
@@ -81,11 +71,9 @@ def start_graph(langchainLib:LangchainLib,args):
         if message.lower() in ["/quit", "/exit", "/stop","/q","/bye"]:
             print("Goodbye!")
             break
-        #system_message = """请始终用中文回答"""
         if message=="@@NONE@@":
             message = None
-        graphLib.graph_stream(graph,message,thread_id = thread_id,system_message=system_message)
-        system_message=None
+        graphLib.graph_stream(graph,message,thread_id = thread_id)
         if graphLib.human_action(graph,thread_id):
             message = "@@NONE@@"
             continue

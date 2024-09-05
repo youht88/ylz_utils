@@ -3,8 +3,8 @@ from .node import Node
 
 from langchain_core.messages import AIMessage
 class DietNode(Node):
-    def __init__(self,lifeGraph):
-        super().__init__(lifeGraph)
+    def __init__(self,lifeGraph,msg=None):
+        super().__init__(lifeGraph,msg)
         self.llm = self.graphLib.get_node_llm()
         self.llm_with_output = self.llm.with_structured_output(Diets)
     def __call__(self,state:State):
