@@ -4,7 +4,7 @@ from .state import State,RequestAssistance
 from .node import Node
 
 class HumanNode(Node):
-    def human_node(self,state: State):
+    def __call__(self,state: State):
         score = state["score"]
         score.score=0
         return {"score":score}

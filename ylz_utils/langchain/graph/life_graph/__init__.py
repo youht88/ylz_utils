@@ -1,4 +1,5 @@
 
+from typing import Literal
 from ylz_utils.langchain.graph import GraphLib
 
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -6,7 +7,7 @@ from langgraph.graph.message import add_messages
 from langgraph.graph import START,END,StateGraph,MessagesState
 from langchain_core.messages import SystemMessage,HumanMessage,AIMessage,BaseMessage,ToolMessage
 
-from .state import State
+from .state import State, Tag
 from .tag_node import TagNode
 from .diet_node import DietNode
 from .sport_node import SportNode
@@ -14,37 +15,68 @@ from .sign_node import SignNode
 from .sign_query_node import SignQueryNode
 from .buy_node import BuyNode
 from .agent_node import AgentNode
-from .router_edge import router
 
 class LifeGraph(GraphLib):
-    def __init__(self,langchainLib,db_conn_string=":memory:"):
-        super().__init__(langchainLib,db_conn_string)
-        self.tagNode = TagNode(self).tagNode
-        self.dietNode = DietNode(self).dietNode
-        self.sportNode = SportNode(self).sportNode
-        self.signNode = SignNode(self).signNode
-        self.signQueryNode = SignQueryNode(self).signQueryNode
-        self.buyNode = BuyNode(self).buyNode
-        self.agentNode = AgentNode(self).agentNode
-        self.router = router
+    llm = None
+    def __init__(self,langchainLib):
+        super().__init__(langchainLib)
+        self.neo4jLib = self.get_neo4jLib()
+
+    def get_neo4jLib(self):
+        neo4jLib =  self.langchainLib.neo4jLib
+        if not neo4jLib:
+            raise Exception("请先调用langchainLib.init_neo4j(neo4j)")
+        self.neo4jLib = neo4jLib
+        return neo4jLib
     
     def human_action(self, graph, thread_id):
         return super().human_action(graph, thread_id)
     
-    def get_graph(self,llm_key=None,llm_model=None,user_id='default',conversation_id='default'):
-        self.llm_key = llm_key
-        self.llm_model = llm_model
-        self.user_id = user_id
-        self.conversation_id = conversation_id
+    def router(self,state:State)->Literal["diet","sport","sign","buy","sign_query","agent","__end__"]:
+        tag:Tag = state["life_tag"]
+        print("tag=======>",tag)
+        if tag.is_question:
+            for item in tag.subTags:
+                match item.type:
+                    case "diet":
+                        return "diet"
+                    case "sport":
+                        return "sport"
+                    case "sign":
+                        return "sign_query"
+                    case "buy":
+                        return "buy"
+                    case _:
+                        return "agent"
+            return "agent"
+        match tag.action:
+            case "record":
+                for item in tag.subTags:
+                    match item.type:
+                        case "diet":
+                            return "diet"
+                        case "sport":
+                            return "sport"
+                        case "sign":
+                            return "sign"
+                        case "buy":
+                            return "buy"
+                        case _:
+                            return "agent"
+                return "agent"
+            case _:
+                return "agent"
+    
+    def get_graph(self):
         workflow = StateGraph(State)
         
-        workflow.add_node("tag",self.tagNode)
-        workflow.add_node("diet",self.dietNode)
-        workflow.add_node("sport",self.sportNode)
-        workflow.add_node("sign",self.signNode)
-        workflow.add_node("sign_query",self.signQueryNode)
-        workflow.add_node("buy",self.buyNode)
-        workflow.add_node("agent",self.agentNode)
+        workflow.add_node("tag",TagNode(self))
+        workflow.add_node("diet",DietNode(self))
+        workflow.add_node("sport",SportNode(self))
+        workflow.add_node("sign",SignNode(self))
+        workflow.add_node("sign_query",SignQueryNode(self))
+        workflow.add_node("buy",BuyNode(self))
+        workflow.add_node("agent",AgentNode(self,"add node:agentNode"))
         
         workflow.add_edge(START,"tag")
         workflow.add_conditional_edges("diet",self.router)

@@ -3,14 +3,17 @@ from .node import Node
 
 from langchain_core.messages import AIMessage
 class BuyNode(Node):
-    def buyNode(self,state:State):
-        llm = self.get_llm()
-        llm_with_output = llm.with_structured_output(Buys)
+    def __init__(self,lifeGraph):
+        super().__init__(lifeGraph)
+        self.llm = self.graphLib.get_node_llm()
+        self.llm_with_output = self.llm.with_structured_output(Buys)
+    
+    def __call__(self,state:State):
         message = state["messages"][-1]
-        prompt = self.lifeGraph.langchainLib.get_prompt()
+        prompt = self.graphLib.langchainLib.get_prompt()
         subTag = state["life_tag"].subTags[0]
         state["life_tag"].subTags = state["life_tag"].subTags[1:]
-        res = (prompt | llm_with_output).invoke({"input":subTag.sub_text})
+        res = (prompt | self.llm_with_output).invoke({"input":subTag.sub_text})
         if isinstance(res,Buys):
             self.create_record(res)    
             return {"messages":[AIMessage(content=str(res))],"life_tag":state["life_tag"]}
@@ -23,7 +26,7 @@ class BuyNode(Node):
            buy.sdt ,buy.edt, buy.duration = self.parse_time(buy.sdt,buy.edt,buy.duration) 
 
         buys_list = buys.dict()["buys"]
-        user_id = self.lifeGraph.user_id 
+        user_id = self.graphLib.user_id 
         script = """
             unwind $buys as buy
             match (n:Person{name:$user_id})
@@ -51,4 +54,4 @@ class BuyNode(Node):
                 create (n)-[r:buy{sdt:buy.sdt,edt:buy.edt,duration:buy.duration,place:buy.place,act:buy.act,name:buy.name,value:buy.value,unit:buy.unit,buy:buy.buy}]->(pd)
             }
         """
-        self.neo4jLib.run(script,buys=buys_list,user_id=user_id)
+        self.graphLib.neo4jLib.run(script,buys=buys_list,user_id=user_id)

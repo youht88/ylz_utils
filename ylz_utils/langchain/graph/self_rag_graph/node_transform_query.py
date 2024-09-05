@@ -11,7 +11,7 @@ class TransformQueryNode():
     def __init__(self,self_rag_graph:SelfRagGraph):
         self.self_rag_graph = self_rag_graph
 
-    def transform_query(self,state):
+    def __call__(self,state):
         """
         Transform the query to produce a better question.
 

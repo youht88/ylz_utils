@@ -23,30 +23,24 @@ from ylz_utils.file import FileLib
 from ylz_utils.data import StringLib,Color
 
 class GraphLib(ABC):
-    def __init__(self,langchainLib:LangchainLib,db_conn_string=":memory:"):
+    def __init__(self,langchainLib:LangchainLib):
         self.langchainLib = langchainLib
-        self.node_llms = {}
-        self.llm_key = None
-        self.llm_model = None
-        self.llm = None
         self.user_id = 'default'
         self.conversation_id = 'default'
+        self.thread_id='default-default'
+        self.nodes_llm_config = {}
         self.websearch_tool = None
         self.ragsearch_tool = None
         self.python_repl_tool = langchainLib.get_python_repl_tool()
-        self.memory = SqliteSaver.from_conn_string(db_conn_string)
+        self.chat_db_name = ":memory:"
+        self.memory = SqliteSaver.from_conn_string(self.chat_db_name)
         self.query_dbname = None
         self.tools=[]
         self.tools_executor = None
 
-    def set_llm(self,llm_key,llm_model):
-        self.llm_key = llm_key
-        self.llm_model = llm_model
-        self.llm = self.langchainLib.get_llm(llm_key,llm_model)
-        return self.llm
-
-    def set_chat_db(self,dbname):
+    def set_chat_dbname(self,dbname):
         # "checkpoint.sqlite"
+        self.chat_dbname = dbname
         self.memory = SqliteSaver.from_conn_string(dbname)
     def set_query_dbname(self,dbname):
         self.query_dbname = dbname
@@ -79,18 +73,35 @@ class GraphLib(ABC):
             tool_call_id = ai_message.tools_calls[0]["id"]
         )
 
-    def set_node_llms(self,node_llms):
-        self.node_llms = node_llms
-
-    def get_node_llm(self,node_key):
+    def set_nodes_llm_config(self,nodes_llm_config:dict[str,dict[Literal["llm_key","llm_model"],str|None]]|tuple):
+        # {
+        #     "node1":{"llm_key":...,"llm_mode":...}
+        #     "node2":{"llm_key":...,"llm_mode":...}
+        # }
+        if isinstance(nodes_llm_config,tuple):
+            self.nodes_llm_config['default'] = {"llm_key":nodes_llm_config[0],"llm_model":nodes_llm_config[1]}
+        else:
+            self.nodes_llm_config = nodes_llm_config
+    def get_node_llm(self,node_key=None):
         try:
-            node_llm:dict = self.node_llms[node_key] 
-            llm_key = node_llm.get("llm_key")
-            llm_model = node_llm.get("llm_model")
-            return self.langchainLib.get_llm(key=llm_key,model=llm_model)
+            node_llm_config:dict = self.nodes_llm_config[node_key] 
+            llm_key = node_llm_config.get("llm_key")
+            llm_model = node_llm_config.get("llm_model")
+            llm = self.langchainLib.get_llm(key=llm_key,model=llm_model)
         except:            
-            return self.langchainLib.get_llm(key = self.llm_key, model = self.llm_model)
-        
+            default_llm_config = self.nodes_llm_config.get('default',{})
+            if default_llm_config:
+                llm = self.langchainLib.get_llm(key = default_llm_config.get('llm_key'), model = default_llm_config.get('llm_model'))
+            else:
+                llm = self.langchainLib.get_llm()
+        finally:
+            print("llm=",llm.model_name,llm.openai_api_base)
+            return llm
+    def set_thread(self,user_id="default",conversation_id="default"):
+        self.user_id = user_id
+        self.conversation_id = conversation_id
+        self.thread_id = f"{user_id}-{conversation_id}"
+
     def tool_node(self,state):
         if not self.tools_executor:
             raise Exception("please call set_tools_executor(tools) first!")
@@ -110,7 +121,7 @@ class GraphLib(ABC):
         return {"messages":[tool_message]}
         
     @abstractmethod
-    def get_graph(self,llm_key=None,llm_model=None,user_id='default',conversation_id='default') -> CompiledStateGraph:
+    def get_graph(self) -> CompiledStateGraph:
         pass
     # def get_graph(self,graph_key:Literal['stand','life','engineer','db','selfrag']='stand',llm_key=None,llm_model=None,user_id='default',conversation_id='default'):
     #     if graph_key=='life':
@@ -128,10 +139,12 @@ class GraphLib(ABC):
     #     else:
     #         return self.stand_graph.get_graph(llm_key,llm_model,user_id,conversation_id)
     @abstractmethod
-    def human_action(self,graph,thread_id):
+    def human_action(self,graph,thread_id=None):
         pass
 
-    def graph_stream(self,graph:CompiledStateGraph,message,thread_id="default-default",system_message=None):    
+    def graph_stream(self,graph:CompiledStateGraph,message,thread_id=None,system_message=None):    
+        if not thread_id:
+            thread_id = self.thread_id
         messages = []
         if system_message:
             messages.append(SystemMessage(content=system_message))
@@ -172,18 +185,24 @@ class GraphLib(ABC):
                     print(f"{Color.BLUE}User:{Color.RESET} {msg_repr}")
                 _printed.add(message.id)
                 
-    def graph_get_state_history(self,graph:CompiledStateGraph,thread_id="default-default"):
+    def graph_get_state_history(self,graph:CompiledStateGraph,thread_id=None):
+        if not thread_id:
+            thread_id = self.thread_id
         state_history = graph.get_state_history(config = {"configurable":{"thread_id":thread_id}} )
         for state in state_history:
             print("Num Messages: ", len(state.values["messages"]), "Next: ", state.next)
             print("-" * 80)
         return state_history
     
-    def graph_get_state(self,graph:CompiledStateGraph,thread_id="default-default"):
+    def graph_get_state(self,graph:CompiledStateGraph,thread_id=None):
+        if not thread_id:
+            thread_id = self.thread_id
         state = graph.get_state(config =  {"configurable":{"thread_id":thread_id}})
         return state
     
-    def graph_update_state(self,graph:CompiledStateGraph,thread_id,values,as_node = None):
+    def graph_update_state(self,graph:CompiledStateGraph,values,thread_id=None,as_node = None):
+        if not thread_id:
+            thread_id = self.thread_id
         print("as_node:",as_node,"thread_id:",thread_id,"values",values)
         graph.update_state(config = {"configurable":{"thread_id":thread_id}},values=values,as_node=as_node)
     

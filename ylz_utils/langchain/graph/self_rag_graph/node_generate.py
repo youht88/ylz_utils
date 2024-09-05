@@ -16,7 +16,7 @@ class GenerateNode():
     def format_docs(docs):
         return "\n\n".join(doc.page_content for doc in docs)
        
-    def generate(self,state):
+    def __call__(self,state):
         """
         Generate answer
 

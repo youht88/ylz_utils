@@ -8,7 +8,7 @@ class RetrieveNode():
     def __init__(self,self_rag_graph:SelfRagGraph):
         self.self_rag_graph = self_rag_graph
 
-    def retrieve(self,state):
+    def __call__(self,state):
         """
         Retrieve documents
 

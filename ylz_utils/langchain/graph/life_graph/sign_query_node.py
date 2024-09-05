@@ -5,9 +5,11 @@ from .node import Node
 
 from langchain_core.messages import AIMessage
 class SignQueryNode(Node):
-    def signQueryNode(self,state:State):
-        llm = self.get_llm()
-        llm_with_output = llm.with_structured_output(Signs)
+    def __init__(self,lifeGraph):
+        super().__init__(lifeGraph)
+        self.llm = self.graphLib.get_node_llm()
+        self.llm_with_output = self.llm.with_structured_output(Signs)
+    def __call__(self,state:State):
         message = state["messages"][-1]
         prompt_template = \
         """"
@@ -18,7 +20,7 @@ class SignQueryNode(Node):
            3、不要使用neo4j不存在的时间函数,使用date(sdt),date(edt)返回日期
         schema:{schema}
         """
-        prompt = self.lifeGraph.langchainLib.get_prompt(prompt_template)
+        prompt = self.graphLib.langchainLib.get_prompt(prompt_template)
         subTag = state["life_tag"].subTags[0]
         state["life_tag"].subTags = state["life_tag"].subTags[1:]
         schema_description = """
@@ -30,17 +32,17 @@ class SignQueryNode(Node):
            (:Person)-[:sign{{sdt,edt,place,value,unit,buy,duration}}]->(:Sign) 某人测量某项身体指标
            (:Person)-[:at]->(:Place) 某人在某地
         """
-        rel_schema = filter(lambda x:x.get("relType") in [":`sign`",":`at`"],self.neo4jLib.get_node_schema())
-        node_schema = filter(lambda x:x.get("nodeType") in [":`Person`",":`Sign`",":`Place`"],self.neo4jLib.get_node_schema())
+        rel_schema = filter(lambda x:x.get("relType") in [":`sign`",":`at`"],self.graphLib.neo4jLib.get_node_schema())
+        node_schema = filter(lambda x:x.get("nodeType") in [":`Person`",":`Sign`",":`Place`"],self.graphLib.neo4jLib.get_node_schema())
         schema = f"schema description:\n{schema_description}\nrelationship schema:\n{rel_schema}\nnode schema:\n{node_schema}\n"
-        res = (prompt | llm).invoke({"now":datetime.datetime.now(),"schema":schema,"input":subTag.sub_text})
+        res = (prompt | self.graphLib.llm).invoke({"now":datetime.datetime.now(),"schema":schema,"input":subTag.sub_text})
         print("query script1---->",res)
         res = re.findall("```cypher(.*)```",res.content.replace("\n",""))
         if res:
             res = res[0]
             print("query script2---->",res)
-            res = self.neo4jLib.query(res)
-            res = self.neo4jLib.get_data(res)
+            res = self.graphLib.neo4jLib.query(res)
+            res = self.graphLib.neo4jLib.get_data(res)
         print("query script3---->",res)
         if res:
             return {"messages":[AIMessage(content=str(res))]}
@@ -54,22 +56,22 @@ class SignQueryNode(Node):
            sign.sdt ,sign.edt, sign.duration = self.parse_time(sign.sdt,sign.edt,sign.duration) 
 
         signs_list = signs.dict()["signs"]
-        user_id = self.lifeGraph.user_id 
+        user_id = self.graphLib.user_id 
         script = """
             unwind $signs as sign
             match (n:Person{name:$user_id})
             match (n)-[r]-(s:Sign) where s.name = sign.name and datetime(sign.sdt) >= datetime(s.sdt) and datetime(sign.edt) <= datetime(s.edt) 
             return r.value
         """
-        res = self.neo4jLib.query(script,signs=signs_list[0],user_id=user_id)
-        print("RESULT:",self.neo4jLib.get_data(res))
+        res = self.graphLib.neo4jLib.query(script,signs=signs_list[0],user_id=user_id)
+        print("RESULT:",self.graphLib.neo4jLib.get_data(res))
     def create_record(self,signs:Signs):
         # 处理时间问题
         for sign in signs.signs:
            sign.sdt ,sign.edt, sign.duration = self.parse_time(sign.sdt,sign.edt,sign.duration) 
 
         signs_list = signs.dict()["signs"]
-        user_id = self.lifeGraph.user_id 
+        user_id = self.graphLib.user_id 
         script = """
             unwind $signs as sign
             match (n:Person{name:$user_id})
@@ -90,4 +92,4 @@ class SignQueryNode(Node):
                 create (n)-[r:sign{sdt:sign.sdt,edt:sign.edt,duration:sign.duration,place:sign.place,act:sign.act,name:sign.name,value:sign.value,unit:sign.unit,buy:sign.buy}]->(s)
             }
         """
-        self.neo4jLib.run(script,signs=signs_list,user_id=user_id)
+        self.graphLib.neo4jLib.run(script,signs=signs_list,user_id=user_id)

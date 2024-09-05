@@ -3,15 +3,17 @@ from .node import Node
 
 from langchain_core.messages import AIMessage
 class SignNode(Node):
-    def signNode(self,state:State):
-        llm = self.get_llm()
-        llm_with_output = llm.with_structured_output(Signs)
+    def __init__(self,lifeGraph):
+        super().__init__(lifeGraph)
+        self.llm = self.graphLib.get_node_llm()
+        self.llm_with_output = self.llm.with_structured_output(Signs)
+    def __call__(self,state:State):
         message = state["messages"][-1]
         prompt_template = "解析语句，不要出现幻觉！如果是疑问句,value为疑问的文本。如:体重是多少 -> value:value，最大身高是多少？-> value:max(value)"
-        prompt = self.lifeGraph.langchainLib.get_prompt(prompt_template)
+        prompt = self.graphLib.langchainLib.get_prompt(prompt_template)
         subTag = state["life_tag"].subTags[0]
         state["life_tag"].subTags = state["life_tag"].subTags[1:]
-        res = (prompt | llm_with_output).invoke({"input":subTag.sub_text})
+        res = (prompt | self.llm_with_output).invoke({"input":subTag.sub_text})
         if isinstance(res,Signs):
             if state["life_tag"].is_question:
                 res = self.query(res)
@@ -28,22 +30,22 @@ class SignNode(Node):
            sign.sdt ,sign.edt, sign.duration = self.parse_time(sign.sdt,sign.edt,sign.duration) 
 
         signs_list = signs.dict()["signs"]
-        user_id = self.lifeGraph.user_id 
+        user_id = self.graphLib.user_id 
         script = """
             unwind $signs as sign
             match (n:Person{name:$user_id})
             match (n)-[r]-(s:Sign) where s.name = sign.name and datetime(sign.sdt) >= datetime(s.sdt) and datetime(sign.edt) <= datetime(s.edt) 
             return r.value
         """
-        res = self.neo4jLib.query(script,signs=signs_list[0],user_id=user_id)
-        print("RESULT:",self.neo4jLib.get_data(res))
+        res = self.graphLib.neo4jLib.query(script,signs=signs_list[0],user_id=user_id)
+        print("RESULT:",self.graphLib.neo4jLib.get_data(res))
     def create_record(self,signs:Signs):
         # 处理时间问题
         for sign in signs.signs:
            sign.sdt ,sign.edt, sign.duration = self.parse_time(sign.sdt,sign.edt,sign.duration) 
 
         signs_list = signs.dict()["signs"]
-        user_id = self.lifeGraph.user_id 
+        user_id = self.graphLib.user_id 
         script = """
             unwind $signs as sign
             match (n:Person{name:$user_id})
@@ -64,4 +66,4 @@ class SignNode(Node):
                 create (n)-[r:sign{sdt:sign.sdt,edt:sign.edt,duration:sign.duration,place:sign.place,act:sign.act,name:sign.name,value:sign.value,unit:sign.unit,buy:sign.buy}]->(s)
             }
         """
-        self.neo4jLib.run(script,signs=signs_list,user_id=user_id)
+        self.graphLib.neo4jLib.run(script,signs=signs_list,user_id=user_id)

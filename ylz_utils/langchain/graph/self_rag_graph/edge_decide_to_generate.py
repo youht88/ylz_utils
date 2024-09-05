@@ -8,7 +8,7 @@ class DecideToGenerateEdge():
     def __init__(self,self_rag_graph:SelfRagGraph):
         self.self_rag_graph = self_rag_graph
 
-    def decide_to_generate(self,state):
+    def __call__(self,state):
         """
         Determines whether to generate an answer, or re-generate a question.
 

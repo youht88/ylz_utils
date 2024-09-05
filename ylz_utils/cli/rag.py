@@ -1,6 +1,7 @@
 from langchain_community.document_loaders import UnstructuredFileLoader
 from tqdm import tqdm
 from ylz_utils import LangchainLib
+from langchain_community.vectorstores import FAISS
 
 def start_rag(langchainLib:LangchainLib,args):
     embedding_key = args.embedding_key
@@ -29,21 +30,8 @@ def start_rag(langchainLib:LangchainLib,args):
         if not docs:
             return
         batch = args.batch
-        provider_indexname = rag_indexname.split(":")
-        if len(provider_indexname)==2:
-            provider = provider_indexname[0]
-            indexname = provider_indexname[1]
-        else:
-            provider = None
-            indexname = provider_indexname[0]
 
-        if  provider=='faiss':
-            try:
-                vectorstore = langchainLib.vectorstoreLib.faissLib.load(embedding=embedding,collection_name=rag_indexname,)
-            except:
-                vectorstore = langchainLib.vectorstoreLib.faissLib.get_store(collection_name=indexname,embedding=embedding)
-        else:    
-            vectorstore = langchainLib.vectorstoreLib.get_store(provider,indexname,embedding)
+        vectorstore = langchainLib.vectorstoreLib.get_store_with_provider_and_indexname(rag_indexname,embedding=embedding)
         
         if url and rag_indexname:
             ##### create vectorestore
@@ -58,7 +46,7 @@ def start_rag(langchainLib:LangchainLib,args):
             ids = langchainLib.vectorstoreLib.add_docs(vectorstore,docs,batch=batch)                    
             print("ids:",ids)   
     
-        if provider=='faiss':
+        if isinstance(vectorstore,FAISS):
             langchainLib.vectorstoreLib.faissLib.save(vectorstore)
 
         if message and rag_indexname:           

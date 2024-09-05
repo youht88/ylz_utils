@@ -47,9 +47,14 @@ def neo4j_test(args):
     langchainLib.init_neo4j(neo4jLib)
 
     lifeGraph = LifeGraph(langchainLib)
-    life_graph = lifeGraph.get_graph(llm_key,user_id=user_id,conversation_id=conversation_id)
+    lifeGraph.set_nodes_llm_config((llm_key,None))
+    lifeGraph.set_thread(user_id,conversation_id)
+    life_graph = lifeGraph.get_graph()
+    
     standGraph = StandGraph(langchainLib)
-    stand_graph = standGraph.get_graph(llm_key,user_id=user_id,conversation_id=conversation_id)
+    standGraph.set_nodes_llm_config((llm_key,None))
+    standGraph.set_thread(user_id,conversation_id)
+    stand_graph = standGraph.get_graph()
 
 
     print("*"*50,"let's start","*"*50)

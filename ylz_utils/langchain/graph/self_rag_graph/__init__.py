@@ -23,14 +23,8 @@ class SelfRagGraph(GraphLib):
     retriever = None
     normal_llm_grader = None
     hallucinations_llm_grader = None
-    def __init__(self,langchainLib,db_conn_string=":memory:"):
-        super().__init__(langchainLib,db_conn_string)
-        self.retrieve = RetrieveNode(self).retrieve
-        self.grade_documents = GradeDocumentsNode(self).grade_documents
-        self.generate = GenerateNode(self).generate
-        self.transform_query = TransformQueryNode(self).transform_query
-        self.decide_to_generate = DecideToGenerateEdge(self).decide_to_generate
-        self.grade_generation_v_documents_and_question = GradeGenerationVDocumentsAndQuestionEdge(self).grade_generation_v_documents_and_question
+    def __init__(self,langchainLib):
+        super().__init__(langchainLib)
     
     def set_retriever(self,retriever=None):
         if retriever:
@@ -45,7 +39,8 @@ class SelfRagGraph(GraphLib):
                 print(f"there is {len(docs)} docs to be add to {dbname}.")
                 # Add to vectorDB
                 print(docs)
-                vectorstore, _= self.langchainLib.vectorstoreLib.faissLib.add_docs(docs)
+                vectorstore = self.langchainLib.vectorstoreLib.faissLib.get_store()
+                _ = self.langchainLib.vectorstoreLib.faissLib.add_docs(vectorstore,docs,batch=10)
                 vectorstore.save_local(dbname)
             self.retriever = vectorstore.as_retriever()
 
@@ -63,27 +58,22 @@ class SelfRagGraph(GraphLib):
            not self.answer_llm_grader:
             raise Exception("先调用self.set_llm(llm_key,llm_model)")
 
-    def get_graph(self,llm_key,llm_model,user_id='default',conversation_id='default'):
-        self.llm_key = llm_key
-        self.llm_model = llm_model
-        self.user_id = user_id
-        self.conversation_id = conversation_id
-        self.set_llm(llm_key,llm_model)
+    def get_graph(self):
         self._check()
         workflow = StateGraph(GraphState)
 
         # Define the nodes
-        workflow.add_node("retrieve", self.retrieve)  # retrieve
-        workflow.add_node("grade_documents", self.grade_documents)  # grade documents
-        workflow.add_node("generate", self.generate)  # generatae
-        workflow.add_node("transform_query", self.transform_query)  # transform_query
+        workflow.add_node("retrieve", RetrieveNode(self))  # retrieve
+        workflow.add_node("grade_documents", GradeDocumentsNode(self))  # grade documents
+        workflow.add_node("generate", GenerateNode(self))  # generatae
+        workflow.add_node("transform_query", TransformQueryNode(self))  # transform_query
 
         # Build graph
         workflow.add_edge(START, "retrieve")
         workflow.add_edge("retrieve", "grade_documents")
         workflow.add_conditional_edges(
             "grade_documents",
-            self.decide_to_generate,
+            DecideToGenerateEdge(self),
             {
                 "transform_query": "transform_query",
                 "generate": "generate",
@@ -92,7 +82,7 @@ class SelfRagGraph(GraphLib):
         workflow.add_edge("transform_query", "retrieve")
         workflow.add_conditional_edges(
             "generate",
-            self.grade_generation_v_documents_and_question,
+            GradeGenerationVDocumentsAndQuestionEdge(self),
             {
                 "not supported": "generate",
                 "useful": END,

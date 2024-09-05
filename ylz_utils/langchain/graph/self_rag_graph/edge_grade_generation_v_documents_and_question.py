@@ -41,7 +41,7 @@ class GradeGenerationVDocumentsAndQuestionEdge():
         #answer_grader.invoke({"question": question, "generation": generation})
         return answer_grader
     
-    def grade_generation_v_documents_and_question(self,state):
+    def __call__(self,state):
         """
         Determines whether the generation is grounded in the document and answers question.
 

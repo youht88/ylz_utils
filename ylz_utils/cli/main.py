@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import argparse
+from argparse import Namespace
 
 from ylz_utils.cli.init import init
 
@@ -91,7 +92,7 @@ def main():
     serve_parser.add_argument("--user",type=str,help="user_id,example: alice")    
     serve_parser.add_argument("--conversation",type=str,help="conversation_id,example: 123") 
            
-    args = parser.parse_args()
+    args:Namespace = parser.parse_args()
 
     #print("args====>",args)
 

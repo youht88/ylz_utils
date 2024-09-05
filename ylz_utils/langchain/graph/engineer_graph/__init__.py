@@ -14,13 +14,13 @@ from .gather_requirements import gather_requirements
 from .state import AgentState, OutputState, GraphConfig
 
 class EngineerGraph(GraphLib):
-    def __init__(self,langchainLib,db_conn_string=":memory:"):
-        super().__init__(langchainLib,db_conn_string)
-        # self.node_llms = {
+    def __init__(self,langchainLib):
+        super().__init__(langchainLib)
+        # self.set_nodes_llm_config( {
         #     "draft_answer": {"llm_key": "LLM.GROQ","llm_model":None},
         #     "gather_requirements": {"llm_key": "LLM.GROQ","llm_model":None},
         #     "critique": {"llm_key": "LLM.GROQ","llm_model":None},
-        # }
+        # })
     def route_critique(self,state: AgentState) -> Literal["draft_answer", END]:
         if state['accepted']:
             return END
@@ -42,12 +42,8 @@ class EngineerGraph(GraphLib):
         else:
             return END
 
-    def get_graph(self,llm_key=None,llm_model=None,user_id="default",conversation_id="default") -> CompiledStateGraph:
+    def get_graph(self) -> CompiledStateGraph:
         # Define a new graph
-        self.llm_key = llm_key
-        self.llm_model = llm_model
-        self.user_id = user_id
-        self.conversation_id = conversation_id
         workflow = StateGraph(AgentState, input=MessagesState, output=OutputState, config_schema=GraphConfig)
         workflow.add_node(draft_answer)
         workflow.add_node(gather_requirements)

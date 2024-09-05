@@ -32,8 +32,8 @@ class SubmitFinalAnswer(BaseModel):
 
 class DbGraph(GraphLib):
     db = None
-    def __init__(self,langchainLib,db_conn_string=":memory:"):
-        super().__init__(langchainLib,db_conn_string)
+    def __init__(self,langchainLib):
+        super().__init__(langchainLib)
     def set_db(self,uri:str):
         self.db = SQLDatabase.from_uri(uri)
     def _check(self):
@@ -181,11 +181,8 @@ class DbGraph(GraphLib):
         else:
             return "correct_query"
         
-    def get_graph(self,llm_key=None,llm_model=None,user_id='default',conversation_id='default') -> CompiledStateGraph:
+    def get_graph(self) -> CompiledStateGraph:
         # Define a new graph
-        self.llm = self.set_llm(llm_key,llm_model)
-        self.user_id = user_id
-        self.conversation_id = conversation_id
         self._check()
         self.set_toolkit()
         

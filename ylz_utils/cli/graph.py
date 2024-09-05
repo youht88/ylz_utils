@@ -1,6 +1,11 @@
 from ylz_utils.data import StringLib
 from ylz_utils.langchain import LangchainLib
 from langchain_core.messages import HumanMessage,ToolMessage
+from ylz_utils.langchain.graph.db_graph import DbGraph
+from ylz_utils.langchain.graph.engineer_graph import EngineerGraph
+from ylz_utils.langchain.graph.life_graph import LifeGraph
+from ylz_utils.langchain.graph.self_rag_graph import SelfRagGraph
+from ylz_utils.langchain.graph.stand_graph import StandGraph
 
 def input_with_readline(prompt):
     try:
@@ -12,36 +17,51 @@ def input_with_readline(prompt):
 def start_graph(langchainLib:LangchainLib,args):
     # # 设置标准输入为 UTF-8 编码
     # sys.stdin = codecs.getreader('utf-8')(sys.stdin.detach())
-    graph_key = args.graph or 'stand_graph'
+    graph_key = args.graph or 'stand'
     llm_key = args.llm_key
     llm_model = args.llm_model
     message = args.message
     chat_dbname = args.chat_dbname
-    rag_dbname = args.rag_dbname
+    rag_indexname = args.rag_indexname
     query_dbname = args.query_dbname
     user_id = args.user or 'default'
     conversation_id = args.conversation or 'default'
     thread_id = f"{user_id}-{conversation_id}"
     websearch_key = args.websearch
+    graphLib = None
+    match graph_key:
+        case "stand":
+            graphLib = StandGraph(langchainLib)
+        case "life":
+            graphLib = LifeGraph(langchainLib)
+        case "engineer":
+            graphLib = EngineerGraph(langchainLib)
+        case "db":
+            graphLib = DbGraph(langchainLib)
+        case "selfrag":
+            graphLib = SelfRagGraph(langchainLib)
+        case _ :
+            return
     if chat_dbname:                                  
-        langchainLib.graphLib.set_chat_dbname(chat_dbname)
+        graphLib.set_chat_dbname(chat_dbname)
         print("!!!",f"使用对话数据库{chat_dbname}")
-    if rag_dbname:
-        retriever = langchainLib.vectorstoreLib.faiss.load(rag_dbname).as_retriever()
-        langchainLib.graphLib.set_ragsearch_tool(retriever)
-        print("!!!",f"使用知识库{rag_dbname}")
+    if rag_indexname:
+        retriever = langchainLib.vectorstoreLib.get_store_with_provider_and_indexname(rag_indexname).as_retriever()
+        graphLib.set_ragsearch_tool(retriever)
+        print("!!!",f"使用知识库{rag_indexname}")
     if query_dbname:
         if query_dbname=="Chinook.db":
             print(StringLib.color(
                 "执行wget https://storage.googleapis.com/benchmarks-artifacts/chinook/Chinook.db,确保Chinook.db在当前目录。",
                 ["lmagenta","underline"]))
-        langchainLib.graphLib.set_query_dbname(query_dbname)
+        graphLib.set_query_dbname(query_dbname)
         print("!!!",f"使用查询数据库{query_dbname}")
     if websearch_key:
-        langchainLib.graphLib.set_websearch_tool(websearch_key)
+        graphLib.set_websearch_tool(websearch_key)
         print("!!!",f"使用搜索工具{websearch_key}")
-        
-    graph = langchainLib.get_graph(graph_key=graph_key,llm_key=llm_key,llm_model=llm_model,user_id=user_id,conversation_id=conversation_id)
+    graphLib.set_nodes_llm_config((llm_key,llm_model))
+    graphLib.set_thread(user_id,conversation_id)
+    graph = graphLib.get_graph()
 #     system_message = \
 # """
 # 请始终使用中文，并确保中文正确。
@@ -62,21 +82,16 @@ def start_graph(langchainLib:LangchainLib,args):
             print("Goodbye!")
             break
         #system_message = """请始终用中文回答"""
-        langchainLib.graphLib.graph_stream(graph,message,thread_id = thread_id,system_message=system_message)
+        if message=="@@NONE@@":
+            message = None
+        graphLib.graph_stream(graph,message,thread_id = thread_id,system_message=system_message)
         system_message=None
-        snapshot = langchainLib.graphLib.graph_get_state(graph,thread_id)
-        if snapshot.next: 
-            question = snapshot.values["messages"][-1].tool_calls[0]["args"]["request"]            
-            tool_call_id = snapshot.values["messages"][-1].tool_calls[0]["id"]
-            message = input_with_readline("User Input: ")
-            if message.strip().lower() != '':
-                tool_message = ToolMessage(tool_call_id=tool_call_id, content=message)
-                langchainLib.graphLib.graph_update_state(graph,thread_id=thread_id, values = {"messages":[tool_message]})
-                langchainLib.graphLib.graph_stream(graph,None,thread_id = thread_id)
-
+        if graphLib.human_action(graph,thread_id):
+            message = "@@NONE@@"
+            continue
         message = ""
 
-    current_state = langchainLib.graphLib.graph_get_state(graph,thread_id)
+    current_state = graphLib.graph_get_state(graph,thread_id)
     print("\n本次对话的所有消息:\n",current_state.values["messages"])
 
     #langchainLib.graphLib.export_graph(graph)

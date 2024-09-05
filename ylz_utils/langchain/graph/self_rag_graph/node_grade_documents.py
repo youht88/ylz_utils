@@ -31,7 +31,7 @@ class GradeDocumentsNode():
         #print(retrieval_grader.invoke({"question": question, "document": doc_txt}))        
         return retrieval_grader
     
-    def grade_documents(self,state):
+    def __call__(self,state):
         """
         Determines whether the retrieved documents are relevant to the question.
 

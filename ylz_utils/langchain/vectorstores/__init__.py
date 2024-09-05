@@ -23,7 +23,25 @@ class VectorstoreLib():
             self.provider = provider
         else:
             self.provider = self.config.get("VECTORSTORE.DEFAULT")
-
+    
+    def get_store_with_provider_and_indexname(self, provider_and_indexname,embedding=None):
+        provider_indexname = provider_and_indexname.split(":")
+        if len(provider_indexname)==2:
+            provider = provider_indexname[0]
+            indexname = provider_indexname[1]
+        else:
+            provider = None
+            indexname = provider_indexname[0]
+        vector_store = None
+        if  provider=='faiss':
+            try:
+                vector_store = self.faissLib.load(embedding=embedding,collection_name=indexname)
+            except:
+                vector_store = self.faissLib.get_store(collection_name=indexname,embedding=embedding)
+        else:    
+            vector_store = self.get_store(provider,indexname,embedding)
+        return vector_store
+    
     def get_store(self,provider:Optional[Literal['es','faiss','chroma']],collection_name=None,embedding=None):
         if not provider:
             provider = self.provider
