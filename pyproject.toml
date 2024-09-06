@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ylz-utils"
-version = "0.1.45"
+version = "0.1.46"
 description = "ylz 工具类"
 authors = ["youht88"]
 readme = "README.md"
