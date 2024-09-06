@@ -8,5 +8,6 @@ class AgentNode(Node):
         self.llm = self.graphLib.get_node_llm()
     def __call__(self,state:State):
         messages = state["messages"]
+        print("messages--->",messages)
         res = self.llm.invoke(messages)
         return {"messages":[res]}  

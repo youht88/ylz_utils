@@ -15,7 +15,9 @@ class SubTag(BaseModel):
     type: Literal["diet","sport","sign","buy","other"] = Field(description="分析句子是关于饮食、运动、体征、购物还是其他")
 class Tag(BaseModel):
     '''
-    标记句子的意图及类型并为分类标记确信度
+    标记句子的意图及类型,并为可以直接给出问题答案的程度打分。要求：
+    1、不要遗漏日期、地点等关键条件
+    2、如果没有指定日期，且根据上下文也无法判别日期或日期范围，则默认为当天
     举例:
     我吃了一个苹果 -> is_question=fale,action=record,type=diet
     我下午3点要开会 -> is_question=false,action=schedule,type=other
@@ -30,11 +32,13 @@ class Tag(BaseModel):
     这个礼拜做了哪些运动？-> is_question=true,action=other,type=sport
     这个月平均体重是多少 -> is_question=true,action=other,type=sign 
     今天体重多少公斤？ -> is_question=true,action=other,type=sign
+    上周3吃了什么？ -> is_question=true,action=other,type=diet
+    除了火龙果，我还吃了什么？-> is_question=true,action=other,type=diet
     '''
     is_question: bool = Field(description="是否为提问语句")
     action: Literal["record","plan","schedule","other"] = Field(description="语句意图是记录(已经完成)、计划(准备完成的目标)还是日程安排(准备完成的安排),如果都不是则为其他")
-    subTags: List[SubTag] = Field(description="拆分语句类型的列表,注意：需要理解原句子的意思，适当的时候对字句补充相关时间、地点、花费的信息")
-    score: int = Field(description="为分类判断的置信度从1-5打分",min=1,max=5)
+    subTags: List[SubTag] = Field(description="将语句的原始意思进行拆分。注意：需要理解原句子的意思，适当的时候对字句补充相关时间、地点、花费的信息")
+    score: int = Field(description="为可以直接给出问题的答案的可能性打分",min=1,max=5)
 
 class State(MessagesState):
     life_tag: Tag
@@ -52,6 +56,7 @@ class Diet(BaseModel):
     unit: str = Field(description="食品的数量的单位")
     brand: Optional[str] = Field(description="食物的品牌,比如:匹克薯片->brand:匹克,麦当劳汉堡->brand:麦当劳。如果没有指定则为空")
     buy: Optional[float]= Field(description="买食物花的钱，比如：3块5")
+    cal: float = Field(description="估算这些数量食物的热量，单位是卡路里。例如:如果一个苹果95卡,那么3个苹果为285卡")
 class Diets(BaseModel):
     foods:List[Diet] = Field(description="一组食品")
 
@@ -66,7 +71,7 @@ class Sport(BaseModel):
     value: Optional[float] = Field(description="运动的数量,比如300次,150米等")
     unit: Optional[str] = Field(description="运动的数量的单位")
     buy: Optional[float]= Field(description="本次运动所花的钱,比如:3块5")
-
+    cal: float = Field(description="估算这些数量或运动时长的运动消耗的热量，单位是卡路里")
 class Sports(BaseModel):
     sports:List[Sport] = Field(description="一组运动")
 

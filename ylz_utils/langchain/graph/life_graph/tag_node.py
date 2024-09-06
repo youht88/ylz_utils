@@ -12,8 +12,8 @@ class TagNode(Node):
         messages= state["messages"]
         message = messages[-1]
         prompt = self.graphLib.langchainLib.get_prompt()
-        #tag = (prompt | self.llm_with_output).invoke({"input":message.content})
-        tag = self.llm_with_output.invoke(messages)
+        tag = (prompt | self.llm_with_output).invoke({"input":message.content})
+        #tag = self.llm_with_output.invoke(messages)
         if isinstance(tag,Tag):
             return {"life_tag":tag}
         else:
