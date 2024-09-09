@@ -1,6 +1,7 @@
 import os
 
 from ylz_utils import FileLib
+from dotenv import load_dotenv
 
 class ConfigObject:
     def __init__(self, data):
@@ -41,6 +42,8 @@ class Config:
       config_path: 可选，配置文件路径。如果未提供，则首先从本地找config.yaml，其次从用户根目录的.project_name查找
     """
     try:
+        #如何运行程序的当前目录有.env文件，则先会导入这个env所指定的环境变量
+        load_dotenv(".env")
         if config_path is None:
             if FileLib.existsFile("config.yaml"):
                config_path = "config.yaml"
