@@ -40,6 +40,7 @@ def serve(args):
     # life_graph = lifeGraph.get_graph()
     
     testGraph = TestGraph(langchainLib)
+    testGraph.set_nodes_llm_config({'default':{'llm_key':llm_key,'llm_model':llm_model}})
     test_graph = testGraph.get_graph()
 
     app = FastAPI(title="Langserve")
@@ -55,6 +56,6 @@ def serve(args):
     add_routes(app,runnable=chain,path=path)
 
     #add_routes(app,runnable=life_graph,path="/life")
-    add_routes(app,runnable=test_graph.with_types(input_type=MessagesState),path="/test_graph")
+    add_routes(app,runnable=test_graph.with_types(input_type=MessagesState),path="/test_graph",include_callback_events=True)
 
     uvicorn.run(app, host = host, port = port)

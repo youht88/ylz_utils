@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ylz-utils"
-version = "0.1.46"
+version = "0.1.47"
 description = "ylz 工具类"
 authors = ["youht88"]
 readme = "README.md"
@@ -18,7 +18,7 @@ langchain-openai = "^0.1.17"
 langchain-together = "^0.1.4"
 langchain-google-genai = "^1.0.8"
 pyyaml = "^6.0.1"
-langgraph = "^0.1.11"
+langgraph = "^0.2.18"
 langserve = "^0.2.2"
 duckduckgo-search = "^6.2.1"
 sqlite4 = "^0.1.1"
@@ -69,6 +69,7 @@ neo4j = "^5.23.1"
 jionlp = "^1.5.15"
 aiosqlite = "^0.20.0"
 python-dotenv = "^1.0.1"
+langgraph-cli = "^0.1.52"
 
 
 

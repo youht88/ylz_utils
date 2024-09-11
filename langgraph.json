@@ -1,0 +1,8 @@
+{
+    "dependencies": ["."],
+    "graphs": {
+      "life": "./graph_cloud.py:get_life_graph",
+      "test": "./graph_cloud.py:get_test_graph"
+    },
+    "env": ".env"
+  }
