@@ -11,20 +11,30 @@ from ylz_utils.data import StringLib
 
 import time
 import random
-
+import logging
 from langchain_openai import ChatOpenAI
-from langchain_google_genai import ChatGoogleGenerativeAI
+
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+except:
+    logging.warning(f"use `pip install google-generativeai` ,otherwise you can't use provider by LLM.GEMINI")
+
 from langchain_community.chat_models import QianfanChatEndpoint
 from langchain_community.chat_models import ChatTongyi
 from langchain_ollama import ChatOllama
-from langchain_huggingface import HuggingFaceEndpoint,HuggingFacePipeline,ChatHuggingFace
-from huggingface_hub import login as huggingface_login
+
+try:
+    from langchain_huggingface import HuggingFaceEndpoint,HuggingFacePipeline,ChatHuggingFace
+    from huggingface_hub import login as huggingface_login
+    from transformers import BitsAndBytesConfig
+except:
+    logging.warning(f"use `pip install langchain-huggingface huggingface_hub` ,otherwise you can't use provider by LLM.HF")
+
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.runnables import ConfigurableFieldSpec
 
 from gradio_client import Client,file
 
-from transformers import BitsAndBytesConfig
 
 
 class LLMLib():

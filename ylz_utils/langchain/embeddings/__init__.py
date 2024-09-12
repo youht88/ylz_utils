@@ -5,17 +5,26 @@ if TYPE_CHECKING:
 
 import random
 import time
+import logging
 from typing import Optional
 
 from ylz_utils import Config
 
 from langchain_together import TogetherEmbeddings
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+try:
+    from langchain_google_genai import GoogleGenerativeAIEmbeddings
+except:
+    logging.warning(f"use `pip install google-generativeai` ,otherwise you can't use provider by EMBEDDING.GEMINI")
+
 from langchain_ollama import OllamaEmbeddings
 from langchain_community.embeddings.dashscope import DashScopeEmbeddings
-from langchain_huggingface.embeddings import HuggingFaceEndpointEmbeddings,HuggingFaceEmbeddings
-#from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
-from huggingface_hub import login as huggingface_login
+
+try:
+    from langchain_huggingface.embeddings import HuggingFaceEndpointEmbeddings,HuggingFaceEmbeddings
+    #from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
+    from huggingface_hub import login as huggingface_login
+except:
+    logging.warning(f"use `pip install langchain-huggingface huggingface_hub` ,otherwise you can't use provider by EMBEDDING.HF")
 
 from langchain_core.embeddings import DeterministicFakeEmbedding,Embeddings
 

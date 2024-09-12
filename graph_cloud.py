@@ -1,7 +1,9 @@
+from ylz_utils.config import Config
 from ylz_utils.langchain import LangchainLib
 from ylz_utils.langchain.graph.life_graph import LifeGraph
 from ylz_utils.langchain.graph.test_graph import TestGraph
 
+Config.init('ylz_utils')
 langchainLib = LangchainLib()
 
 def get_life_graph():

@@ -14,8 +14,9 @@ from typing_extensions import TypedDict
 from langchain_core.tools import tool,Tool
 from langchain_core.runnables import RunnablePassthrough,RunnableLambda,RunnableParallel
 from langgraph.graph import START,END,StateGraph,MessagesState
-from langgraph.checkpoint.sqlite import SqliteSaver
-from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
+from langgraph.checkpoint.memory import MemorySaver
+#from langgraph.checkpoint.sqlite import SqliteSaver
+#from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
 
 from langgraph.prebuilt import ToolExecutor,ToolInvocation, tools_condition
 from langgraph.graph.state import CompiledStateGraph
@@ -34,8 +35,9 @@ class GraphLib(ABC):
         self.ragsearch_tool = None
         self.python_repl_tool = langchainLib.get_python_repl_tool()
         self.chat_db_name = ":memory:"
-        self.memory = SqliteSaver.from_conn_string(self.chat_db_name)
-        self.amemory = AsyncSqliteSaver.from_conn_string(self.chat_db_name)
+        self.memory = MemorySaver()
+        #self.memory = SqliteSaver.from_conn_string(self.chat_db_name)
+        #self.amemory = AsyncSqliteSaver.from_conn_string(self.chat_db_name)
         self.query_dbname = None
         self.tools=[]
         self.tools_executor = None

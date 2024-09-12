@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 from tqdm import tqdm
 
-from ylz_utils.langchain.vectorstores.elasticsearch import ESLib
+#from ylz_utils.langchain.vectorstores.elasticsearch import ESLib
 from ylz_utils.langchain.vectorstores.faiss import FaissLib
 from ylz_utils.langchain.vectorstores.chroma import ChromaLib
 
@@ -17,7 +17,7 @@ class VectorstoreLib():
         self.langchainLib = langchainLib
         self.config = langchainLib.config
         self.faissLib = FaissLib(self)
-        self.esLib = ESLib(self)
+        #self.esLib = ESLib(self)
         self.chromaLib = ChromaLib(self)
         if provider:
             self.provider = provider

@@ -2,9 +2,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
     from ylz_utils.langchain.vectorstores import VectorstoreLib
+import logging
 
-import chromadb
-from langchain_chroma import Chroma
+try:
+    import chromadb
+    from langchain_chroma import Chroma
+except:
+    logging.warning(f"use `pip install langchain-chroma` ,otherwise you can't use provider by ChromaLib")
+
 from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_core.documents import Document
 

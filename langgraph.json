@@ -4,5 +4,11 @@
       "life": "./graph_cloud.py:get_life_graph",
       "test": "./graph_cloud.py:get_test_graph"
     },
+    "dockerfile_lines": [
+        "ADD ./ylz_utils/config.yaml /root/.ylz_utils/",
+        "RUN apt-get update",
+        "RUN pip install --upgrade pip",
+        "RUN pip install zipp wrapt mypy_extensions mdurl webencodings wcwidth netaddr pyasn1 rsa"
+    ],
     "env": ".env"
   }

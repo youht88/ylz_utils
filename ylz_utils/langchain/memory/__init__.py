@@ -4,9 +4,12 @@ if TYPE_CHECKING:
     from ylz_utils.langchain import LangchainLib
 
 from langchain.memory import ConversationBufferMemory
+
 from langchain_elasticsearch import ElasticsearchChatMessageHistory
-from langchain_community.chat_message_histories import SQLChatMessageHistory,ChatMessageHistory,ElasticsearchChatMessageHistory
+from langchain_community.chat_message_histories import ElasticsearchChatMessageHistory
 from langchain_elasticsearch.client import create_elasticsearch_client
+
+from langchain_community.chat_message_histories import SQLChatMessageHistory,ChatMessageHistory
 
 from ylz_utils.config import Config 
 
