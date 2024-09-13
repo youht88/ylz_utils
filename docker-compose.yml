@@ -27,7 +27,7 @@ services:
             interval: 60s
             start_interval: 1s
     langgraph-api:
-        image: ylz_utils-langgraph-api
+        image: ylz_utils_langgraph:v1
         ports:
             - "8123:8000"
         depends_on:
@@ -38,13 +38,14 @@ services:
         environment:
             REDIS_URI: redis://langgraph-redis:6379
             POSTGRES_URI: postgres://postgres:postgres@langgraph-postgres:5432/postgres?sslmode=disable
+            LANGSMITH_API_KEY: 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
         healthcheck:
             test: python /api/healthcheck.py
             interval: 60s
             start_interval: 1s
-            start_period: 10sls
+            start_period: 10s
         env_file: .env
-        pull_policy: build
+        #pull_policy: build
         build:
             context: .
             dockerfile_inline: |

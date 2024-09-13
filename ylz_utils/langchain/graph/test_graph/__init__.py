@@ -12,7 +12,7 @@ class TestGraph(GraphLib):
         workflow.add_edge(START,"nodeA")
         workflow.add_edge("nodeA","nodeB")
         workflow.add_edge("nodeB",END)        
-        graph = workflow.compile(self.amemory)
+        graph = workflow.compile(self.memory)
         return graph
 
     def human_action(self, graph, thread_id=None):

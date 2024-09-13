@@ -4,35 +4,16 @@
       "life": "./graph_cloud.py:get_life_graph",
       "test": "./graph_cloud.py:get_test_graph"
     },
-    "dockerfile_lines_bak": [
-      "ADD ./ylz_utils/config.yaml /root/.ylz_utils/",
+    "dockerfile_lines": [
       "RUN apt-get update",
       "RUN pip install --upgrade pip",
       "RUN pip install poetry",
-      "RUN pip install langchain-community==0.2.16 langchain-chroma==0.1.3 langserve==0.2.3",
-      "RUN pip install qianfan==0.4.2 yfinance==0.2.41 ipfs-toolkit==0.5.24",
-      "RUN pip install wolframalpha==5.1.3",
-      "RUN pip install simsimd elasticsearch==8.15.1"
-    ],
-    "dockerfile_lines": [ 
-      "ADD ./ylz_utils/config.yaml /root/.ylz_utils/",
-      "RUN apt-get update",
-      "RUN pip install --upgrade pip",
-      "RUN pip install poetry",
-      "ADD . /deps/ylz_utils",
-      "RUN poetry install -C /deps/ylz_utils --no-root"
-    ],
-    "dockerfile_lines_bak2": [
-      "ADD ./ylz_utils/config.yaml /root/.ylz_utils/",
-      "RUN apt-get update",
-      "RUN pip install --upgrade pip",
-      "RUN pip install poetry",
-      "RUN pip install mypy_extensions ",
-      "RUN pip install mdurl webencodings",
-      "RUN pip install wcwidth", 
-      "RUN pip install netaddr ",
-      "RUN pip install zipp wrapt pyasn1 rsa pyasn1_modules mpmath humanfriendly asgiref sympy requests_oauthlib pyproject_hooks flatbuffers",
-      "RUN pip install "
+      "ADD ./pyproject.toml /deps/ylz_utils/",
+      "# 禁止poetry自动创建虚拟环境",
+      "RUN poetry config virtualenvs.create false",
+      "# 安装依赖包",
+      "RUN poetry install -C /deps/ylz_utils --no-root",
+      "ADD ./ylz_utils/config.yaml /root/.ylz_utils/"
     ],
     "env": ".env"
   }
