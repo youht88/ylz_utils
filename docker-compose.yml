@@ -47,3 +47,10 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
+    neo4j:
+        image: neo4j
+        environment:
+            NEO4J_AUTH: neo4j/abcd1234
+        ports:
+            - "7474:7474"
+            - "7687:7687"
