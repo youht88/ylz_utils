@@ -27,7 +27,6 @@ services:
             interval: 60s
             #start_interval: 1s
     langgraph-api:
-        image: ylz_utils_langgraph:latest
         ports:
             - "8123:8000"
         depends_on:
@@ -45,7 +44,6 @@ services:
             #start_interval: 1s
             start_period: 10s
         env_file: .env
-        # pull_policy: build
-        # build:
-        #     context: .
-        #     dockerfile: Dockerfile
+        build:
+            context: .
+            dockerfile: Dockerfile
