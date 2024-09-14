@@ -129,7 +129,8 @@ VECTORSTORE:
         DB_FILE: rag.chroma
 NEO4J:
     #HOST: neo4j+s://f0ada9b2.databases.neo4j.io
-    HOST: bolt://localhost:7687
+    #HOST: bolt://localhost:7687
+    HOST: bolt://neo4j:7687 
     USER: neo4j
     PASSWORD: ${NEO4J_PASSWORD}
 

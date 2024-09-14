@@ -8,6 +8,7 @@ Config.init('ylz_utils')
 langchainLib = LangchainLib()
 
 def get_life_graph():
+    print("graph_cloud:life")
     neo4jLib = Neo4jLib(password="abcd1234")
     langchainLib.init_neo4j(neo4jLib)
     lifeGraph = LifeGraph(langchainLib)
@@ -17,8 +18,11 @@ def get_life_graph():
     return graph
 
 def get_test_graph():
+    print("graph_cloud:test")
     testGraph = TestGraph(langchainLib)
     testGraph.set_nodes_llm_config(("LLM.DEEPBRICKS",None))
     graph = testGraph.get_graph()
     return graph
 
+life_graph = get_life_graph()
+test_graph = get_test_graph()

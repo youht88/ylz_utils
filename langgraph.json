@@ -1,13 +1,15 @@
 {
     "dependencies": ["."],
     "graphs": {
-      "life": "./graph_cloud.py:get_life_graph",
-      "test": "./graph_cloud.py:get_test_graph"
+      "life": "./graph_cloud.py:life_graph",
+      "test": "./graph_cloud.py:test_graph"
     },
     "dockerfile_lines": [
       "RUN apt-get update",
+      "ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple",
       "RUN pip install --upgrade pip",
       "RUN pip install poetry",
+      "RUN poetry config repositories.tuna https://pypi.tuna.tsinghua.edu.cn/simple",
       "ADD ./pyproject.toml /deps/ylz_utils/",
       "# 禁止poetry自动创建虚拟环境",
       "RUN poetry config virtualenvs.create false",

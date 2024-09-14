@@ -25,9 +25,9 @@ services:
             timeout: 1s
             retries: 5
             interval: 60s
-            start_interval: 1s
+            #start_interval: 1s
     langgraph-api:
-        image: ylz_utils_langgraph:v1
+        image: ylz_utils_langgraph:latest
         ports:
             - "8123:8000"
         depends_on:
@@ -42,23 +42,10 @@ services:
         healthcheck:
             test: python /api/healthcheck.py
             interval: 60s
-            start_interval: 1s
+            #start_interval: 1s
             start_period: 10s
         env_file: .env
-        #pull_policy: build
-        build:
-            context: .
-            dockerfile_inline: |
-                FROM langchain/langgraph-api:3.11
-                "ADD ./ylz_utils/config.yaml /root/.ylz_utils/",
-                "RUN apt-get update",
-                "RUN pip install --upgrade pip",
-                "RUN pip install poetry",
-                "ADD . /deps/ylz_utils",
-                "RUN poetry install -C /deps/ylz_utils",
-                #ADD . /deps/ylz_utils
-                #RUN pip install zipp wrapt mypy_extensions mdurl webencodings
-                #RUN PYTHONDONTWRITEBYTECODE=1 pip install --no-cache-dir -c /api/constraints.txt -e /deps/*
-                ENV LANGSERVE_GRAPHS='{"life": "/deps/ylz_utils/graph_cloud.py:get_life_graph", "test": "/deps/ylz_utils/graph_cloud.py:get_test_graph"}'
-                WORKDIR /deps/ylz_utils
-
+        # pull_policy: build
+        # build:
+        #     context: .
+        #     dockerfile: Dockerfile

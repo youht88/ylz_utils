@@ -16,6 +16,6 @@ ADD . /deps/ylz_utils
 
 #RUN PYTHONDONTWRITEBYTECODE=1 pip install --no-cache-dir -c /api/constraints.txt -e /deps/*
 
-ENV LANGSERVE_GRAPHS='{"life": "/deps/ylz_utils/graph_cloud.py:get_life_graph", "test": "/deps/ylz_utils/graph_cloud.py:get_test_graph"}'
+ENV LANGSERVE_GRAPHS='{"life": "/deps/ylz_utils/graph_cloud.py:life_graph", "test": "/deps/ylz_utils/graph_cloud.py:test_graph"}'
 
 WORKDIR /deps/ylz_utils
