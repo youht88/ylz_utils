@@ -37,7 +37,7 @@ services:
         environment:
             REDIS_URI: redis://langgraph-redis:6379
             POSTGRES_URI: postgres://postgres:postgres@langgraph-postgres:5432/postgres?sslmode=disable
-            LANGSMITH_API_KEY: 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
+            LANGSMITH_API_KEY: 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
         healthcheck:
             test: python /api/healthcheck.py
             interval: 60s
