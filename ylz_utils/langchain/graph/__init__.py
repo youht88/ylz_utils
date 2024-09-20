@@ -9,7 +9,7 @@ from abc import ABC,abstractmethod
 from operator import itemgetter
 from typing import Literal,List,Annotated
 from langchain_core.messages import SystemMessage,HumanMessage,AIMessage,BaseMessage,ToolMessage
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 from langchain_core.tools import tool,Tool
 from langchain_core.runnables import RunnablePassthrough,RunnableLambda,RunnableParallel

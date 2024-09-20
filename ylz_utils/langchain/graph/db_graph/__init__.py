@@ -19,7 +19,7 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from typing import Annotated, Literal
 
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
 from langgraph.graph.message import AnyMessage, add_messages

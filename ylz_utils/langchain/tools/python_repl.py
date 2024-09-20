@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 from typing import Type
 from langchain_core.tools import Tool
 from langchain_experimental.utilities import PythonREPL
-from langchain_core.pydantic_v1 import BaseModel,Field
+from pydantic import BaseModel,Field
 class PythonREPLArgSchema(BaseModel):
     ''' input str for python repl tool'''
     command: str = Field(description="the command to execute use python repl. you must print the result with `print(...)` at last.")

@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     
 from langchain_core.prompts import ChatPromptTemplate,PromptTemplate,SystemMessagePromptTemplate
 from langchain_core.prompt_values import StringPromptValue,ChatPromptValue
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 
 from ylz_utils.data import StringLib
 
