@@ -66,8 +66,15 @@ LLM:
         API_KEYS: 
             - ${DASHSCOPE_API_KEYS}
             - ${DASHSCOPE_API_KEY}
-        BASH_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
+        BASE_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
         MODEL: ${DASHSCOPE_LLM_MODEL}
+    ZHIPU:
+        API_KEYS: 
+            - ${ZHIPU_API_KEYS}
+            - ${ZHIPU_API_KEY}
+        BASE_URL: https://open.bigmodel.cn/api/paas/v4
+        MODEL: ${ZHIPU_LLM_MODEL}
+    
 EMBEDDING:
     DEFAULT: EMBEDDING.TOGETHER
     TOGETHER: 

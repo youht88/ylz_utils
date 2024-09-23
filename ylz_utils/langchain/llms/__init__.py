@@ -257,7 +257,9 @@ class LLMLib():
                     "LLM.HF": 
                       {"model":"HuggingFaceH4/zephyr-7b-beta","temperature":0.3},                        
                     "LLM.DASHSCOPE":
-                      {"model":"qwen-max","temperature":0}
+                      {"model":"qwen-max","temperature":0},
+                    "LLM.ZHIPU":
+                      {"model":"glm-4-flash","temperature":0}
                       }
         for key in defaults:
             default = defaults[key]
