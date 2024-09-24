@@ -10,6 +10,8 @@ from langchain_community.utilities.tavily_search import TavilySearchAPIWrapper
 from langchain_community.tools.tavily_search.tool import TavilySearchResults
 from langchain_community.utilities.duckduckgo_search import DuckDuckGoSearchAPIWrapper
 from langchain_community.tools import DuckDuckGoSearchResults
+from langchain_community.tools import GoogleSerperResults
+from langchain_community.utilities.google_serper import GoogleSerperAPIWrapper
 
 from langchain.docstore.document import Document
 from langchain_core.runnables import RunnableLambda
@@ -65,6 +67,22 @@ class WebSearchTool():
                     #return tool_doc
                     return tool
                 except:
-                    raise Exception("请先设置TAVILY_API_KEYS环境变量") 
+                    raise Exception(f"请先设置{key}_API_KEYS环境变量") 
+        elif key == "SERP":
+            # url,content,
+            search_config = self.config.get(f"SEARCH_TOOLS.{key}")        
+            api_keys = search_config.get("API_KEYS")
+            try:
+                api_keys = self.langchainLib.split_keys(api_keys)
+                api_key = random.choice(api_keys)
+            except:
+                raise Exception(f"请先设置{key}_API_KEYS环境变量") 
+            if api_key:
+                try:
+                    search = GoogleSerperAPIWrapper(serper_api_key=api_key,k = rows)
+                    tool = GoogleSerperResults(api_wrapper=search)
+                    return tool
+                except:
+                    raise Exception(f"请先设置{key}_API_KEYS环境变量") 
         else:
             raise Exception(f"不支持{key}的搜索") 

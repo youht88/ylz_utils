@@ -121,6 +121,11 @@ SEARCH_TOOLS:
         API_KEYS: 
             - ${TAVILY_API_KEYS}
             - ${TAVILY_API_KEY}
+    SERP:
+        API_KEYS: 
+            - ${SERP_API_KEYS}
+            - ${SERP_API_KEY}
+
 VECTORSTORE:
     DEFAULT: chroma
     FAISS:

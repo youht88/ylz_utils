@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ylz-utils"
-version = "0.3.1"
+version = "0.3.2"
 description = "ylz 工具类"
 authors = ["youht88"]
 readme = "README.md"
@@ -78,6 +78,7 @@ aiosqlite = "^0.20.0"
 elasticsearch-dsl = "^8.15.2"
 elastic-transport = "^8.15.0"
 opentelemetry-sdk = "^1.27.0"
+serpapi = "^0.1.5"
 
 [build-system]
 requires = ["poetry-core"]

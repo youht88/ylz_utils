@@ -13,7 +13,7 @@ def get_life_graph():
     langchainLib.init_neo4j(neo4jLib)
     lifeGraph = LifeGraph(langchainLib)
     lifeGraph.set_thread("youht","default")
-    lifeGraph.set_nodes_llm_config(("LLM.DEEPBRICKS",None))
+    lifeGraph.set_nodes_llm_config(("LLM.ZHIPU",None))
     graph = lifeGraph.get_graph()
     return graph
 
