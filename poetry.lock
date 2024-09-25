@@ -1766,6 +1766,24 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 reference = "tsinghua"
 
 [[package]]
+name = "google-search-results"
+version = "2.4.2"
+description = "Scrape and search localized results from Google, Bing, Baidu, Yahoo, Yandex, Ebay, Homedepot, youtube at scale using SerpApi.com"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "google_search_results-2.4.2.tar.gz", hash = "sha256:603a30ecae2af8e600b22635757a6df275dad4b934f975e67878ccd640b78245"},
+]
+
+[package.dependencies]
+requests = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
 name = "googleapis-common-protos"
 version = "1.65.0"
 description = "Common protobufs used in Google APIs"
@@ -6965,4 +6983,4 @@ reference = "tsinghua"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10,<3.13"
-content-hash = "84b31f263211ceae8cc441048689e403854bd9fbf14a2bdb94b2985efc50d9e4"
+content-hash = "0cb6cf360e1bd9171b9ab2269645bc9140394ff901643883b0c5589fda386fc1"

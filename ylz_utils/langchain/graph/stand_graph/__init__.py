@@ -31,21 +31,20 @@ class StandGraph(GraphLib):
         #             description="when you need to calculation, use python repl tool to execute code ,then return the result to AI.",
         #             func=self.python_repl_tool)
         #      ]
-        tools = self.set_tools()
-        self.set_tools_executor(tools)
 
     def chatbot_router(self,state:State)-> Literal["tools","__end__"]:
         messages = state["messages"]
-        tool_calls = messages[-1].tool_calls
-        if tool_calls:
-            return "tools"
-        else:
-            return END
-
+        if isinstance(messages[-1],AIMessage):
+            tool_calls = messages[-1].tool_calls
+            if tool_calls:
+                return "tools"
+            else:
+                return END
+        return END
     def score_router(self,state:State):
         score = state["score"]
         print("score_router.score=",score)
-        if score.score <= 1:
+        if not score or score.score <= 1:
             return "chatbotNode"
         else:
             return "humanNode"
@@ -53,6 +52,9 @@ class StandGraph(GraphLib):
 
     def get_graph(self) -> CompiledStateGraph:
         print("--> create graph:standGraph")
+        tools = self.set_tools()
+        print("[tools]",tools)
+        self.set_tools_executor(tools)
         workflow = StateGraph(State)
         workflow.add_node("scoreNode",ScoreNode(self,"add node:scoreNode"))
         workflow.add_node("chatbotNode",ChatbotNode(self,"add node:chatbotNode"))
@@ -64,6 +66,7 @@ class StandGraph(GraphLib):
         
         workflow.add_edge(START, "scoreNode")
         workflow.add_conditional_edges("scoreNode",self.score_router)
+        #workflow.add_edge(START,"chatbotNode")
         workflow.add_edge("toolsNode","chatbotNode")
         workflow.add_edge("humanNode","scoreNode")
 

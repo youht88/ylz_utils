@@ -6,6 +6,7 @@ from ylz_utils.langchain.graph.engineer_graph import EngineerGraph
 from ylz_utils.langchain.graph.life_graph import LifeGraph
 from ylz_utils.langchain.graph.self_rag_graph import SelfRagGraph
 from ylz_utils.langchain.graph.stand_graph import StandGraph
+from rich.console import Console
 
 def input_with_readline(prompt):
     try:
@@ -62,24 +63,26 @@ def start_graph(langchainLib:LangchainLib,args):
     graphLib.set_nodes_llm_config((llm_key,llm_model))
     graphLib.set_thread(user_id,conversation_id)
     graph = graphLib.get_graph()
-    while True:
-        if not message:
-            #message = input("User Input: ")
-            message = input_with_readline("User Input: ")
-        else:
-            print(f"User:{message}")
-        if message.lower() in ["/quit", "/exit", "/stop","/q","/bye"]:
-            print("Goodbye!")
-            break
-        if message=="@@NONE@@":
-            message = None
-        graphLib.graph_stream(graph,message,thread_id = thread_id)
-        if graphLib.human_action(graph,thread_id):
-            message = "@@NONE@@"
-            continue
-        message = ""
+    message = input("User Input: ")
+    graphLib.graph_test(graph,message)
+    # while True:
+    #     if not message:
+    #         #message = input("User Input: ")
+    #         message = input_with_readline("User Input: ")
+    #     else:
+    #         print(f"User:{message}")
+    #     if message.lower() in ["/quit", "/exit", "/stop","/q","/bye"]:
+    #         print("Goodbye!")
+    #         break
+    #     if message=="@@NONE@@":
+    #         message = None
+    #     graphLib.graph_stream(graph,message,thread_id = thread_id)
+    #     if graphLib.human_action(graph,thread_id):
+    #         message = "@@NONE@@"
+    #         continue
+    #     message = ""
 
     current_state = graphLib.graph_get_state(graph,thread_id)
-    print("\n本次对话的所有消息:\n",current_state.values["messages"])
+    Console().print("\n本次对话的所有消息:\n",current_state.values["messages"])
 
     #langchainLib.graphLib.export_graph(graph)

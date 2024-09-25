@@ -205,7 +205,7 @@ print(3+2)
 
 def start(args):
     langchainLib = LangchainLib()
-    langchainLib.add_plugins()
+    #langchainLib.add_plugins()
     if args.mode == "llm":
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试llm {Color.RESET}")
         __llm_test(langchainLib,args)

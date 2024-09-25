@@ -32,11 +32,11 @@ class WebSearchTool():
         tool = TavilySearchResults(api_wrapper=search,max_results=4)
         return tool
 
-    def get_tool(self,key="TAVILY",rows=4):
+    def get_tool(self,key="TAVILY",rows=10):
         key = key.upper()
         if key == "DUCKDUCKGO":
             search = DuckDuckGoSearchAPIWrapper()
-            tool  = DuckDuckGoSearchResults(api_wrapper=search,num_results=rows)
+            tool  = DuckDuckGoSearchResults(api_wrapper=search,max_results=rows)
             #snippet,title,link: 
             pattern = "snippet: (.*?) title: (.*?) link: (.*?) snippet:"
             def __toDocument(text):
@@ -68,7 +68,7 @@ class WebSearchTool():
                     return tool
                 except:
                     raise Exception(f"请先设置{key}_API_KEYS环境变量") 
-        elif key == "SERP":
+        elif key == "SERPAPI":
             # url,content,
             search_config = self.config.get(f"SEARCH_TOOLS.{key}")        
             api_keys = search_config.get("API_KEYS")
@@ -82,7 +82,7 @@ class WebSearchTool():
                     search = GoogleSerperAPIWrapper(serper_api_key=api_key,k = rows)
                     tool = GoogleSerperResults(api_wrapper=search)
                     return tool
-                except:
-                    raise Exception(f"请先设置{key}_API_KEYS环境变量") 
+                except Exception as e:
+                    raise Exception(f"请先设置{key}_API_KEYS环境变量,{e}") 
         else:
             raise Exception(f"不支持{key}的搜索") 

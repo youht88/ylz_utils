@@ -21,7 +21,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import ToolExecutor,ToolInvocation, tools_condition
 from langgraph.graph.state import CompiledStateGraph
 
-from ylz_utils.file import FileLib
+from ylz_utils.file import FileLib, IOLib
 from ylz_utils.data import StringLib,Color
 
 class GraphLib(ABC):
@@ -130,6 +130,20 @@ class GraphLib(ABC):
     @abstractmethod
     def human_action(self,graph,thread_id=None):
         pass
+    
+    def graph_test(self,graph:CompiledStateGraph,message,thread_id=None):
+        if not thread_id:
+            thread_id = self.thread_id
+        print("thread_id=",thread_id)
+        while True:
+            if message=="/q":
+                break
+            self.graph_stream(graph,message,thread_id)
+            human_turn = self.human_action(graph,thread_id)
+            if human_turn:
+                message = None
+            else:
+                message = IOLib.input_with_history(f"{StringLib.green('User: ')}") 
 
     def graph_stream(self,graph:CompiledStateGraph,message,thread_id=None):    
         if not thread_id:

@@ -121,10 +121,10 @@ SEARCH_TOOLS:
         API_KEYS: 
             - ${TAVILY_API_KEYS}
             - ${TAVILY_API_KEY}
-    SERP:
+    SERPAPI:
         API_KEYS: 
-            - ${SERP_API_KEYS}
-            - ${SERP_API_KEY}
+            - ${SERPAPI_API_KEYS}
+            - ${SERPAPI_API_KEY}
 
 VECTORSTORE:
     DEFAULT: chroma
