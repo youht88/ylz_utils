@@ -42,6 +42,7 @@ LLM:
         API_KEYS: 
             - ${OLLAMA_API_KEYS}
             - ${OLLAMA_API_KEY}
+        BASE_URL: ${OLLAMA_BASE_URL}    
         MODEL: ${OLLAMA_LLM_MODEL}
         KEEP_ALIVE: -1
     MOONSHOT:
@@ -91,6 +92,7 @@ EMBEDDING:
         API_KEYS: 
             - ${OLLAMA_API_KEYS}
             - ${OLLAMA_API_KEY}
+        BASE_URL: ${OLLAMA_BASE_URL}
         MODEL: ${OLLAMA_EMBEDDING_MODEL}
     HF:
         API_KEYS: 
@@ -131,18 +133,19 @@ VECTORSTORE:
     FAISS:
         DB_FILE: rag.faiss
     ES:
-        HOST: https://localhost:9200
+        HOST: ${ES_HOST}
         USER: elastic
         PASSWORD: ${ES_PASSWORD}
     CHROMA:
         SERVER: false
-        HOST: localhost
+        HOST: ${CHROMA_HOST}
         PORT: 8089
         DB_FILE: rag.chroma
 NEO4J:
     #HOST: neo4j+s://f0ada9b2.databases.neo4j.io
     #HOST: bolt://localhost:7687
-    HOST: bolt://neo4j:7687 
+    #HOST: bolt://neo4j:7687 
+    HOST: ${NEO4J_HOST}
     USER: neo4j
     PASSWORD: ${NEO4J_PASSWORD}
 

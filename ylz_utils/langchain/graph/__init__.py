@@ -128,8 +128,8 @@ class GraphLib(ABC):
     def get_graph(self) -> CompiledStateGraph:
         pass
     @abstractmethod
-    def human_action(self,graph,thread_id=None):
-        pass
+    def human_action(self,graph,thread_id=None) -> bool:
+        return False
     
     def graph_test(self,graph:CompiledStateGraph,message,thread_id=None):
         if not thread_id:

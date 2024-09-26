@@ -180,6 +180,7 @@ class LLMLib():
                             try:
                                 StringLib.logging_in_box(f"ollama_api_key={llm.get('api_key')},model={llm.get('model')}")
                                 llm['llm'] = ChatOllama(model= llm.get('model'),
+                                                        base_url=llm.get('base_url'),
                                                         temperature= temperature or llm.get('temperature'),
                                                         keep_alive=llm.get('keep_alive'))
                             except:

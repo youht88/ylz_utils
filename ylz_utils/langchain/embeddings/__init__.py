@@ -92,7 +92,7 @@ class EmbeddingLib():
                         embedding['embedding'] = DashScopeEmbeddings(model=embedding.get('model'),
                                                                      dashscope_api_key=embedding.get('api_key'))
                     elif embed_type == 'EMBEDDING.OLLAMA':
-                        embedding['embedding'] = OllamaEmbeddings(model=embedding.get('model'))
+                        embedding['embedding'] = OllamaEmbeddings(model=embedding.get('model'),base_url=embedding.get('base_url'))
                     elif embed_type == 'EMBEDDING.HF':
                         if embedding.get('pipeline'): 
                             huggingface_login(embedding.get('api_key'))
