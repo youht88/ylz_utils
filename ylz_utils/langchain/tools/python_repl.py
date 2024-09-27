@@ -9,7 +9,7 @@ from langchain_experimental.utilities import PythonREPL
 from pydantic import BaseModel,Field
 class PythonREPLArgSchema(BaseModel):
     ''' input str for python repl tool'''
-    command: str = Field(description="the command to execute use python repl. you must print the result with `print(...)` at last.")
+    command: str = Field(description="the command to execute use python repl with `print(...)` at last.")
 
 class PythonREPLTool():
     def __init__(self,langchainLib:LangchainLib):
@@ -23,7 +23,7 @@ class PythonREPLTool():
         repl_tool = Tool(
             name=name,
             description="""
-The tool is a Python shell. Use this to execute python commands. Input should be a valid python command. """,
+The tool is a Python shell with print(...) as last. Use this to execute python commands and get result. Input should be a valid python command. """,
             args_schema = PythonREPLArgSchema ,
             func=python_repl.run
         )

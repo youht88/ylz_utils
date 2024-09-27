@@ -15,18 +15,18 @@ class ChatbotNode(Node):
         lastMessage:BaseMessage = state["messages"][-1]
         messages = state["messages"]
         if isinstance(lastMessage,ToolMessage):
-            if  lastMessage.content:
-                messages[-2].content=lastMessage.content
-            else:
-               messages[-2].content="我没有从工具中获得信息，如果你使用python_repl工具则必须在最后使用print(...)语句返回计算结果" 
+            if  not lastMessage.content:
+               lastMessage.content="我没有从工具中获得信息，如果你使用python_repl工具则必须在最后使用print(...)语句返回计算结果" 
             try:
                 response = self.llm_with_tools.invoke(state["messages"])
+                response = self.graphLib.get_safe_response(response)
                 return {"messages":[response]}
             except Exception as e:
                 Console().print("ERROR!!!",messages,e)
                 raise e
         else:
             response = self.llm_with_tools.invoke(messages)
+            response = self.graphLib.get_safe_response(response)
             Console().print("HERE NO TOOL!!!")
             return {"messages":[response]}
         

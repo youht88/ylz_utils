@@ -111,19 +111,28 @@ class GraphLib(ABC):
             raise Exception("please call set_tools_executor(tools) first!")
         messages = state["messages"]
         last_message = messages[-1]
-        tool_call = last_message.tool_calls[0]
-        action = ToolInvocation(
-            tool = tool_call["name"],
-            tool_input = tool_call["args"]
-        )  
-        response = self.tools_executor.invoke(action)
-        tool_message = ToolMessage(
-            content = str(response),
-            name = action.tool,
-            tool_call_id = tool_call["id"]
-        )
-        return {"messages":[tool_message]}
-        
+        tool_messages = []
+        for tool_call in last_message.tool_calls: 
+            action = ToolInvocation(
+                tool = tool_call["name"],
+                tool_input = tool_call["args"]
+            )  
+            response = self.tools_executor.invoke(action)
+            tool_message = ToolMessage(
+                content = str(response),
+                name = action.tool,
+                tool_call_id = tool_call["id"]
+            )
+            tool_messages.append(tool_message)
+        return {"messages":tool_messages}
+    def get_safe_response(self,responseMessage:BaseMessage):
+        safeResponseMessage = responseMessage.model_copy()
+        if isinstance(responseMessage,AIMessage):
+            if len(responseMessage.tool_calls)>0 and responseMessage.content=="":
+                print("!!!!!",responseMessage)
+                names = list(set([tool_call["name"] for tool_call in responseMessage.tool_calls]))
+                safeResponseMessage.content = f"我要使用`{','.join(names)}`等工具"
+        return safeResponseMessage
     @abstractmethod
     def get_graph(self) -> CompiledStateGraph:
         pass
@@ -175,7 +184,8 @@ class GraphLib(ABC):
                     msg_repr = msg_repr[:max_length] + " ... (truncated)"
                 if isinstance(message,AIMessage):
                     if message.tool_calls:
-                        print(f"{Color.LBLUE}AI:{Color.RESET}",f'使用{Color.GREEN}{message.tool_calls[0]["name"]}{Color.RESET},调用参数:{Color.GREEN}{message.tool_calls[0]["args"]}{Color.RESET}')
+                        for tool_call in message.tool_calls:
+                            print(f"{Color.LBLUE}AI:{Color.RESET}",f'使用{Color.GREEN}{tool_call["name"]}{Color.RESET},调用参数:{Color.GREEN}{tool_call["args"]}{Color.RESET}')
                     else:
                         response_metadata = message.response_metadata 
                         print(f"{Color.LBLUE}AI:{Color.RESET}",msg_repr,
@@ -207,7 +217,7 @@ class GraphLib(ABC):
         print("as_node:",as_node,"thread_id:",thread_id,"values",values)
         graph.update_state(config = {"configurable":{"thread_id":thread_id}},values=values,as_node=as_node)
     
-    def export_graph(self,graph:CompiledStateGraph):
-        FileLib.writeFile("graph.png",graph.get_graph().draw_mermaid_png(),mode="wb")  
+    def graph_export(self,graph:CompiledStateGraph):
+        FileLib.writeFile("graph.png",graph.get_graph(xray=1).draw_mermaid_png(),mode="wb")  
 
     
