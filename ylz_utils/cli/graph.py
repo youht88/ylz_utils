@@ -85,4 +85,7 @@ def start_graph(langchainLib:LangchainLib,args):
     current_state = graphLib.graph_get_state(graph,thread_id)
     Console().print("\n本次对话的所有消息:\n",current_state.values["messages"])
 
-    #langchainLib.graphLib.export_graph(graph)
+    Console().print(graph.get_graph(xray=1).to_json())
+    graph.get_graph(xray=1).print_ascii()
+    graphLib.graph_export(graph)
+    
