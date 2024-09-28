@@ -6,6 +6,8 @@ from ylz_utils.langchain.graph.engineer_graph import EngineerGraph
 from ylz_utils.langchain.graph.life_graph import LifeGraph
 from ylz_utils.langchain.graph.self_rag_graph import SelfRagGraph
 from ylz_utils.langchain.graph.stand_graph import StandGraph
+from ylz_utils.langchain.graph.test_graph import TestGraph
+
 from rich.console import Console
 
 def input_with_readline(prompt):
@@ -25,8 +27,8 @@ def start_graph(langchainLib:LangchainLib,args):
     chat_dbname = args.chat_dbname
     rag_indexname = args.rag_indexname
     query_dbname = args.query_dbname
-    user_id = args.user or 'default'
-    conversation_id = args.conversation or 'default'
+    user_id = args.user_id or 'default'
+    conversation_id = args.conversation_id or 'default'
     thread_id = f"{user_id}-{conversation_id}"
     websearch_key = args.websearch
     graphLib = None
@@ -41,6 +43,8 @@ def start_graph(langchainLib:LangchainLib,args):
             graphLib = DbGraph(langchainLib)
         case "selfrag":
             graphLib = SelfRagGraph(langchainLib)
+        case "test":
+            graphLib = TestGraph(langchainLib)
         case _ :
             return
     if chat_dbname:                                  
@@ -64,28 +68,14 @@ def start_graph(langchainLib:LangchainLib,args):
     graphLib.set_thread(user_id,conversation_id)
     graph = graphLib.get_graph()
     message = input("User Input: ")
-    graphLib.graph_test(graph,message)
-    # while True:
-    #     if not message:
-    #         #message = input("User Input: ")
-    #         message = input_with_readline("User Input: ")
-    #     else:
-    #         print(f"User:{message}")
-    #     if message.lower() in ["/quit", "/exit", "/stop","/q","/bye"]:
-    #         print("Goodbye!")
-    #         break
-    #     if message=="@@NONE@@":
-    #         message = None
-    #     graphLib.graph_stream(graph,message,thread_id = thread_id)
-    #     if graphLib.human_action(graph,thread_id):
-    #         message = "@@NONE@@"
-    #         continue
-    #     message = ""
-
-    current_state = graphLib.graph_get_state(graph,thread_id)
+    config={"configurable":{"thread_id":thread_id,
+                            "user_id":user_id,
+                            "llm_key":llm_key,"llm_model":llm_model}}
+    graphLib.graph_test(graph,message,config)
+    current_state = graphLib.graph_get_state(graph,config)
     Console().print("\n本次对话的所有消息:\n",current_state.values["messages"])
-
-    Console().print(graph.get_graph(xray=1).to_json())
+    Console().print("\n最终的状态:\n",current_state)
+    Console().print("\n流程图",graph.get_graph(xray=1).to_json())
     graph.get_graph(xray=1).print_ascii()
     graphLib.graph_export(graph)
     

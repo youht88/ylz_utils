@@ -59,8 +59,8 @@ def main():
     start_parser.add_argument("--llm_model",type=str,help="语言模型model")
     start_parser.add_argument("--embedding_model",type=str,help="嵌入模型model")
     start_parser.add_argument("--message",type=str,help="input message")
-    start_parser.add_argument("--user",type=str,help="user_id,example: alice")    
-    start_parser.add_argument("--conversation",type=str,help="conversation_id,example: 123") 
+    start_parser.add_argument("--user_id",type=str,help="user_id,example: alice")    
+    start_parser.add_argument("--conversation_id",type=str,help="conversation_id,example: 123") 
     start_parser.add_argument("--url",type=str,help="仅rag,loader使用,下载的URL地址")    
     start_parser.add_argument("--depth",type=int,default=1,help="仅rag使用,下载的深度，默认为1")
     start_parser.add_argument("--rag_indexname",type=str,help="保存的向量索引表,格式为<es|faiss|chroma>:<indexname>") 
@@ -74,7 +74,7 @@ def main():
      
     
     start_parser.add_argument("--size",type=int,help="文档分隔的size") 
-    start_parser.add_argument("--graph",type=str,choices=["stand","life","engineer","db","selfrag"],help="内置graph的类型") 
+    start_parser.add_argument("--graph",type=str,choices=["stand","life","engineer","db","selfrag","test"],help="内置graph的类型") 
     start_parser.add_argument("--fake_size",type=int,help="使用fake embeding的size，当fake_size>0是使用fake embeding，并且维度为fake_size") 
     start_parser.add_argument("--batch",type=int,default=10,help="使用生成embeding时的以batch为度量显示进度，默认分隔为10批") 
      

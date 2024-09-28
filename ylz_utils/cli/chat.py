@@ -14,8 +14,8 @@ def start_chat(langchainLib:LangchainLib,args):
     llm_key = args.llm_key
     message = args.message
     model = args.llm_model
-    user_id = args.user if args.user else 'default'
-    conversation_id = args.conversation if args.conversation else 'default'
+    user_id = args.user_id if args.user_id else 'default'
+    conversation_id = args.conversation_id if args.conversation_id else 'default'
     llm = langchainLib.get_llm(key=llm_key,model=model)
     dbname = args.chat_dbname or 'chat.sqlite'
     #### chat 模式

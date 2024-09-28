@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING,Optional
 
 if TYPE_CHECKING:
     from ylz_utils.langchain import LangchainLib
@@ -12,7 +12,7 @@ from langchain_core.messages import SystemMessage,HumanMessage,AIMessage,BaseMes
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 from langchain_core.tools import tool,Tool
-from langchain_core.runnables import RunnablePassthrough,RunnableLambda,RunnableParallel
+from langchain_core.runnables import RunnablePassthrough,RunnableLambda,RunnableParallel,RunnableConfig
 from langgraph.graph import START,END,StateGraph,MessagesState
 from langgraph.checkpoint.memory import MemorySaver
 #from langgraph.checkpoint.sqlite import SqliteSaver
@@ -41,6 +41,15 @@ class GraphLib(ABC):
         self.query_dbname = None
         self.tools=[]
         self.tools_executor = None
+    
+    class ConfigSchema(TypedDict):
+        useSummary:bool
+        thread_id:str
+        user_id: Optional[str]
+        system_message: Optional[str]
+        llm_key: Optional[str]
+        llm_model: Optional[str]
+        
 
     def set_chat_dbname(self,dbname):
         # "checkpoint.sqlite"
@@ -82,6 +91,8 @@ class GraphLib(ABC):
         #     "node1":{"llm_key":...,"llm_mode":...}
         #     "node2":{"llm_key":...,"llm_mode":...}
         # }
+        # or
+        # (llm_key,llm_model)
         if isinstance(nodes_llm_config,tuple):
             self.nodes_llm_config['default'] = {"llm_key":nodes_llm_config[0],"llm_model":nodes_llm_config[1]}
         else:
@@ -137,39 +148,44 @@ class GraphLib(ABC):
     def get_graph(self) -> CompiledStateGraph:
         pass
     @abstractmethod
-    def human_action(self,graph,thread_id=None) -> bool:
+    def human_action(self,graph,config=None,thread_id=None) -> bool:
         return False
     
-    def graph_test(self,graph:CompiledStateGraph,message,thread_id=None):
-        if not thread_id:
-            thread_id = self.thread_id
-        print("thread_id=",thread_id)
+    def graph_test(self,graph:CompiledStateGraph,message,config=None,thread_id=None,stream_mode="values",subgraphs=False):
+        if not config:
+            if not thread_id:
+                thread_id = self.thread_id
+            config = {"configurable":{"thread_id":thread_id}}
+        print("graph_test====>","config=",config)
         while True:
             if message=="/q":
                 break
-            self.graph_stream(graph,message,thread_id)
-            human_turn = self.human_action(graph,thread_id)
+            self.graph_stream(graph,message,config,stream_mode=stream_mode,subgraphs=subgraphs)
+            human_turn = self.human_action(graph,config)
             if human_turn:
                 message = None
             else:
                 message = IOLib.input_with_history(f"{StringLib.green('User: ')}") 
 
-    def graph_stream(self,graph:CompiledStateGraph,message,thread_id=None):    
-        if not thread_id:
-            thread_id = self.thread_id
+    def graph_stream(self,graph:CompiledStateGraph,message,config=None,thread_id=None,stream_mode="values",subgraphs=False): 
+        if not config:
+            if not thread_id:
+                thread_id = self.thread_id
+            config = {"configurable":{"thread_id":thread_id}}
         messages = []
         if message:
             messages.append(HumanMessage(content=message))
-            values = {"messages":messages}          
+            input = {"messages":messages}          
         else:
-            values = None
-        events = graph.stream( values,
-                                config = {"configurable":{"thread_id":thread_id}},
-                                stream_mode = "values")
+            input = None
+        events = graph.stream(  input,
+                                config = config,
+                                stream_mode = stream_mode,
+                                subgraphs = subgraphs)
         _print_set = set()
         for event in events:
             self._print_event(event,_print_set)
-    
+
     def _print_event(self, event: dict, _printed: set, max_length=1500):
         current_state = event.get("dialog_state")
         if current_state:
@@ -196,26 +212,32 @@ class GraphLib(ABC):
                     print(f"{Color.BLUE}User:{Color.RESET} {msg_repr}")
                 _printed.add(message.id)
                 
-    def graph_get_state_history(self,graph:CompiledStateGraph,thread_id=None):
-        if not thread_id:
-            thread_id = self.thread_id
-        state_history = graph.get_state_history(config = {"configurable":{"thread_id":thread_id}} )
+    def graph_get_state_history(self,graph:CompiledStateGraph,config=None,thread_id=None):
+        if not config:
+            if not thread_id:
+                thread_id = self.thread_id
+            config = {"configurable":{"thread_id":thread_id}}
+        state_history = graph.get_state_history(config = config )
         for state in state_history:
             print("Num Messages: ", len(state.values["messages"]), "Next: ", state.next)
             print("-" * 80)
         return state_history
     
-    def graph_get_state(self,graph:CompiledStateGraph,thread_id=None):
-        if not thread_id:
-            thread_id = self.thread_id
-        state = graph.get_state(config =  {"configurable":{"thread_id":thread_id}})
+    def graph_get_state(self,graph:CompiledStateGraph,config=None,thread_id=None,subgraphs=False):
+        if not config:
+            if not thread_id:
+                thread_id = self.thread_id
+            config = {"configurable":{"thread_id":thread_id}}
+        state = graph.get_state(config = config, subgraphs=subgraphs )
         return state
     
-    def graph_update_state(self,graph:CompiledStateGraph,values,thread_id=None,as_node = None):
-        if not thread_id:
-            thread_id = self.thread_id
-        print("as_node:",as_node,"thread_id:",thread_id,"values",values)
-        graph.update_state(config = {"configurable":{"thread_id":thread_id}},values=values,as_node=as_node)
+    def graph_update_state(self,graph:CompiledStateGraph,values,config=None,thread_id=None,as_node = None):
+        if not config:
+            if not thread_id:
+                thread_id = self.thread_id
+            config = {"configurable":{"thread_id":thread_id}}
+        print("graph_update_state===>","as_node:",as_node,"thread_id:",thread_id,"values",values,"config:",config)
+        graph.update_state(config = config,values=values,as_node=as_node)
     
     def graph_export(self,graph:CompiledStateGraph):
         FileLib.writeFile("graph.png",graph.get_graph(xray=1).draw_mermaid_png(),mode="wb")  

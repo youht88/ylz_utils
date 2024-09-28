@@ -75,10 +75,12 @@ class StandGraph(GraphLib):
         
         return graph   
 
-    def human_action(self,graph,thread_id=None) -> bool:
-        if not thread_id:
-            thread_id = self.thread_id
-        snapshot = self.graph_get_state(graph,thread_id)
+    def human_action(self,graph,config=None,thread_id=None) -> bool:
+        if not config:
+            if not thread_id:
+                thread_id = self.thread_id
+            config = {"configurable":{"thread_id":thread_id}}
+        snapshot = self.graph_get_state(graph,config)
         if snapshot.next:
             next = snapshot.next[0]
             last_message = snapshot.values["messages"][-1]
@@ -89,7 +91,7 @@ class StandGraph(GraphLib):
             humanMessage = HumanMessage(answer)
             snapshot.values["messages"].extend([aiMessage,humanMessage])
             print(snapshot.values["messages"])
-            self.graph_update_state(graph,thread_id = thread_id,values=snapshot.values,as_node=next)
+            self.graph_update_state(graph,config=config,values=snapshot.values,as_node=next)
             return True
         return False     
  
