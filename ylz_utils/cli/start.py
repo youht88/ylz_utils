@@ -239,6 +239,8 @@ def start(args):
         print(StringLib.yellow("llms--->:"),[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_llm(full=True)])
         print(StringLib.yellow("embeddings---->:"),[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_embedding(full=True)])
         #return
+        agent = langchainLib.agentLib.get_full_agent(llm_key=args.llm_key,llm_model=args.llm_model)
+        res = agent.invoke("今年的奥运会中国获得多少金牌？")
         return
         #langchainLib.ttsLib.tts_save("你好呀","tts.wav")
         #langchainLib.ttsLib.tts_play("祝你有愉快的一天")

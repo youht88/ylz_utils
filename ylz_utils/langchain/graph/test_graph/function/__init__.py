@@ -12,8 +12,11 @@ class FunctionGraph(GraphLib):
     def __init__(self,langchainLib):
         super().__init__(langchainLib)
         Tools(self)
+        self.set_websearch_tool('tavily')
+        self.tools.append(self.python_repl_tool)
+        self.tools.append(self.websearch_tool)
     def get_graph(self):
-        workflow = StateGraph(State,self.ConfigSchema)
+        workflow = StateGraph(State)
         workflow.add_node("agent",Agent(self))
         workflow.add_node("tools",ToolNode(tools = self.tools))
         workflow.add_edge(START,"agent")

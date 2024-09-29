@@ -19,6 +19,7 @@ class Agent:
             llm = self.graphLib.get_node_llm()
         llm_bind_tools = llm.bind_tools(self.graphLib.tools)
         systemPrompt = ("你是个人信息助理。调用相应的函数查找或设置个人信息，"
+                  "涉及金融相关的问题，请使用python repl的yfinance获取。执行脚本的最后一条语句务必使用print(...)返回结果，从而避免空数据"
                   "不要编造任何信息，仅记录我提供给你的信息。"
                   "不要产生幻觉"
                   "当前日期:{today}")

@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from ylz_utils.database.neo4j import Neo4jLib
 from ylz_utils.langchain import LangchainLib
 from ylz_utils.langchain.graph.life_graph import LifeGraph
-from ylz_utils.langchain.graph.test_graph import TestGraph
+from ylz_utils.langchain.graph.test_graph.function import FunctionGraph,State
 from langgraph.graph import MessagesState
 
 class InputChat(BaseModel):
@@ -39,8 +39,9 @@ def serve(args):
     # lifeGraph.set_thread("youht","default")
     # life_graph = lifeGraph.get_graph()
     
-    testGraph = TestGraph(langchainLib)
+    testGraph = FunctionGraph(langchainLib)
     testGraph.set_nodes_llm_config({'default':{'llm_key':llm_key,'llm_model':llm_model}})
+    testGraph.set_thread("youht","default")
     test_graph = testGraph.get_graph()
 
     app = FastAPI(title="Langserve")
@@ -52,10 +53,11 @@ def serve(args):
         allow_headers=["*"],
         expose_headers=["*"],
     )
-    chain = langchainLib.get_prompt(human_keys={"input":"问题"}) | langchainLib.get_llm(llm_key,llm_model) | langchainLib.get_outputParser()
-    add_routes(app,runnable=chain,path=path)
+    # chain = langchainLib.get_prompt(human_keys={"input":"问题"}) | langchainLib.get_llm(llm_key,llm_model) | langchainLib.get_outputParser()
+    # add_routes(app,runnable=chain,path=path)
 
-    #add_routes(app,runnable=life_graph,path="/life")
-    add_routes(app,runnable=test_graph.with_types(input_type=MessagesState),path="/test_graph",include_callback_events=True)
+    #add_routes(app,runnable=life_graph.with_types(input_type=MessagesState),path="/life")
+    #add_routes(app,runnable=test_graph.with_types(input_type=State),path="/test_graph",include_callback_events=True)
+    add_routes(app,runnable=test_graph,path="/test_graph")
 
     uvicorn.run(app, host = host, port = port)
