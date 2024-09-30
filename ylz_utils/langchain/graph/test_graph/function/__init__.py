@@ -13,8 +13,11 @@ class FunctionGraph(GraphLib):
         super().__init__(langchainLib)
         Tools(self)
         self.set_websearch_tool('tavily')
+        #self.set_websearch_tool('duckduckgo')
+        #self.set_websearch_tool('SERPAPI')
         self.tools.append(self.python_repl_tool)
         self.tools.append(self.websearch_tool)
+        #print("!!!!!!!!!!!!",f"@{self.websearch_tool.api_wrapper.tavily_api_key.get_secret_value()}@")
     def get_graph(self):
         workflow = StateGraph(State)
         workflow.add_node("agent",Agent(self))

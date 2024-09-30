@@ -22,8 +22,11 @@ class PythonREPLTool():
         #So You are not skilled at dealing with computation issues,All question about calculate shoud use this tool when you get all argument value.
         repl_tool = Tool(
             name=name,
-            description="""
-The tool is a Python shell with print(...) as last. Use this to execute python commands and get result. Input should be a valid python command. """,
+            description=(
+              "The tool is a Python shell with print(...) as last. "
+              "Use this to execute python commands and get result. Input should be a valid python command. "
+              "if you are using finance module,you must know that the argument `Period` of `stock.history` function must be one of ['1d', '5d', '1mo', '3mo', '6mo', '1y', '2y', '5y', '10y', 'ytd', 'max']"
+            ),
             args_schema = PythonREPLArgSchema ,
             func=python_repl.run
         )

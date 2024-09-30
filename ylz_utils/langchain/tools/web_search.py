@@ -13,6 +13,8 @@ from langchain_community.tools import DuckDuckGoSearchResults
 from langchain_community.tools import GoogleSerperResults
 from langchain_community.utilities.google_serper import GoogleSerperAPIWrapper
 
+from langchain_core.tools import Tool
+
 from langchain.docstore.document import Document
 from langchain_core.runnables import RunnableLambda
 
@@ -57,15 +59,16 @@ class WebSearchTool():
             except:
                 raise Exception(f"请先设置{key}_API_KEYS环境变量") 
             if api_key:
+                print("TAVILY KEY:",api_key)
                 try:
                     def __toDocument(doc_json):
                         docs = [Document(doc['content'],metadata={"link":doc['url']}) for doc in doc_json]
                         return docs
                     search = TavilySearchAPIWrapper(tavily_api_key=api_key)
                     tool = TavilySearchResults(api_wrapper=search,max_results=rows)
-                    tool_doc = tool | RunnableLambda(__toDocument, name="Tavily2Document")
+                    #tool_doc = tool | RunnableLambda(__toDocument, name="Tavily2Document")
                     #return tool_doc
-                    return tool
+                    return Tool(name=tool.name,func=tool,description=tool.description) 
                 except:
                     raise Exception(f"请先设置{key}_API_KEYS环境变量") 
         elif key == "SERPAPI":
@@ -81,7 +84,8 @@ class WebSearchTool():
                 try:
                     search = GoogleSerperAPIWrapper(serper_api_key=api_key,k = rows)
                     tool = GoogleSerperResults(api_wrapper=search)
-                    return tool
+                    #return tool
+                    return Tool(name=tool.name,func=tool,description=tool.description)
                 except Exception as e:
                     raise Exception(f"请先设置{key}_API_KEYS环境变量,{e}") 
         else:

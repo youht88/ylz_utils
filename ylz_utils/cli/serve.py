@@ -10,6 +10,7 @@ from ylz_utils.database.neo4j import Neo4jLib
 from ylz_utils.langchain import LangchainLib
 from ylz_utils.langchain.graph.life_graph import LifeGraph
 from ylz_utils.langchain.graph.test_graph.function import FunctionGraph,State
+from ylz_utils.langchain.graph.test_graph import TestGraph
 from langgraph.graph import MessagesState
 
 class InputChat(BaseModel):
@@ -23,13 +24,16 @@ class InputChat(BaseModel):
 def serve(args):
     print("args:",args)
     langchainLib: LangchainLib = LangchainLib()
-    langchainLib.add_plugins()    
+    #langchainLib.add_plugins()    
     path = args.path
     host = args.host
     port = args.port
     llm_key = args.llm_key
     llm_model = args.llm_model
-
+    embedding_key = args.embedding_key
+    embedding_model = args.embedding_model
+    langchainLib.llmLib.set_default_llm_key(llm_key or "LLM.DEEPBRICKS")
+    langchainLib.embeddingLib.set_default_embedding_key(embedding_key or "EMBEDDING.DASHSCOPE")
     llm = langchainLib.get_llm(llm_key)
     
     # neo4jLib = Neo4jLib(None,'neo4j','abcd1234')
@@ -39,9 +43,9 @@ def serve(args):
     # lifeGraph.set_thread("youht","default")
     # life_graph = lifeGraph.get_graph()
     
-    testGraph = FunctionGraph(langchainLib)
-    testGraph.set_nodes_llm_config({'default':{'llm_key':llm_key,'llm_model':llm_model}})
-    testGraph.set_thread("youht","default")
+    testGraph = TestGraph(langchainLib)
+    #testGraph.set_nodes_llm_config({'default':{'llm_key':llm_key,'llm_model':llm_model}})
+    #testGraph.set_thread("youht","default")
     test_graph = testGraph.get_graph()
 
     app = FastAPI(title="Langserve")

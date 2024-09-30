@@ -5102,13 +5102,13 @@ reference = "tsinghua"
 
 [[package]]
 name = "pyproject-hooks"
-version = "1.1.0"
+version = "1.2.0"
 description = "Wrappers to call pyproject.toml-based build backend hooks."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pyproject_hooks-1.1.0-py3-none-any.whl", hash = "sha256:7ceeefe9aec63a1064c18d939bdc3adf2d8aa1988a510afec15151578b232aa2"},
-    {file = "pyproject_hooks-1.1.0.tar.gz", hash = "sha256:4b37730834edbd6bd37f26ece6b44802fb1c1ee2ece0e54ddff8bfc06db86965"},
+    {file = "pyproject_hooks-1.2.0-py3-none-any.whl", hash = "sha256:9e5c6bfa8dcc30091c74b0cf803c81fdd29d94f01992a7707bc97babb1141913"},
+    {file = "pyproject_hooks-1.2.0.tar.gz", hash = "sha256:1e859bd5c40fae9448642dd871adf459e5e2084186e8d2c2a79a824c970da1f8"},
 ]
 
 [package.source]
@@ -5195,13 +5195,13 @@ reference = "tsinghua"
 
 [[package]]
 name = "python-multipart"
-version = "0.0.11"
+version = "0.0.12"
 description = "A streaming multipart parser for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "python_multipart-0.0.11-py3-none-any.whl", hash = "sha256:0597982db95c0ce012d8bd91b8c9eb2b45c7e095122c05cd8fb7ee4c5bf78df6"},
-    {file = "python_multipart-0.0.11.tar.gz", hash = "sha256:1d377f074b69a47dd204c990de57a7cf03d9b85695a3e57faec32d54b78e3e48"},
+    {file = "python_multipart-0.0.12-py3-none-any.whl", hash = "sha256:43dcf96cf65888a9cd3423544dd0d75ac10f7aa0c3c28a175bbcd00c9ce1aebf"},
+    {file = "python_multipart-0.0.12.tar.gz", hash = "sha256:045e1f98d719c1ce085ed7f7e1ef9d8ccc8c02ba02b5566d5f7521410ced58cb"},
 ]
 
 [package.source]
@@ -5315,13 +5315,13 @@ reference = "tsinghua"
 
 [[package]]
 name = "qianfan"
-version = "0.4.9"
+version = "0.4.9.1"
 description = "文心千帆大模型平台 Python SDK"
 optional = false
 python-versions = ">=3.7,<4"
 files = [
-    {file = "qianfan-0.4.9-py3-none-any.whl", hash = "sha256:e81698bfef489d7a17a60614559d671ffdaf5708689d61568687064acbb77a67"},
-    {file = "qianfan-0.4.9.tar.gz", hash = "sha256:9cead3febabf6c955af47b213391eec05dd5a6a1581d8ff475297551b6e1f724"},
+    {file = "qianfan-0.4.9.1-py3-none-any.whl", hash = "sha256:620e449d9fd57e8171c8b1051c8a934df5f872c67e69c08f39d00087b6137377"},
+    {file = "qianfan-0.4.9.1.tar.gz", hash = "sha256:2f35317630ab3ea5c54b17a881e75dfd32718f5227861b7ce107fb3b4ce1a997"},
 ]
 
 [package.dependencies]
@@ -6945,4 +6945,4 @@ reference = "tsinghua"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12,<3.13"
-content-hash = "b192634faa8c28deba0aa5a0c5835300f23c3cf2a8d6b43b5cf1fbf550848b58"
+content-hash = "a69e28283fd955fc58e412e01ffc40919cd212505483e277473055640aaa3f25"

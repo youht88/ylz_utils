@@ -8,7 +8,7 @@ from abc import ABC,abstractmethod
 
 from operator import itemgetter
 from typing import Literal,List,Annotated
-from langchain_core.messages import SystemMessage,HumanMessage,AIMessage,BaseMessage,ToolMessage
+from langchain_core.messages import SystemMessage,HumanMessage,AIMessage,BaseMessage,ToolMessage,RemoveMessage
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 from langchain_core.tools import tool,Tool
@@ -80,12 +80,20 @@ class GraphLib(ABC):
         self.tools_executor = ToolExecutor(tools) 
         return self.tools_executor
        
-    def create_response(self, response: str, ai_message: AIMessage):
+    def create_tool_message(self, response: str, ai_message: AIMessage):
         return ToolMessage(
             content = response,
             tool_call_id = ai_message.tools_calls[0]["id"]
         )
-
+    def create_remove_messages(self,messages:BaseMessage):
+        return [RemoveMessage(id=message["id"]) for message in messages ]
+    
+    def get_llm(self,llm_key=None,llm_model=None):
+        return self.langchainLib.get_llm(llm_key,llm_model)
+    def get_embedding(self,embedding_key=None,embedding_model=None):
+        return self.langchainLib.get_embedding(embedding_key,embedding_model)
+    
+    @DeprecationWarning
     def set_nodes_llm_config(self,nodes_llm_config:dict[str,dict[Literal["llm_key","llm_model"],str|None]]|tuple):
         # {
         #     "node1":{"llm_key":...,"llm_mode":...}
@@ -97,6 +105,7 @@ class GraphLib(ABC):
             self.nodes_llm_config['default'] = {"llm_key":nodes_llm_config[0],"llm_model":nodes_llm_config[1]}
         else:
             self.nodes_llm_config = nodes_llm_config
+    @DeprecationWarning
     def get_node_llm(self,node_key=None):
         try:
             node_llm_config:dict = self.nodes_llm_config[node_key] 
@@ -112,6 +121,7 @@ class GraphLib(ABC):
         finally:
             #print("llm=",llm.model_name,llm.openai_api_base)
             return llm
+    @DeprecationWarning
     def set_thread(self,user_id="default",conversation_id="default"):
         self.user_id = user_id
         self.conversation_id = conversation_id

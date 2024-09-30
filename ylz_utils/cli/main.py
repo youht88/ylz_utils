@@ -87,10 +87,13 @@ def main():
     serve_parser.add_argument("--host",type=str,default="0.0.0.0",help="bind host,default:0.0.0.0")
     serve_parser.add_argument("--port",type=int,default=8000,help="listen port,default::8000")
     serve_parser.add_argument("--path",type=str,default="/test",help="path,default:: /test")
-    serve_parser.add_argument("--llm_key",type=str,help="llm,example: LLM.DEEPSEEK")    
-    serve_parser.add_argument("--llm_model",type=str,help="model,example: deepseek-chat") 
+    serve_parser.add_argument("--llm_key",type=str,help="llm provider,example: LLM.DEEPSEEK")    
+    serve_parser.add_argument("--llm_model",type=str,help="llm model,example: deepseek-chat") 
+    serve_parser.add_argument("--embedding_key",type=str,help="embedding provider,example: LLM.DASHSCOPE")    
+    serve_parser.add_argument("--embedding_model",type=str,help="embedding model,example: deepseek-chat") 
     serve_parser.add_argument("--user_id",type=str,help="user_id,example: alice")    
     serve_parser.add_argument("--conversation_id",type=str,help="conversation_id,example: 123") 
+    serve_parser.add_argument("--rag_indexname",type=str,help="保存的向量索引表,格式为<es|faiss|chroma>:<indexname>") 
            
     args:Namespace = parser.parse_args()
 
