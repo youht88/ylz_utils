@@ -11,6 +11,7 @@ from ylz_utils.langchain import LangchainLib
 from ylz_utils.langchain.graph.life_graph import LifeGraph
 from ylz_utils.langchain.graph.test_graph.function import FunctionGraph,State
 from ylz_utils.langchain.graph.test_graph import TestGraph
+from ylz_utils.langchain.graph.stock_graph import StockGraph
 from langgraph.graph import MessagesState
 
 class InputChat(BaseModel):
@@ -43,10 +44,13 @@ def serve(args):
     # lifeGraph.set_thread("youht","default")
     # life_graph = lifeGraph.get_graph()
     
-    testGraph = TestGraph(langchainLib)
-    #testGraph.set_nodes_llm_config({'default':{'llm_key':llm_key,'llm_model':llm_model}})
-    #testGraph.set_thread("youht","default")
-    test_graph = testGraph.get_graph()
+    # testGraph = TestGraph(langchainLib)
+    # #testGraph.set_nodes_llm_config({'default':{'llm_key':llm_key,'llm_model':llm_model}})
+    # #testGraph.set_thread("youht","default")
+    # test_graph = testGraph.get_graph()
+
+    stockGraph = StockGraph(langchainLib)
+    stock_graph = stockGraph.get_graph()
 
     app = FastAPI(title="Langserve")
     app.add_middleware(
@@ -62,6 +66,7 @@ def serve(args):
 
     #add_routes(app,runnable=life_graph.with_types(input_type=MessagesState),path="/life")
     #add_routes(app,runnable=test_graph.with_types(input_type=State),path="/test_graph",include_callback_events=True)
-    add_routes(app,runnable=test_graph,path="/test_graph")
+    #add_routes(app,runnable=test_graph,path="/test_graph")
+    add_routes(app,runnable=stock_graph,path="/stock_graph")
 
     uvicorn.run(app, host = host, port = port)
