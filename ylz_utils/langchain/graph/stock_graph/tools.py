@@ -6,6 +6,51 @@ import json
 import os
 from ylz_utils.config import Config 
 
+from pydantic import BaseModel, Field
+from datetime import datetime
+from rich import print
+
+class CompanyInfo(BaseModel):
+    name: str = Field(..., description="公司名称")
+    ename: str = Field(..., description="公司英文名称")
+    market: str = Field(..., description="上市市场")
+    idea: str = Field(..., description="概念及板块，多个概念由英文逗号分隔")
+    ldate: datetime = Field(..., description="上市日期，格式yyyy-MM-dd")
+    sprice: str = Field(..., description="发行价格（元）")
+    principal: str = Field(..., description="主承销商")
+    rdate: str = Field(..., description="成立日期")
+    rprice: str = Field(..., description="注册资本")
+    instype: str = Field(..., description="机构类型")
+    organ: str = Field(..., description="组织形式")
+    secre: str = Field(..., description="董事会秘书")
+    phone: str = Field(..., description="公司电话")
+    sphone: str = Field(..., description="董秘电话")
+    fax: str = Field(..., description="公司传真")
+    sfax: str = Field(..., description="董秘传真")
+    email: str = Field(..., description="公司电子邮箱")
+    semail: str = Field(..., description="董秘电子邮箱")
+    site: str = Field(..., description="公司网站")
+    post: str = Field(..., description="邮政编码")
+    infosite: str = Field(..., description="信息披露网址")
+    oname: str = Field(..., description="证券简称更名历史")
+    addr: str = Field(..., description="注册地址")
+    oaddr: str = Field(..., description="办公地址")
+    desc: str = Field(..., description="公司简介")
+    bscope: str = Field(..., description="经营范围")
+    printype: str = Field(..., description="承销方式")
+    referrer: str = Field(..., description="上市推荐人")
+    putype: str = Field(..., description="发行方式")
+    pe: str = Field(..., description="发行市盈率（按发行后总股本）")
+    firgu: str = Field(..., description="首发前总股本（万股）")
+    lastgu: str = Field(..., description="首发后总股本（万股）")
+    realgu: str = Field(..., description="实际发行量（万股）")
+    planm: str = Field(..., description="预计募集资金（万元）")
+    realm: str = Field(..., description="实际募集资金合计（万元）")
+    pubfee: str = Field(..., description="发行费用总额（万元）")
+    collect: str = Field(..., description="募集资金净额（万元）")
+    signfee: str = Field(..., description="承销费用（万元）")
+    pdate: datetime = Field(..., description="招股公告日")
+
 class StockTools:
     stock:list = []
     def __init__(self,graphLib):
@@ -24,12 +69,13 @@ class MairuiTools(StockTools):
         self.mairui_token = Config.get('STOCK.MAIRUI.TOKEN')
         self.mairui_api_url = "http://api.mairui.club"
         
-    def query(self, code):
+    def get_company_info(self, code:str)->CompanyInfo:
+        """获取公司基本信息"""
         res = requests.get( 
-            f"{self.mairui_api_url}/hsmy/zlzj/{code}/{self.mairui_token}",
+            f"{self.mairui_api_url}/hscp/gsjj/{code}/{self.mairui_token}",
         )
         data = res.json()        
-        return data
+        return CompanyInfo(**data)
     
 class TushareTools(StockTools):
     def __init__(self,graphLib):
@@ -215,5 +261,5 @@ if __name__ == "__main__":
     # toolLib = SnowballTools(stockGraph)
     # data  = toolLib.balance("ST易联众")
     toolLib = MairuiTools(stockGraph)
-    data = toolLib.query("300096")
+    data = toolLib.get_company_info("300096")
     print(data)

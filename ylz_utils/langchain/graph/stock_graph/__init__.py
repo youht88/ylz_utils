@@ -8,7 +8,7 @@ from langchain_core.messages import SystemMessage
 
 from .configurable import ConfigSchema
 from .state import State
-from .tools import SnowballTools
+from .tools import SnowballTools,MairuiTools
 
 from rich import print
 from datetime import datetime
@@ -19,7 +19,7 @@ class StockGraph(GraphLib):
         #toolsLib = Tools(self)
         #self.tools = [toolsLib.pankou,toolsLib.quotec,toolsLib.income,
         #              toolsLib.holders,toolsLib.balance,toolsLib.top_holders]
-        self.tools:list = self.get_class_instance_tools(SnowballTools(self))
+        self.tools:list = self.get_class_instance_tools(MairuiTools(self))
         self.tools.append(self.python_repl_tool)
     def get_graph(self) -> CompiledStateGraph:
         workflow = StateGraph(MessagesState,ConfigSchema)
