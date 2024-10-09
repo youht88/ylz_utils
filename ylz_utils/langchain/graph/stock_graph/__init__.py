@@ -8,7 +8,7 @@ from langchain_core.messages import SystemMessage
 
 from .configurable import ConfigSchema
 from .state import State
-from .tools import Tools
+from .tools import Tools,get_tools
 
 from rich import print
 from datetime import datetime
@@ -16,8 +16,10 @@ from datetime import datetime
 class StockGraph(GraphLib):
     def __init__(self,langchainLib):
         super().__init__(langchainLib)
-        toolsLib = Tools(self)
-        self.tools = [toolsLib.pankou,toolsLib.balance]
+        #toolsLib = Tools(self)
+        #self.tools = [toolsLib.pankou,toolsLib.quotec,toolsLib.income,
+        #              toolsLib.holders,toolsLib.balance,toolsLib.top_holders]
+        self.tools = get_tools(Tools(self))
     def get_graph(self) -> CompiledStateGraph:
         workflow = StateGraph(MessagesState,ConfigSchema)
         workflow.add_node("agent",Agent(self))
