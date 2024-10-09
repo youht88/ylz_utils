@@ -70,8 +70,12 @@ matplotlib = "^3.9.0"
 #torch = { version = "2.0.0", extras = ["cpu"] }
 #torch = "2.2.0"
 
+#需要vpn
 yfinance = "^0.2.41"
+#需要SNOWBALL_TOKEN
 pysnowball = "^0.1.3"
+#需要TUSHARE_TOKEN
+tushare = "^1.4.13"
 
 ipfs-toolkit = "^0.5.24"
 neo4j = "^5.23.1"

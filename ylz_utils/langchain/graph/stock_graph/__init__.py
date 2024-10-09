@@ -8,7 +8,7 @@ from langchain_core.messages import SystemMessage
 
 from .configurable import ConfigSchema
 from .state import State
-from .tools import Tools,get_tools
+from .tools import SnowballTools
 
 from rich import print
 from datetime import datetime
@@ -19,7 +19,8 @@ class StockGraph(GraphLib):
         #toolsLib = Tools(self)
         #self.tools = [toolsLib.pankou,toolsLib.quotec,toolsLib.income,
         #              toolsLib.holders,toolsLib.balance,toolsLib.top_holders]
-        self.tools = get_tools(Tools(self))
+        self.tools:list = self.get_class_instance_tools(SnowballTools(self))
+        self.tools.append(self.python_repl_tool)
     def get_graph(self) -> CompiledStateGraph:
         workflow = StateGraph(MessagesState,ConfigSchema)
         workflow.add_node("agent",Agent(self))
@@ -44,11 +45,11 @@ class Agent():
         else:
             llm = self.graphLib.get_node_llm()        
         llm_bind_tools = llm.bind_tools(self.graphLib.tools)
-        print(llm_bind_tools)
-        systemPrompt = ("你是个人信息助理。调用相应的股票相关函数查找数据"
-                  "1、不要编造任何信息，仅记录我提供给你的信息。"
-                  "2、不要产生幻觉"
-                  "3、当前日期:{today}")
+        #print(llm_bind_tools)
+        systemPrompt = ("你是个人信息助理。调用相应的股票相关函数查找和分析数据"
+                  "- 不要编造任何信息，仅记录我提供给你的信息。"
+                  "- 不要产生幻觉"
+                  "- 当前日期:{today}")
         messages = [SystemMessage(systemPrompt.format(today=datetime.now()))] + state["messages"]
         res = llm_bind_tools.invoke(messages)
         res = self.graphLib.get_safe_response(res)

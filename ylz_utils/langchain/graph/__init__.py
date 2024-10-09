@@ -154,6 +154,15 @@ class GraphLib(ABC):
                 names = list(set([tool_call["name"] for tool_call in responseMessage.tool_calls]))
                 safeResponseMessage.content = f"我要使用`{','.join(names)}`等工具"
         return safeResponseMessage
+    def get_class_instance_tools(self,classInstance)->list:
+        '''获取类实例的所有函数，用于批量构成tools'''
+        # 获取类的所有成员
+        members = dir(classInstance)
+        # 筛选出函数
+        methods = [getattr(classInstance,member) for member in members if callable(getattr(classInstance, member)) and not member.startswith("_")]
+        #print(methods)
+        return methods
+
     @abstractmethod
     def get_graph(self) -> CompiledStateGraph:
         pass
