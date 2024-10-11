@@ -156,16 +156,11 @@ class GraphLib(ABC):
         return safeResponseMessage
     def get_class_instance_tools(self,classInstance)->list:
         '''获取类实例的所有函数，用于批量构成tools'''
-        try:
-            export_function = getattr(classInstance,"_export")
-            if export_function:
-                exports = export_function()
-        except:
-            exports = []
+        _exports = getattr(classInstance,"_exports")
         # 获取类的所有成员
         members = dir(classInstance)
-        if exports:
-            members = [item for item in members if item in exports]
+        if _exports:
+            members = [item for item in members if item in _exports]
             print("!!!!",members)
         # 筛选出函数
         methods = [getattr(classInstance,member) for member in members if callable(getattr(classInstance, member)) and not member.startswith("_")]

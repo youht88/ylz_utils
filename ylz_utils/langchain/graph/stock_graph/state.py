@@ -1,11 +1,10 @@
 from langgraph.graph import MessagesState
-class State(MessagesState):
-    pass
+
 
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
-
+    
 class CompanyInfo(BaseModel):
     name: str = Field(..., description="公司名称")
     ename: str = Field(..., description="公司英文名称")
@@ -133,3 +132,125 @@ class FinancialReport(BaseModel):
     ysk12: Optional[float|str] = Field(None, description="1-2年以内其它应收款(元)")
     ysk23: Optional[float|str] = Field(None, description="2-3年以内其它应收款(元)")
     ysk3: Optional[float|str] = Field(None, description="3年以内其它应收款(元)")
+
+class JDLR(BaseModel):
+    date:str = Field(description="截止日期yyyy-MM-dd")
+    income:str = Field(description="营业收入（万元）")
+    expend:str = Field(description="营业支出（万元）")
+    profit:str = Field(description="营业利润（万元）")
+    totalp:str = Field(description="利润总额（万元）")
+    reprofit:str = Field(description="净利润（万元）")
+    basege:str = Field(description="基本每股收益(元/股)")
+    ettege:str = Field(description="稀释每股收益(元/股)")
+    otherp:str = Field(description="其他综合收益（万元）")
+    totalcp:str = Field(description="综合收益总额（万元）")
+
+class JDXJ(BaseModel):
+    date: str = Field(..., description="截止日期yyyy-MM-dd")
+    jyin: Optional[float|str] = Field(None, description="经营活动现金流入小计（万元）")
+    jyout: Optional[float|str] = Field(None, description="经营活动现金流出小计（万元）")
+    jyfinal: Optional[float|str] = Field(None, description="经营活动产生的现金流量净额（万元）")
+    tzin: Optional[float|str] = Field(None, description="投资活动现金流入小计（万元）")
+    tzout: Optional[float|str] = Field(None, description="投资活动现金流出小计（万元）")
+    tzfinal: Optional[float|str] = Field(None, description="投资活动产生的现金流量净额（万元）")
+    czin: Optional[float|str] = Field(None, description="筹资活动现金流入小计（万元）")
+    czout: Optional[float|str] = Field(None, description="筹资活动现金流出小计（万元）")
+    czfinal: Optional[float|str] = Field(None, description="筹资活动产生的现金流量净额（万元）")
+    hl: Optional[float|str] = Field(None, description="汇率变动对现金及现金等价物的影响（万元）")
+    cashinc: Optional[float|str] = Field(None, description="现金及现金等价物净增加额（万元）")
+    cashs: Optional[float|str] = Field(None, description="期初现金及现金等价物余额（万元）")
+    cashe: Optional[float|str] = Field(None, description="期末现金及现金等价物余额（万元）")
+
+class SSJY(BaseModel):
+    fm: Optional[float] = Field(None, description="五分钟涨跌幅（%）")
+    h: Optional[float] = Field(None, description="最高价（元）")
+    hs: Optional[float] = Field(None, description="换手（%）")
+    lb: Optional[float] = Field(None, description="量比（%）")
+    l: Optional[float] = Field(None, description="最低价（元）")
+    lt: Optional[float] = Field(None, description="流通市值（元）")
+    o: Optional[float] = Field(None, description="开盘价（元）")
+    pe: Optional[float] = Field(None, description="市盈率（动态，总市值除以预估全年净利润）")
+    pc: Optional[float] = Field(None, description="涨跌幅（%）")
+    p: Optional[float] = Field(None, description="当前价格（元）")
+    sz: Optional[float] = Field(None, description="总市值（元）")
+    cje: Optional[float] = Field(None, description="成交额（元）")
+    ud: Optional[float] = Field(None, description="涨跌额（元）")
+    v: Optional[float] = Field(None, description="成交量（手）")
+    yc: Optional[float] = Field(None, description="昨日收盘价（元）")
+    zf: Optional[float] = Field(None, description="振幅（%）")
+    zs: Optional[float] = Field(None, description="涨速（%）")
+    sjl: Optional[float] = Field(None, description="市净率")
+    zdf60: Optional[float] = Field(None, description="60日涨跌幅（%）")
+    zdfnc: Optional[float] = Field(None, description="年初至今涨跌幅（%）")
+    t: str = Field(..., description="更新时间YYYY-MM-DD HH:MM")
+
+class MMWP(BaseModel):
+    t: str = Field(..., description="更新时间YYYY-MM-DD HH:MM")
+    vc: Optional[float] = Field(None, description="委差（股）")
+    vb: Optional[float] = Field(None, description="委比（%）")
+    
+    # 买入报价和买入量
+    pb1: Optional[float] = Field(None, description="买1价（元）")
+    vb1: Optional[float] = Field(None, description="买1量（股）")
+    pb2: Optional[float] = Field(None, description="买2价（元）")
+    vb2: Optional[float] = Field(None, description="买2量（股）")
+    pb3: Optional[float] = Field(None, description="买3价（元）")
+    vb3: Optional[float] = Field(None, description="买3量（股）")
+    pb4: Optional[float] = Field(None, description="买4价（元）")
+    vb4: Optional[float] = Field(None, description="买4量（股）")
+    pb5: Optional[float] = Field(None, description="买5价（元）")
+    vb5: Optional[float] = Field(None, description="买5量（股）")
+    
+    # 卖出报价和卖出量
+    ps1: Optional[float] = Field(None, description="卖1价（元）")
+    vs1: Optional[float] = Field(None, description="卖1量（股）")
+    ps2: Optional[float] = Field(None, description="卖2价（元）")
+    vs2: Optional[float] = Field(None, description="卖2量（股）")
+    ps3: Optional[float] = Field(None, description="卖3价（元）")
+    vs3: Optional[float] = Field(None, description="卖3量（股）")
+    ps4: Optional[float] = Field(None, description="卖4价（元）")
+    vs4: Optional[float] = Field(None, description="卖4量（股）")
+    ps5: Optional[float] = Field(None, description="卖5价（元）")
+    vs5: Optional[float] = Field(None, description="卖5量（股）")
+
+class JLR(BaseModel):
+    t: str = Field(..., description="服务器更新时间yyyy-MM-dd HH:mm:ss")
+    mc: Optional[str] = Field(None, description="名称")
+    dm: Optional[str] = Field(None, description="代码")
+    zxj: Optional[float] = Field(None, description="最新价（元）")
+    zdf: Optional[float] = Field(None, description="涨跌幅（%）")
+    hsl: Optional[float] = Field(None, description="换手率（%）")
+    cje: Optional[float] = Field(None, description="成交额（元）")
+    lczj: Optional[float] = Field(None, description="流出资金（元）")
+    lrzj: Optional[float] = Field(None, description="流入资金（元）")
+    jlr: Optional[float|str] = Field(None, description="净流入（元）")
+    jlrl: Optional[float|str] = Field(None, description="净流入率（%）")
+
+class ZLJLR(BaseModel):
+    t: str = Field(..., description="服务器更新时间yyyy-MM-dd HH:mm:ss")
+    mc: Optional[str] = Field(None, description="名称")
+    dm: Optional[str] = Field(None, description="代码")
+    zxj: Optional[float] = Field(None, description="最新价（元）")
+    zdf: Optional[float] = Field(None, description="涨跌幅（%）")
+    hsl: Optional[float] = Field(None, description="换手率（%）")
+    cje: Optional[float] = Field(None, description="成交额（元）")
+    zllczj: Optional[float] = Field(None, description="主力流出资金（元）")
+    zllrzj: Optional[float] = Field(None, description="主力流入资金（元）")
+    zljlr: Optional[float|str] = Field(None, description="主力净流入（元）")
+    zljlrl: Optional[float|str] = Field(None, description="主力净流入率（%）")
+
+class SHJLR(BaseModel):
+    t: str = Field(..., description="服务器更新时间yyyy-MM-dd HH:mm:ss")
+    mc: Optional[str] = Field(None, description="名称")
+    dm: Optional[str] = Field(None, description="代码")
+    zxj: Optional[float] = Field(None, description="最新价（元）")
+    zdf: Optional[float] = Field(None, description="涨跌幅（%）")
+    hsl: Optional[float] = Field(None, description="换手率（%）")
+    cje: Optional[float] = Field(None, description="成交额（元）")
+    shlczj: Optional[float] = Field(None, description="散户流出资金（元）")
+    shlrzj: Optional[float] = Field(None, description="散户流入资金（元）")
+    shjlr: Optional[float|str] = Field(None, description="散户净流入（元）")
+    shjlrl: Optional[float|str] = Field(None, description="散户净流入率（%）")
+
+class NewState(MessagesState):
+    mmwp:Optional[dict]

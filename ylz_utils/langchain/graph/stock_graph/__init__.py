@@ -1,13 +1,14 @@
+import json
 from ylz_utils.langchain.graph import GraphLib
 
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode,tools_condition
 from langgraph.graph import START,END,StateGraph,MessagesState
 from langchain_core.runnables import RunnableConfig
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import SystemMessage,ToolMessage
 
 from .configurable import ConfigSchema
-from .state import State
+from .state import MMWP, NewState
 from .tools import SnowballTools,MairuiTools
 
 from rich import print
@@ -22,7 +23,7 @@ class StockGraph(GraphLib):
         self.tools:list = self.get_class_instance_tools(MairuiTools(self))
         self.tools.append(self.python_repl_tool)
     def get_graph(self) -> CompiledStateGraph:
-        workflow = StateGraph(MessagesState,ConfigSchema)
+        workflow = StateGraph(NewState,ConfigSchema)
         workflow.add_node("agent",Agent(self))
         workflow.add_node("tools",ToolNode(tools=self.tools))
         workflow.add_edge(START,"agent")
@@ -51,6 +52,21 @@ class Agent():
                   "- 不要产生幻觉"
                   "- 当前日期:{today}")
         messages = [SystemMessage(systemPrompt.format(today=datetime.now()))] + state["messages"]
+           
         res = llm_bind_tools.invoke(messages)
         res = self.graphLib.get_safe_response(res)
-        return {"messages":[res]}
+        if isinstance(state["messages"][-1],ToolMessage):
+            try:
+                content = state["messages"][-1].content
+                print("[DEBUG0]",content)
+                print("???",state["messages"][-1])
+                content = json.loads(content)
+                print("[DEBUG1]",content)
+                #content = MMWP.model_validate(content)
+                #print("[DEBUG2]",content)
+                return {"mmwp":content,"messages":[res]}
+            except Exception as e:
+                print("[ERROR]",e)
+        else:
+            return {"mmwp":{},"messages":[res]}
+        
