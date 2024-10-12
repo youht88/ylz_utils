@@ -127,8 +127,8 @@ class GraphLib(ABC):
         self.conversation_id = conversation_id
         self.thread_id = f"{user_id}-{conversation_id}"
 
-    def tool_node(self,state):
-        if not self.tools_executor:
+    def tools_execute(self,tools,state):
+        if not tools_executor:
             raise Exception("please call set_tools_executor(tools) first!")
         messages = state["messages"]
         last_message = messages[-1]
@@ -166,7 +166,34 @@ class GraphLib(ABC):
         methods = [getattr(classInstance,member) for member in members if callable(getattr(classInstance, member)) and not member.startswith("_")]
         #print(methods)
         return methods
-
+    
+    def summarize_conversation(self,state,config: RunnableConfig):
+        llm_key = config["configurable"].get("llm_key")
+        llm_model = config["configurable"].get("llm_model")
+        if llm_key or llm_model:
+            llm = self.langchainLib.get_llm(llm_key,llm_model)
+        else:
+            llm = self.get_node_llm()
+        if len(state["messages"])>6:
+            # First, we summarize the conversation
+            summary = state.get("summary", "")
+            if summary:
+                # If a summary already exists, we use a different system prompt
+                # to summarize it than if one didn't
+                summary_message = (
+                    f"This is summary of the conversation to date: {summary}\n\n"
+                    "Extend the summary by taking into account the new messages above:"
+                )
+            else:
+                summary_message = "Create a summary of the conversation above:"
+            messages =  state["messages"][:-1]+ [HumanMessage(content=summary_message)]
+            response = llm.invoke(messages)
+            # We now need to delete messages that we no longer want to show up
+            # I will delete all but the last two messages, but you can change this
+            delete_messages = [RemoveMessage(id=m.id) for m in state["messages"][:-1]]
+            return {"summary": response.content, "messages": delete_messages }
+        else:
+            return {"messages":state["messages"]}
     @abstractmethod
     def get_graph(self) -> CompiledStateGraph:
         pass

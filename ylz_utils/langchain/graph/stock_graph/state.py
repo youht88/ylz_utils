@@ -251,6 +251,16 @@ class SHJLR(BaseModel):
     shlrzj: Optional[float] = Field(None, description="散户流入资金（元）")
     shjlr: Optional[float|str] = Field(None, description="散户净流入（元）")
     shjlrl: Optional[float|str] = Field(None, description="散户净流入率（%）")
+    
+class JDDXT(BaseModel):
+    t:str = Field(...,description="时间yyyy-MM-dd")
+    jlr3:float = Field(...,description="近3日主力净流入(元）")
+    jlr5:float = Field(...,description="近5日主力净流入(元）")
+    jlr10:float = Field(...,description="近10日主力净流入(元）")
+    jlrl3:float = Field(...,description="近3日主力净流入率(%）")
+    jlrl5:float = Field(...,description="近5日主力净流入率(%）")
+    jlrl10:float = Field(...,description="近10日主力净流入率(%）")
 
 class NewState(MessagesState):
+    summary:Optional[str]
     mmwp:Optional[dict]

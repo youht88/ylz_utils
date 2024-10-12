@@ -49,9 +49,7 @@ class MairuiTools(StockTools):
             'get_hscp_cwzb','get_hscp_jdlr','get_hscp_jdxj',
             'get_hsmy_jddxt','get_hsmy_lscjt',
             'get_hsrl_zbdd','get_hsrl_mmwp'
-        ] 
-    def __call__(self,state:NewState,config:RunnableConfig):
-        pass      
+        ]     
     def get_hscp_gsjj(self, code:str)->CompanyInfo:
         """获取公司基本信息和IPO基本信息"""
         code = self._get_stock_code(code)

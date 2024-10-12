@@ -5,7 +5,7 @@ from langgraph.graph import START,END,StateGraph,MessagesState
 
 from .configurable import ConfigSchema
 from .function import FunctionGraph
-from .summary import SummaryGraph
+from ..public_graph.summary import SummaryGraph
 
 from rich import print
 

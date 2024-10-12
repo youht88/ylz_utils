@@ -74,6 +74,7 @@ class SummaryGraph(GraphLib):
             llm = self.get_node_llm()
 
         # First, we summarize the conversation
+        print("State keys:",state.keys())
         summary = state.get("summary", "")
         if summary:
             # If a summary already exists, we use a different system prompt

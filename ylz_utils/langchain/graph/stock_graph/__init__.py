@@ -11,6 +11,8 @@ from .configurable import ConfigSchema
 from .state import MMWP, NewState
 from .tools import SnowballTools,MairuiTools
 
+from ..public_graph.summary import SummaryGraph
+
 from rich import print
 from datetime import datetime
 
@@ -24,9 +26,11 @@ class StockGraph(GraphLib):
         self.tools.append(self.python_repl_tool)
     def get_graph(self) -> CompiledStateGraph:
         workflow = StateGraph(NewState,ConfigSchema)
+        workflow.add_node("summary_convasation",self.summarize_conversation)
         workflow.add_node("agent",Agent(self))
         workflow.add_node("tools",ToolNode(tools=self.tools))
-        workflow.add_edge(START,"agent")
+        workflow.add_edge(START,"summary_convasation")
+        workflow.add_edge("summary_convasation","agent")
         workflow.add_conditional_edges("agent",tools_condition)
         workflow.add_edge("tools","agent")
         graph = workflow.compile(self.memory)
@@ -34,6 +38,7 @@ class StockGraph(GraphLib):
 
     def human_action(self, graph, config=None, thread_id=None) -> bool:
         return super().human_action(graph, config, thread_id)
+    
 
 class Agent():
     def __init__(self,graphLib:GraphLib):
@@ -47,11 +52,13 @@ class Agent():
             llm = self.graphLib.get_node_llm()        
         llm_bind_tools = llm.bind_tools(self.graphLib.tools)
         #print(llm_bind_tools)
+        summary = state.get("summary","")
         systemPrompt = ("你是个人信息助理。调用相应的股票相关函数查找和分析数据"
                   "- 不要编造任何信息，仅记录我提供给你的信息。"
                   "- 不要产生幻觉"
-                  "- 当前日期:{today}")
-        messages = [SystemMessage(systemPrompt.format(today=datetime.now()))] + state["messages"]
+                  "- 当前日期:{today}"
+                  "- 之前对话的总结为:{summary}")
+        messages = [SystemMessage(systemPrompt.format(today=datetime.now(),summary=summary))] + state["messages"]
            
         res = llm_bind_tools.invoke(messages)
         res = self.graphLib.get_safe_response(res)
