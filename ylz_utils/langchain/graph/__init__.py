@@ -174,6 +174,7 @@ class GraphLib(ABC):
             llm = self.langchainLib.get_llm(llm_key,llm_model)
         else:
             llm = self.get_node_llm()
+        print("State keys:",state.keys(),state["summary"],len(state["messages"]))
         if len(state["messages"])>6:
             # First, we summarize the conversation
             summary = state.get("summary", "")
@@ -188,6 +189,7 @@ class GraphLib(ABC):
                 summary_message = "Create a summary of the conversation above:"
             messages =  state["messages"][:-1]+ [HumanMessage(content=summary_message)]
             response = llm.invoke(messages)
+            print("response:",response)
             # We now need to delete messages that we no longer want to show up
             # I will delete all but the last two messages, but you can change this
             delete_messages = [RemoveMessage(id=m.id) for m in state["messages"][:-1]]

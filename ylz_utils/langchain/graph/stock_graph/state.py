@@ -262,5 +262,5 @@ class JDDXT(BaseModel):
     jlrl10:float = Field(...,description="近10日主力净流入率(%）")
 
 class NewState(MessagesState):
-    summary:Optional[str]
-    mmwp:Optional[dict]
+    summary:str
+    mmwp:dict

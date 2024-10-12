@@ -229,7 +229,7 @@ class MairuiTools(StockTools):
         )
         data = res.json()        
         return [SSJY(**item) for item in data]
-    def get_hsrl_mmwp(self,code:str,config: RunnableConfig,state: Annotated[dict, InjectedState("mmwp")])->dict:
+    def get_hsrl_mmwp(self,code:str,config: RunnableConfig,state: Annotated[NewState, InjectedState])->dict:
         """获取某个股票的盘口交易数据,返回值没有当前股价，仅有5档买卖需求量价以及委托统计"""
         #数据更新：交易时间段每2分钟
         #请求频率：1分钟300次
