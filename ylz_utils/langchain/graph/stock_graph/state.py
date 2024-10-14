@@ -253,6 +253,9 @@ class SHJLR(BaseModel):
     shjlrl: Optional[float|str] = Field(None, description="散户净流入率（%）")
     
 class JDDXT(BaseModel):
+    '''
+    近十个交易日内的阶段资金动向
+    '''
     t:str = Field(...,description="时间yyyy-MM-dd")
     jlr3:float = Field(...,description="近3日主力净流入(元）")
     jlr5:float = Field(...,description="近5日主力净流入(元）")

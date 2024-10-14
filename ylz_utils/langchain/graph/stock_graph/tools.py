@@ -44,6 +44,7 @@ class MairuiTools(StockTools):
     def __init__(self,graphLib):
         super().__init__(graphLib)
         self.mairui_token = Config.get('STOCK.MAIRUI.TOKEN')
+        print("MAIRUI_TOKEN=",self.mairui_token)
         self.mairui_api_url = "http://api.mairui.club" 
         self._exports = [
             'get_hscp_cwzb','get_hscp_jdlr','get_hscp_jdxj',
@@ -189,7 +190,7 @@ class MairuiTools(StockTools):
         )
         data = res.json()        
         return data
-    def get_hsmy_jddxt(self,code:str):
+    def get_hsmy_jddxt(self,code:str)->list[JDDXT]:
         """获取某个股票的近十天主力阶段资金动向"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）
         #请求频率：1分钟300次 
@@ -197,8 +198,11 @@ class MairuiTools(StockTools):
         res = requests.get( 
             f"{self.mairui_api_url}/hsmy/jddxt/{code}/{self.mairui_token}",
         )
-        data = res.json()        
-        return data
+        if res.status_code==200:
+            data = res.json()        
+            return [JDDXT(**item) for item in data]
+        else:
+            return []
     def get_hsmy_lscj(self,code:str):
         """获取某个股票的近十年每天历史成交分布"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）
@@ -236,7 +240,7 @@ class MairuiTools(StockTools):
         try:
             code = self._get_stock_code(code)
             if state:
-                print("!!!!!-->state.mmwp",state["mmwp"])
+                print("!!!!!-->state.mmwp","|",state["mmwp"],"|",state["summary"])
                 if state["mmwp"]:
                     return state["mmwp"]
             res = requests.get( 

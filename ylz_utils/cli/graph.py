@@ -64,8 +64,8 @@ def start_graph(langchainLib:LangchainLib,args):
     if websearch_key:
         graphLib.set_websearch_tool(websearch_key)
         print("!!!",f"使用搜索工具{websearch_key}")
-    graphLib.set_nodes_llm_config((llm_key,llm_model))
-    graphLib.set_thread(user_id,conversation_id)
+    #graphLib.set_nodes_llm_config((llm_key,llm_model))
+    #graphLib.set_thread(user_id,conversation_id)
     graph = graphLib.get_graph()
     message = input("User Input: ")
     config={"configurable":{"thread_id":thread_id,
