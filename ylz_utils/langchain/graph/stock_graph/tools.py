@@ -109,14 +109,14 @@ class MairuiTools(StockTools):
         )
         data = res.json()        
         return [JDXJ(**item) for item in data]
-    def get_hscp_cwzb(self, code:str)->list[FinancialReport]:
+    def get_hscp_cwzb(self, code:str)->list[CWZB]:
         """获取公司近一年各季度主要财务指标"""
         code = self._get_stock_code(code)
         res = requests.get( 
             f"{self.mairui_api_url}/hscp/cwzb/{code}/{self.mairui_token}",
         )
         data = res.json()        
-        return [FinancialReport(**item) for item in data]
+        return [CWZB(**item) for item in data]
         #return list(map(lambda item:FinancialReport(**item),data))
     def get_hscp_sdgd(self, code:str):
         """获取公司十大股东"""
@@ -423,7 +423,7 @@ class MairuiTools(StockTools):
         data = res.json()        
         return data
 
-    def get_hitc_jrts(self):
+    def get_hitc_jrts(self)->JRTS:
         """获取今日股票、基金公告事项以及交易异动概览"""
         #数据更新：每天15:30（约10分钟更新完成）
         #请求频率：1分钟20次
@@ -431,8 +431,8 @@ class MairuiTools(StockTools):
             f"{self.mairui_api_url}/hitc/jrts/{self.mairui_token}",
         )
         data = res.json()        
-        return data
-    def get_hitc_dzjy(self):
+        return JRTS(**data)
+    def get_hitc_dzjy(self)->list[DZJY]:
         """获取上一个交易日的大宗交易数据"""
         #数据更新：每天15:30（约10分钟更新完成）
         #请求频率：1分钟20次
@@ -440,8 +440,26 @@ class MairuiTools(StockTools):
             f"{self.mairui_api_url}/hitc/dzjy/{self.mairui_token}",
         )
         data = res.json()        
-        return data
-    def get_higg_jlr(self)->JLR:
+        return [DZJY(**item) for item in data]
+    def get_hibk_zjhhy(self)->list[ZJHHY]:
+        """获取所有证件会行业板块个股统计数据"""
+        #数据更新：每天15:30（约10分钟更新完成）
+        #请求频率：1分钟20次
+        res = requests.get( 
+            f"{self.mairui_api_url}/hibk/zjyhy/{self.mairui_token}",
+        )
+        data = res.json()        
+        return [ZJHHY(**item) for item in data]
+    def get_hibk_gnbk(self)->list[GNBK]:
+        """获取所有概念板块个股统计数据"""
+        #数据更新：每天15:30（约10分钟更新完成）
+        #请求频率：1分钟20次
+        res = requests.get( 
+            f"{self.mairui_api_url}/hibk/gnbk/{self.mairui_token}",
+        )
+        data = res.json()        
+        return [GNBK(**item) for item in data]
+    def get_higg_jlr(self)->list[JLR]:
         """获取所有股票的资金净流入"""
         #数据更新：每天15:30（约10分钟更新完成）
         #请求频率：1分钟20次
@@ -450,7 +468,7 @@ class MairuiTools(StockTools):
         )
         data = res.json()        
         return [JLR(**item) for item in data]
-    def get_higg_zljlr(self)->ZLJLR:
+    def get_higg_zljlr(self)->list[ZLJLR]:
         """获取所有股票的主力资金净流入"""
         #数据更新：每天15:30（约10分钟更新完成）
         #请求频率：1分钟20次
@@ -459,7 +477,7 @@ class MairuiTools(StockTools):
         )
         data = res.json()        
         return [ZLJLR(**item) for item in data]
-    def get_higg_shjlr(self)->SHJLR:
+    def get_higg_shjlr(self)->list[SHJLR]:
         """获取所有股票的散户资金净流入"""
         #数据更新：每天15:30（约10分钟更新完成）
         #请求频率：1分钟20次

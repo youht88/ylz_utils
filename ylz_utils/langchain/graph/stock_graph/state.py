@@ -2,10 +2,11 @@ from langgraph.graph import MessagesState
 
 
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional,List
 from datetime import datetime
     
 class CompanyInfo(BaseModel):
+    '''某只股票的基本信息和上市信息'''
     name: str = Field(..., description="公司名称")
     ename: str = Field(..., description="公司英文名称")
     market: str = Field(..., description="上市市场")
@@ -46,7 +47,8 @@ class CompanyInfo(BaseModel):
     signfee: str = Field(..., description="承销费用（万元）")
     pdate: datetime = Field(..., description="招股公告日")
 
-class FinancialReport(BaseModel):
+class CWZB(BaseModel):
+    '''某只股票的财务指标信息'''
     date: str = Field(..., description="报告日期yyyy-MM-dd")
     tbmg: Optional[float|str] = Field(None, description="摊薄每股收益(元)")
     jqmg: Optional[float|str] = Field(None, description="加权每股收益(元)")
@@ -134,6 +136,7 @@ class FinancialReport(BaseModel):
     ysk3: Optional[float|str] = Field(None, description="3年以内其它应收款(元)")
 
 class JDLR(BaseModel):
+    '''某只股票各季度的利润情况'''
     date:str = Field(description="截止日期yyyy-MM-dd")
     income:str = Field(description="营业收入（万元）")
     expend:str = Field(description="营业支出（万元）")
@@ -146,6 +149,7 @@ class JDLR(BaseModel):
     totalcp:str = Field(description="综合收益总额（万元）")
 
 class JDXJ(BaseModel):
+    '''某只股票各季度的现金流情况'''
     date: str = Field(..., description="截止日期yyyy-MM-dd")
     jyin: Optional[float|str] = Field(None, description="经营活动现金流入小计（万元）")
     jyout: Optional[float|str] = Field(None, description="经营活动现金流出小计（万元）")
@@ -162,6 +166,7 @@ class JDXJ(BaseModel):
     cashe: Optional[float|str] = Field(None, description="期末现金及现金等价物余额（万元）")
 
 class SSJY(BaseModel):
+    '''某只股票实时的交易信息'''
     fm: Optional[float] = Field(None, description="五分钟涨跌幅（%）")
     h: Optional[float] = Field(None, description="最高价（元）")
     hs: Optional[float] = Field(None, description="换手（%）")
@@ -185,6 +190,7 @@ class SSJY(BaseModel):
     t: str = Field(..., description="更新时间YYYY-MM-DD HH:MM")
 
 class MMWP(BaseModel):
+    '''某只股票当前的5档盘口信息'''
     t: str = Field(..., description="更新时间YYYY-MM-DD HH:MM")
     vc: Optional[float] = Field(None, description="委差（股）")
     vb: Optional[float] = Field(None, description="委比（%）")
@@ -213,10 +219,72 @@ class MMWP(BaseModel):
     ps5: Optional[float] = Field(None, description="卖5价（元）")
     vs5: Optional[float] = Field(None, description="卖5量（股）")
 
-class JLR(BaseModel):
+class JRTS(BaseModel):
+    '''今日提示'''
+    t: str = Field(..., description="日期yyyy-MM-dd")
+    tp: Optional[List[str]] = Field(None, description="停牌。格式：tp:[xxx,xxx,...]，其中xxx格式为“(股票代码) 股票名称：停牌说明”")
+    zfssr: Optional[List[str]] = Field(None, description="转增上市日。格式：zfssr:[xxx,xxx,...]，其中xxx格式为“(股票代码) 股票名称：说明”")
+    gddh: Optional[List[str]] = Field(None, description="召开股东大会。格式：gddh:[xxx,xxx,...]，其中xxx格式为“(股票代码) 股票名称：说明”")
+    zqdjr: Optional[List[str]] = Field(None, description="债权登记日。格式：zqdjr:[xxx,xxx,...]，其中xxx格式为“(股票代码) 股票名称：说明”")
+    jjfp: Optional[List[str]] = Field(None, description="基金收益分配款发放日。格式：jjfp:[xxx,xxx,...]，其中xxx格式为“(股票代码) 股票名称：说明”")
+    jjcx: Optional[List[str]] = Field(None, description="基金收益分配除息日。格式：jjcx:[xxx,xxx,...]，其中xxx格式为“(股票代码) 股票名称：说明”")
+    jjdj: Optional[List[str]] = Field(None, description="基金权益登记日。格式：jjdj:[xxx,xxx,...]，其中xxx格式为“(股票代码) 股票名称：说明”")
+    szgg: Optional[List[str]] = Field(None, description="深交所公告。格式：szgg:[xxx,xxx,...]，其中xxx格式为“(股票代码) 股票名称：说明”")
+    shgg: Optional[List[str]] = Field(None, description="上交所公告。格式：shgg:[xxx,xxx,...]，其中xxx格式为“(股票代码) 股票名称：说明”")
+    jjfx: Optional[List[str]] = Field(None, description="开放式基金发行起始日。格式：jjfx:[xxx,xxx,...]，其中xxx格式为“(股票代码) 股票名称：说明”")
+    jjjz: Optional[List[str]] = Field(None, description="开放式基金发行截止日。格式：jjjz:[xxx,xxx,...]，其中xxx格式为“(股票代码) 股票名称：说明”")
+    gpgk: Optional[List[str]] = Field(None, description="股票交易公开信息。格式：gpgk:[xxx,xxx,...]，其中xxx格式为“(股票代码) 股票名称：说明”")
+    obsh: Optional[List[str]] = Field(None, description="货币型基金结转份额可赎回起始日。格式：obsh:[xxx,xxx,...]，其中xxx格式为“(股票代码) 股票名称：说明”")
+    cqcx: Optional[List[str]] = Field(None, description="恢复交易日。格式：cqcx:[xxx,xxx,...]，其中xxx格式为“(股票代码) 股票名称：说明”")
+    djr: Optional[List[str]] = Field(None, description="股票登记日。格式：djr:[xxx,xxx,...]，其中xxx格式为“(股票代码) 股票名称：说明”")
+
+class ZJHHY(BaseModel):
+    '''证监会行业板块数据'''
     t: str = Field(..., description="服务器更新时间yyyy-MM-dd HH:mm:ss")
-    mc: Optional[str] = Field(None, description="名称")
-    dm: Optional[str] = Field(None, description="代码")
+    mc: str = Field(..., description="行业名称")
+    dm: str = Field(..., description="行业代码")
+    jj: float = Field(..., description="均价（元）")
+    zdf: float = Field(..., description="涨跌幅（%）")
+    lrzj: float = Field(..., description="流入资金（元）")
+    lczj: float = Field(..., description="流出资金（元）")
+    jlr: float = Field(..., description="净流入（元）")
+    jlrl: float = Field(..., description="净流入率（%）")
+    lzgmc: str = Field(..., description="领涨股名称")
+    lzgdm: str = Field(..., description="领涨股代码")
+    lzgjlrl: float = Field(..., description="领涨股净流入率（%）")
+
+class GNBK(BaseModel):
+    '''概念板块数据'''
+    t: str = Field(..., description="服务器更新时间yyyy-MM-dd HH:mm:ss")
+    mc: str = Field(..., description="概念板块名称")
+    dm: str = Field(..., description="概念板块代码")
+    jj: float = Field(..., description="均价（元）")
+    zdf: float = Field(..., description="涨跌幅（%）")
+    lrzj: float = Field(..., description="流入资金（元）")
+    lczj: float = Field(..., description="流出资金（元）")
+    jlr: float = Field(..., description="净流入（元）")
+    jlrl: float = Field(..., description="净流入率（%）")
+    lzgmc: str = Field(..., description="领涨股名称")
+    lzgdm: str = Field(..., description="领涨股代码")
+    lzgjlrl: float = Field(..., description="领涨股净流入率（%）")
+
+class DZJY(BaseModel):
+    '''大宗交易'''
+    t: str = Field(..., description="日期yyyy-MM-dd")
+    dm: str = Field(..., description="股票代码")
+    mc: str = Field(..., description="股票名称")
+    p: float = Field(..., description="成交价格(元)")
+    v: float = Field(..., description="成交量(万股)")
+    dp: float = Field(..., description="成交金额(万元)")
+    buyi: str = Field(..., description="买方营业部")
+    selli: str = Field(..., description="卖方营业部")
+    type: str = Field(..., description="证券类型")
+
+class JLR(BaseModel):
+    ''''所有股票近一个交易日的资金净流入情况，也包括对应的涨跌幅、换手率、成交额等信息'''
+    t: str = Field(..., description="服务器更新时间yyyy-MM-dd HH:mm:ss")
+    mc: Optional[str] = Field(None, description="股票名称")
+    dm: Optional[str] = Field(None, description="股票代码")
     zxj: Optional[float] = Field(None, description="最新价（元）")
     zdf: Optional[float] = Field(None, description="涨跌幅（%）")
     hsl: Optional[float] = Field(None, description="换手率（%）")
@@ -227,6 +295,7 @@ class JLR(BaseModel):
     jlrl: Optional[float|str] = Field(None, description="净流入率（%）")
 
 class ZLJLR(BaseModel):
+    ''''所有股票近一个交易日主力资金的净流入情况，也包括对应的涨跌幅、换手率、成交额等信息'''
     t: str = Field(..., description="服务器更新时间yyyy-MM-dd HH:mm:ss")
     mc: Optional[str] = Field(None, description="名称")
     dm: Optional[str] = Field(None, description="代码")
@@ -240,6 +309,7 @@ class ZLJLR(BaseModel):
     zljlrl: Optional[float|str] = Field(None, description="主力净流入率（%）")
 
 class SHJLR(BaseModel):
+    ''''所有股票近一个交易日散户资金的净流入情况，也包括对应的涨跌幅、换手率、成交额等信息'''
     t: str = Field(..., description="服务器更新时间yyyy-MM-dd HH:mm:ss")
     mc: Optional[str] = Field(None, description="名称")
     dm: Optional[str] = Field(None, description="代码")
@@ -254,7 +324,7 @@ class SHJLR(BaseModel):
     
 class JDDXT(BaseModel):
     '''
-    近十个交易日内的阶段资金动向
+    近十个交易日内的阶段资金动向。近3日、5日、10日是指对应天数的累积量或累计率。
     '''
     t:str = Field(...,description="时间yyyy-MM-dd")
     jlr3:float = Field(...,description="近3日主力净流入(元）")
