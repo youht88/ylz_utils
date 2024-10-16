@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING,Optional
 if TYPE_CHECKING:
     from ylz_utils.langchain import LangchainLib
 
-import asyncio
+import re
 from abc import ABC,abstractmethod
 
 from operator import itemgetter
@@ -87,7 +87,10 @@ class GraphLib(ABC):
     def create_remove_messages(self,messages:BaseMessage):
         return [RemoveMessage(id=message["id"]) for message in messages ]
     
-    def get_llm(self,llm_key=None,llm_model=None):
+    def get_llm(self,llm_key=None,llm_model=None,config:Optional[RunnableConfig]=None):
+        if config:
+            llm_key = config.get('configurable',{}).get('llm_key')
+            llm_model = config.get('configurable',{}).get('llm_model')
         return self.langchainLib.get_llm(llm_key,llm_model)
     def get_embedding(self,embedding_key=None,embedding_model=None):
         return self.langchainLib.get_embedding(embedding_key,embedding_model)
@@ -159,7 +162,7 @@ class GraphLib(ABC):
         # 获取类的所有成员
         members = dir(classInstance)
         if _exports:
-            members = [item for item in members if item in _exports]
+            members = [item for item in members if any([re.match(pattern,item) for pattern in _exports])]
             print("!!!!",members)
         # 筛选出函数
         methods = [getattr(classInstance,member) for member in members if callable(getattr(classInstance, member)) and not member.startswith("_")]

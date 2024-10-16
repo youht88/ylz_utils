@@ -4,9 +4,17 @@ from langgraph.graph import MessagesState
 from pydantic import BaseModel, Field
 from typing import Optional,List
 from datetime import datetime
-    
-class CompanyInfo(BaseModel):
+
+class HSLT_LIST(BaseModel):
+    '''沪深两市的公司列表'''
+    t: str = Field(..., description="服务器更新时间yyyy-MM-dd HH:mm:ss")
+    dm: str = Field(description="股票的代码为交易所+六位交易代码，例如：sh601398")
+    mc: str = Field(description="股票名称，例如：工商银行")
+    jys: str = Field(description="交易所，'sh'表示上证，'sz'表示深证")    
+class HSCP_GSJJ(BaseModel):
     '''某只股票的基本信息和上市信息'''
+    t: str = Field(..., description="服务器更新时间yyyy-MM-dd HH:mm:ss")
+    dm: str = Field(..., description="股票代码")
     name: str = Field(..., description="公司名称")
     ename: str = Field(..., description="公司英文名称")
     market: str = Field(..., description="上市市场")

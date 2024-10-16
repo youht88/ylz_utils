@@ -73,8 +73,8 @@ def start_graph(langchainLib:LangchainLib,args):
                             "llm_key":llm_key,"llm_model":llm_model}}
     graphLib.graph_test(graph,message,config)
     current_state = graphLib.graph_get_state(graph,config)
-    Console().print("\n本次对话的所有消息:\n",current_state.values["messages"])
-    Console().print("\n最终的状态:\n",current_state)
+    #Console().print("\n本次对话的所有消息:\n",current_state.values["messages"])
+    #Console().print("\n最终的状态:\n",current_state)
     Console().print("\n流程图",graph.get_graph(xray=1).to_json())
     graph.get_graph(xray=1).print_ascii()
     graphLib.graph_export(graph)

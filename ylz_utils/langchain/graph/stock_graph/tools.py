@@ -49,16 +49,26 @@ class MairuiTools(StockTools):
         self._exports = [
             'get_hscp_cwzb','get_hscp_jdlr','get_hscp_jdxj',
             'get_hsmy_jddxt','get_hsmy_lscjt',
-            'get_hsrl_zbdd','get_hsrl_mmwp'
-        ]     
-    def get_hscp_gsjj(self, code:str)->CompanyInfo:
+            'get_hsrl_zbdd','get_hsrl_mmwp',
+            'get_hscp_.*'
+        ]        
+    def get_hslt_list(self)->list[HSLT_LIST]:
+        """获取沪深两市的公司列表"""
+        res = requests.get( 
+            f"{self.mairui_api_url}/hslt/list/{self.mairui_token}",
+        )
+        data = res.json()        
+        today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+        return [HSLT_LIST(**{**item,"t":today,"dm":f"{item['jys']}{item['dm']}"}) for item in data]
+    
+    def get_hscp_gsjj(self, code:str)->HSCP_GSJJ:
         """获取公司基本信息和IPO基本信息"""
         code = self._get_stock_code(code)
         res = requests.get( 
             f"{self.mairui_api_url}/hscp/gsjj/{code}/{self.mairui_token}",
         )
         data = res.json()        
-        return CompanyInfo(**data)
+        return HSCP_GSJJ(**{**data,"dm":code,"t":datetime.today().strftime("%Y-%m-%d %H:%M:%S")})
     
     def get_hscp_sszs(self, code:str):
         """获取公司所属的指数代码和名称"""
@@ -442,13 +452,13 @@ class MairuiTools(StockTools):
         data = res.json()        
         return [DZJY(**item) for item in data]
     def get_hibk_zjhhy(self)->list[ZJHHY]:
-        """获取所有证件会行业板块个股统计数据"""
+        """获取所有证监会定义的行业板块个股统计数据"""
         #数据更新：每天15:30（约10分钟更新完成）
         #请求频率：1分钟20次
         res = requests.get( 
-            f"{self.mairui_api_url}/hibk/zjyhy/{self.mairui_token}",
+            f"{self.mairui_api_url}/hibk/zjhhy/{self.mairui_token}",
         )
-        data = res.json()        
+        data = res.json()      
         return [ZJHHY(**item) for item in data]
     def get_hibk_gnbk(self)->list[GNBK]:
         """获取所有概念板块个股统计数据"""

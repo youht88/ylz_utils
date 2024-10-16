@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from ylz_utils.file import FileLib
 from ylz_utils.langchain.graph import GraphLib
 
@@ -12,7 +12,7 @@ from ylz_utils.langchain.graph.stock_graph.tools import MairuiTools
 from .configurable import ConfigSchema
 from .function import FunctionGraph
 from ..public_graph.summary import SummaryGraph
-from ..stock_graph.state import JDDXT,JLR,ZLJLR,SHJLR
+from ..stock_graph.state import *
 from pydantic import BaseModel,Field
 from rich import print
 import pandas as pd
@@ -27,31 +27,63 @@ class TestGraph(GraphLib):
     def __init__(self,langchainLib):
         super().__init__(langchainLib)
         stockGraph = StockGraph(langchainLib)
-        toolLib = MairuiTools(stockGraph)
+        self.toolLib = MairuiTools(stockGraph)
         #data = toolLib.get_company_info("ST易联众")
         #self.stockData = toolLib.get_hsmy_jddxt("瑞芯微")
+    def load_data(self,func,csv_file_name,time_str,trans_to_datamodel:Optional[BaseModel]=None) ->pd.DataFrame|BaseModel:
+        # self.data = self.load_data(self.toolLib.get_higg_jlr,"higg_jlr.csv","t",trans_to_datamodel=JLR)
         try:
-            jlr_df = pd.read_csv("higg_jlr.csv")
-            given_date = datetime.strptime(self.jlr.loc[0]['t'], "%Y-%m-%d %H:%M:%S")
+            df = pd.read_csv(csv_file_name)
+            given_date = datetime.strptime(df.loc[0][time_str], "%Y-%m-%d %H:%M:%S")
             # 获取当前日期
             now = datetime.now()
             # 创建当前日期的下午 4 点钟的 datetime 对象
             newdata_today = now.replace(hour=16, minute=0, second=0, microsecond=0)
             if given_date.date() < now.date() and now > newdata_today:
-                higg_jlr = toolLib.get_higg_jlr()
-                self.jlr = higg_jlr
-                jlr_df = pd.DataFrame([item.model_dump() for item in higg_jlr])
-                jlr_df.to_csv("higg_jlr.csv") 
+                data = func()
+                df = pd.DataFrame([item.model_dump() for item in data])
+                df.to_csv(csv_file_name) 
             else:
-                print("888"*20)
-                self.jlr = [JLR(**row) for index, row in jlr_df.iterrows()]  
+                print(f"正在转换{csv_file_name}")
+                data = [trans_to_datamodel(**row) for index, row in df.iterrows()]  
+                print("转换完毕!")
         except Exception as e:
-            higg_jlr = toolLib.get_higg_jlr()
-            self.jlr = higg_jlr
-            jlr_df = pd.DataFrame([item.model_dump() for item in higg_jlr])
-            jlr_df.to_csv("higg_jlr.csv")
-        print("higg jlr counts=",len(self.jlr))
+            print("error on retrieve data,now re retrieve",e)
+            data = func()
+            df = pd.DataFrame([item.model_dump() for item in data])
+            df.to_csv(csv_file_name)
+        print(f"{csv_file_name} counts=",len(data))
+        return data
+    def load_data_by_code(self,code,func,csv_file_name,time_str,trans_to_datamodel:Optional[BaseModel]=None) ->pd.DataFrame|BaseModel:
+        # self.data = self.load_data("sz300096",self.toolLib.get_hscp_gsjj,"hicp_gscp.csv","t",trans_to_datamodel=GSJJ)
+        try:
+            df = pd.read_csv(csv_file_name)
+            name = df.loc[0][time_str]
+            # 获取当前日期
+            now = datetime.now()
+            # 创建当前日期的下午 4 点钟的 datetime 对象
+            newdata_today = now.replace(hour=16, minute=0, second=0, microsecond=0)
+            if given_date.date() < now.date() and now > newdata_today:
+                data = func()
+                df = pd.DataFrame([item.model_dump() for item in data])
+                df.to_csv(csv_file_name) 
+            else:
+                print(f"正在转换{csv_file_name}")
+                data = [trans_to_datamodel(**row) for index, row in df.iterrows()]  
+                print("转换完毕!")
+        except Exception as e:
+            print("error on retrieve data,now re retrieve",e)
+            data = func()
+            df = pd.DataFrame([item.model_dump() for item in data])
+            df.to_csv(csv_file_name)
+        print(f"{csv_file_name} counts=",len(data))
+        return data
+    
     def get_graph(self) -> CompiledStateGraph:
+        self.hslt_list = self.load_data(self.toolLib.get_hslt_list,"hslt_list.csv","t",trans_to_datamodel=HSLT_LIST)
+        self.jlr = self.load_data(self.toolLib.get_higg_jlr,"higg_jlr.csv","t",trans_to_datamodel=JLR)
+        self.gnbk = self.load_data(self.toolLib.get_hibk_gnbk,"hibk_gnbk.csv","t",trans_to_datamodel=GNBK) 
+        self.zjhhy = self.load_data(self.toolLib.get_hibk_zjhhy,"hibk_zjhhy.csv","t",trans_to_datamodel=ZJHHY) 
         workflow = StateGraph(State,ConfigSchema)
         #workflow.add_node("function",FunctionGraph(self.langchainLib).get_graph())
         #workflow.add_node("summary",SummaryGraph(self.langchainLib).get_graph())
@@ -59,23 +91,27 @@ class TestGraph(GraphLib):
         #workflow.add_edge("function","summary")
         #workflow.add_edge("summary",END)
         workflow.add_node("agent",self.agent0)
-        workflow.add_node("exec",self.python_exec_tool)
+        workflow.add_edge("agent",END)
         workflow.add_edge(START,"agent")
-        workflow.add_edge("agent","exec")
-        workflow.add_conditional_edges("exec",self.if_continue)
+        # workflow.add_node("exec",self.python_exec_tool)
+        # workflow.add_edge("agent","exec")
+        # workflow.add_conditional_edges("exec",self.if_continue)
         graph = workflow.compile(self.memory)
         return graph
         #return SummaryGraph(self.langchainLib).get_graph()
     def human_action(self, graph, config=None, thread_id=None) -> bool:
         return super().human_action(graph, config, thread_id)
     def agent0(self,state,config:RunnableConfig):
-        modelData = {"jlr":self.jlr}
-        return {"modelData":modelData}
+        #modelData = {"hslt_list":self.hslt_list,"jlr":self.jlr,"gnbk":self.gnbk,"zjhhy":self.zjhhy}
+        llm = self.get_llm(config=config)
+        llm_bind_tool = llm.bind_tools(self.get_class_instance_tools(self.toolLib))
+        res = llm_bind_tool.invoke(state["messages"])
+        print(res)
+        return {"error":""}
     def python_exec_tool(self,state,config:RunnableConfig):
-        modelData:dict[str,BaseModel|list[BaseModel]] = state.get("modelData",{})
-        llm_key = config.get('configurable',{}).get('llm_key')
-        llm_model = config.get('configurable',{}).get('llm_model')
-        llm = self.langchainLib.get_llm(llm_key,llm_model)
+        #modelData:dict[str,BaseModel|list[BaseModel]] = state.get("modelData",{})
+        modelData = {"hslt_list":self.hslt_list,"jlr":self.jlr,"gnbk":self.gnbk,"zjhhy":self.zjhhy}
+        llm = self.get_llm(config=config)
         context1: list[str] = []
         context2: list[str] = []
         dataFrames ={}
@@ -102,22 +138,19 @@ class TestGraph(GraphLib):
         print("[prompt]",prompt)
         lastmessage = state["messages"][-1]
         res = llm.invoke([SystemMessage(prompt)]+[lastmessage])
-        match = re.match(r"```python(.*)```",res.content)
-        print("????",match)
+        pattern = re.compile(r".*```python(.*)```",re.DOTALL)
+        match = re.match(pattern,res.content)
         if not match:
             print("NO RESULT",res.content)
             return {"error":""}
         script = match.groups(0)[0]
-        print("[script]",script)
         try:
             result={}
             exec(script,dataFrames,result)
             print("script--->",script)
             print("result--->",result)
-            res1 = llm.invoke([SystemMessage(f"{prompt0}")]+state["messages"]+[HumanMessage(str(result))])
-            return {"error":"","messages":[res1]}
         except Exception as e:
-            print("ERROR!!")
+            print("ERROR!!",e,script)
             return {"error":str(e)}
         
     def agent(self,state,config:RunnableConfig):
