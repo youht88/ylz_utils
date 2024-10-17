@@ -27,18 +27,80 @@ class StockTools:
         zsdm_file = os.path.join(current_dir, 'zsdm.json')
         with open(zsdm_file, 'r', encoding='utf-8') as f:
             self.zsdm = json.load(f)
-    def _get_stock_code(self,stock_name:str):
+    def _get_stock_code(self,stock_name:str)->dict:
         """根据股票或指数名称获取股票/指数代码"""
-        stock_info = list(filter(lambda item:item["name"]==stock_name.upper(),self.gpdm))
-        if stock_info:
-            stock_code = stock_info[0]['symbol']
-            return stock_code
+        if stock_name.startswith('sh') or stock_name.startswith('sz'):
+            # mairui code
+            jys = stock_name[:2]
+            code = stock_name[2:]
+            ts_code = f"{code}.{jys.upper()}"
+            mr_code = stock_name
+            ball_code = f"{jys.upper()}{code}"
+            stock_info = list(filter(lambda item:item["symbol"]==code,self.gpdm))
+            if stock_info:
+                name = stock_info[0]['name']
+                return {"code":code,"mr_code":mr_code,"ts_code":ts_code,"name":name,"jys":jys,"ball_code":ball_code}
+            else:
+                return {}
+        elif stock_name.endswith('.SH') or stock_name.endswith('.SZ'):
+            #tu-share code
+            jys = stock_name[-2:].lower()
+            code = stock_name[:-3]
+            ts_code = stock_name
+            mr_code = f"{jys}{code}"
+            ball_code = f"{jys.upper()}{code}"
+            stock_info = list(filter(lambda item:item["symbol"]==code,self.gpdm))
+            if stock_info:
+                name = stock_info[0]['name']
+                return {"code":code,"mr_code":mr_code,"ts_code":ts_code,"name":name,"jys":jys,"ball_code":ball_code}
+            else:
+                return {}
+        elif stock_name.startswith('SH') or stock_name.startswith('SZ'):
+            #雪球code
+            jys = stock_name[:2].lower()
+            code = stock_name[2:]
+            ball_code = stock_name
+            ts_code = f"{code}.{jys.upper()}"
+            mr_code = f"{jys}{code}"
+            stock_info = list(filter(lambda item:item["symbol"]==code,self.gpdm))
+            if stock_info:
+                name = stock_info[0]['name']
+                return {"code":code,"mr_code":mr_code,"ts_code":ts_code,"name":name,"jys":jys,"ball_code":ball_code}
+            else:
+                return {}
+        elif stock_name.isnumeric():
+            code = stock_name
+            stock_info = list(filter(lambda item:item["symbol"]==code,self.gpdm))
+            if stock_info:
+                ts_code = stock_info[0]['ts_code']
+                jys = ts_code[-2:].lower()
+                mr_code = f"{jys}{code}"
+                name = stock_info[0]['name']
+                ball_code = f"{jys.upper()}{code}"
+                return {"code":code,"mr_code":mr_code,"ts_code":ts_code,"name":name,"jys":jys,"ball_code":ball_code}
+            else:
+                return {}
         else:
-            zhishu_info = list(filter(lambda item:item["mc"]==stock_name.upper(),self.zsdm))
-            if zhishu_info:
-                zhishu_code = zhishu_info[0]['dm']
-                return zhishu_code
-        return stock_name
+            stock_info = list(filter(lambda item:item["name"]==stock_name.upper(),self.gpdm))
+            if stock_info:
+                ts_code = stock_info[0]['ts_code']
+                jys = ts_code[-2:].lower()
+                code = stock_info[0]['symbol']
+                name = stock_info[0]['name']
+                mr_code = f"{jys}{code}"
+                ball_code = f"{jys.upper()}{code}"
+                return {"code":code,"mr_code":mr_code,"ts_code":ts_code,"name":name,"jys":jys,"ball_code":ball_code}
+            else:
+                zs_info = list(filter(lambda item:item["mc"]==stock_name.upper(),self.zsdm))
+                if zs_info:
+                    mr_code = zs_info[0]['dm']
+                    jys = zs_info[0]['jys']
+                    name = zs_info[0]['mc']
+                    code = mr_code[2:]
+                    ts_code = f"{code}.{jys.upper()}"
+                    ball_code = f"{jys.upper()}{code}"
+                    return {"code":code,"mr_code":mr_code,"ts_code":ts_code,"name":name,"jys":jys,"ball_code":ball_code}
+ 
         
 class MairuiTools(StockTools):
     def __init__(self,graphLib):
@@ -50,8 +112,11 @@ class MairuiTools(StockTools):
             'get_hscp_cwzb','get_hscp_jdlr','get_hscp_jdxj',
             'get_hsmy_jddxt','get_hsmy_lscjt',
             'get_hsrl_zbdd','get_hsrl_mmwp',
-            'get_hscp_.*'
+            'get_hscp_.*',
+            '.*'
         ]        
+        self.df_hsrl_mmwp = pd.DataFrame([])       
+        self.df_hsrl_zbjy = pd.DataFrame([])
     def get_hslt_list(self)->list[HSLT_LIST]:
         """获取沪深两市的公司列表"""
         res = requests.get( 
@@ -63,16 +128,20 @@ class MairuiTools(StockTools):
     
     def get_hscp_gsjj(self, code:str)->HSCP_GSJJ:
         """获取公司基本信息和IPO基本信息"""
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hscp/gsjj/{code}/{self.mairui_token}",
         )
         data = res.json()        
-        return HSCP_GSJJ(**{**data,"dm":code,"t":datetime.today().strftime("%Y-%m-%d %H:%M:%S")})
+        return HSCP_GSJJ(**{**data,"mr_code":mr_code,"t":datetime.today().strftime("%Y-%m-%d %H:%M:%S")})
     
     def get_hscp_sszs(self, code:str):
         """获取公司所属的指数代码和名称"""
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hscp/sszs/{code}/{self.mairui_token}",
         )
@@ -80,7 +149,9 @@ class MairuiTools(StockTools):
         return data
     def get_hscp_ljgg(self, code:str):
         """获取公司历届高管成员名单"""
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hscp/ljgg/{code}/{self.mairui_token}",
         )
@@ -88,7 +159,9 @@ class MairuiTools(StockTools):
         return data
     def get_hscp_ljds(self, code:str):
         """获取公司历届董事成员名单"""
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hscp/ljds/{code}/{self.mairui_token}",
         )
@@ -96,7 +169,9 @@ class MairuiTools(StockTools):
         return data
     def get_hscp_ljjj(self, code:str):
         """获取公司历届监事成员名单"""
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hscp/ljjj/{code}/{self.mairui_token}",
         )
@@ -104,7 +179,9 @@ class MairuiTools(StockTools):
         return data
     def get_hscp_jdlr(self, code:str)-> list[JDLR]:
         """获取公司近一年各季度利润"""
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hscp/jdlr/{code}/{self.mairui_token}",
         )
@@ -113,7 +190,9 @@ class MairuiTools(StockTools):
 
     def get_hscp_jdxj(self, code:str) -> list[JDXJ]:
         """获取公司近一年各季度现金流"""
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hscp/jdxj/{code}/{self.mairui_token}",
         )
@@ -121,7 +200,9 @@ class MairuiTools(StockTools):
         return [JDXJ(**item) for item in data]
     def get_hscp_cwzb(self, code:str)->list[CWZB]:
         """获取公司近一年各季度主要财务指标"""
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hscp/cwzb/{code}/{self.mairui_token}",
         )
@@ -130,7 +211,9 @@ class MairuiTools(StockTools):
         #return list(map(lambda item:FinancialReport(**item),data))
     def get_hscp_sdgd(self, code:str):
         """获取公司十大股东"""
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hscp/sdgd/{code}/{self.mairui_token}",
         )
@@ -138,7 +221,9 @@ class MairuiTools(StockTools):
         return data
     def get_hscp_ltgd(self, code:str):
         """获取公司十大流通股股东"""
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hscp/ltgd/{code}/{self.mairui_token}",
         )
@@ -146,7 +231,9 @@ class MairuiTools(StockTools):
         return data
     def get_hscp_gdbh(self, code:str):
         """获取公司股东变化趋势"""
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hscp/gdbh/{code}/{self.mairui_token}",
         )
@@ -154,7 +241,9 @@ class MairuiTools(StockTools):
         return data
     def get_hscp_jjcg(self, code:str):
         """获取公司最近500家左右的基金持股情况"""
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hscp/jjcg/{code}/{self.mairui_token}",
         )
@@ -164,7 +253,9 @@ class MairuiTools(StockTools):
         """获取某个股票的每分钟主力资金走势"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）
         #请求频率：1分钟300次 
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hsmy/zlzh/{code}/{self.mairui_token}",
         )
@@ -174,7 +265,9 @@ class MairuiTools(StockTools):
         """获取某个股票的近十年每天资金流入趋势"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）
         #请求频率：1分钟300次 
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hsmy/zjlr/{code}/{self.mairui_token}",
         )
@@ -184,7 +277,9 @@ class MairuiTools(StockTools):
         """获取某个股票的近10天资金流入趋势"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）
         #请求频率：1分钟300次 
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hsmy/zhlrt/{code}/{self.mairui_token}",
         )
@@ -194,7 +289,9 @@ class MairuiTools(StockTools):
         """获取某个股票的近十年主力阶段资金动向"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）
         #请求频率：1分钟300次 
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hsmy/jddx/{code}/{self.mairui_token}",
         )
@@ -204,7 +301,9 @@ class MairuiTools(StockTools):
         """获取某个股票的近十天主力阶段资金动向"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）
         #请求频率：1分钟300次 
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hsmy/jddxt/{code}/{self.mairui_token}",
         )
@@ -217,7 +316,9 @@ class MairuiTools(StockTools):
         """获取某个股票的近十年每天历史成交分布"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）
         #请求频率：1分钟300次 
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hsmy/lscj/{code}/{self.mairui_token}",
         )
@@ -227,7 +328,9 @@ class MairuiTools(StockTools):
         """获取某个股票的近十天历史成交分布"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）
         #请求频率：1分钟300次 
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hsmy/lscjt/{code}/{self.mairui_token}",
         )
@@ -237,45 +340,80 @@ class MairuiTools(StockTools):
         """获取某个股票的实时交易数据"""
         #数据更新：交易时间段每1分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hsrl/ssjy/{code}/{self.mairui_token}",
         )
         data = res.json()        
         return [SSJY(**item) for item in data]
-    def get_hsrl_mmwp(self,code:str,config: RunnableConfig,state: Annotated[NewState, InjectedState])->dict:
+    def _load_data_by_code(self,code:str,file_name:str,method_path:str,dataframe:pd.DataFrame,keys=['mr_code']):
+        try:
+            code_info = self._get_stock_code(code)
+            code=code_info['code']
+            mr_code = code_info['mr_code']
+            if dataframe.empty:
+                try:
+                    dataframe = pd.read_csv(file_name)
+                except:
+                    pass
+            res = requests.get( 
+                f"{self.mairui_api_url}/{method_path}/{code}/{self.mairui_token}",
+            )
+            data = res.json()
+            if isinstance(data,list):
+                data = [{**item,"mr_code":mr_code} for item in data]
+            else:
+                data = [{**data,"mr_code":mr_code}]
+            df = pd.DataFrame(data)
+            if not dataframe.empty:
+                condition = pd.Series([True] * len(df))
+                # 根据字段名列表构建动态筛选条件
+                for k in keys:
+                    if k in df.columns:
+                        condition = condition & (dataframe[k] == df[k][0])
+                # 应用筛选条件
+                find_row:pd.DataFrame = dataframe[condition]
+                if find_row.empty:
+                    dataframe = pd.concat([dataframe,df], ignore_index=True)
+                    dataframe.to_csv(file_name,index=False)
+            else:
+                dataframe = df
+                dataframe.to_csv(file_name,index=False)    
+        except Exception as e:
+            raise Exception(f"error on _load_data_by_code,the error is :{e}")
+        return df
+
+    def get_hsrl_mmwp(self,code:str,state: Annotated[NewState, InjectedState]=None)->list[HSRL_MMWP]:
         """获取某个股票的盘口交易数据,返回值没有当前股价，仅有5档买卖需求量价以及委托统计"""
         #数据更新：交易时间段每2分钟
         #请求频率：1分钟300次
-        try:
-            code = self._get_stock_code(code)
-            if state:
-                print("!!!!!-->state.mmwp","|",state["mmwp"],"|",state["summary"])
-                if state["mmwp"]:
-                    return state["mmwp"]
-            res = requests.get( 
-                f"{self.mairui_api_url}/hsrl/mmwp/{code}/{self.mairui_token}",
-            )
-            data = res.json()
-        except Exception as e:
-            print("get_hsrl_mmwp?",code)
-        
-        return data
+        df = self._load_data_by_code(code,"hsrl_wwmp.csv","hsrl/mmwp",self.df_hsrl_mmwp,keys=['t','mr_code'])
+        #return [HSRL_MMWP(**item) for idx,item in self.df_hsrl_mmwp[self.df_hsrl_mmwp['mr_code']==mr_code].iterrows()]
+        return [HSRL_MMWP(**item) for idx,item in df.iterrows()]
+    
     def get_hsrl_zbjy(self,code:str):
         """获取某个股票的当天逐笔交易数据"""
         #数据更新：每天20:00开始更新，当日23:59前完成
         #请求频率：1分钟300次
-        code = self._get_stock_code(code)
-        res = requests.get( 
-            f"{self.mairui_api_url}/hsrl/zbjy/{code}/{self.mairui_token}",
-        )
-        data = res.json()        
-        return data
+        # code_info = self._get_stock_code(code)
+        # code=code_info['code']
+        # mr_code = code_info['mr_code']
+        # res = requests.get( 
+        #     f"{self.mairui_api_url}/hsrl/zbjy/{code}/{self.mairui_token}",
+        # )
+        # data = res.json()        
+        # return data
+        df = self._load_data_by_code(code,"hsrl_zbjy.csv","hsrl/zbjy",self.df_hsrl_zbjy,keys=['d','mr_code'])
+        return df
     def get_hsrl_fscj(self,code:str):
         """获取某个股票的当天分时成交数据"""
         #数据更新：每天20:00开始更新，当日23:59前完成
         #请求频率：1分钟300次
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hsrl/fscj/{code}/{self.mairui_token}",
         )
@@ -285,7 +423,9 @@ class MairuiTools(StockTools):
         """获取某个股票的当天分价成交数据"""
         #数据更新：每天20:00开始更新，当日23:59前完成
         #请求频率：1分钟300次
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hsrl/fjcj/{code}/{self.mairui_token}",
         )
@@ -295,7 +435,9 @@ class MairuiTools(StockTools):
         """获取某个股票的当天逐笔超400手的大单成交数据"""
         #数据更新：每天20:00开始更新，当日23:59前完成
         #请求频率：1分钟300次
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hsrl/zbdd/{code}/{self.mairui_token}",
         )
@@ -306,7 +448,9 @@ class MairuiTools(StockTools):
         """获取股票代码分时交易实时数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hszb/fsjy/{code}/{fs}/{self.mairui_token}",
         )
@@ -317,7 +461,9 @@ class MairuiTools(StockTools):
         """获取股票代码分时交易的平均移动线数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hszb/ma/{code}/{fs}/{self.mairui_token}",
         )
@@ -328,7 +474,9 @@ class MairuiTools(StockTools):
         """获取股票代码分时交易历史数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hszbl/fsjy/{code}/{fs}/{self.mairui_token}",
         )
@@ -339,7 +487,9 @@ class MairuiTools(StockTools):
         """获取股票代码分时交易的平均移动线历史数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hszbl/ma/{code}/{fs}/{self.mairui_token}",
         )
@@ -350,7 +500,9 @@ class MairuiTools(StockTools):
         """获取股票代码某段时间分时交易历史数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hszbc/fsjy/{code}/{fs}/{sdt}/{edt}/{self.mairui_token}",
         )
@@ -361,7 +513,9 @@ class MairuiTools(StockTools):
         """获取股票代码某段时间分时交易的平均移动线历史数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hszbc/ma/{code}/{fs}/{sdt}/{edt}/{self.mairui_token}",
         )
@@ -372,14 +526,16 @@ class MairuiTools(StockTools):
         """获取某个指数的实时交易数据"""
         #数据更新：交易时间段每1分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/zs/sssj/{code}/{self.mairui_token}",
         )
         data = res.json()        
         return data
     
-    def get_zs_lsgl(self):
+    def get_zs_lsgl(self)->list[ZS_LSGL]:
         """获取沪深两市不同涨跌幅的股票数统计"""
         #数据更新：交易时间段每2分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
@@ -387,13 +543,15 @@ class MairuiTools(StockTools):
             f"{self.mairui_api_url}/zs/lsgl/{self.mairui_token}",
         )
         data = res.json()        
-        return data
+        return [ZS_LSGL(**{**item,"t":datetime.today().strftime("%Y-%m-%d %H:%M:%S")}) for item in [data]]
 
     def get_zs_fsjy(self,code:str,fs:Literal["5m","15m","30m","60m","dn","wn","mn","yn"]="5m"):
         """获取指数代码分时交易实时数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/zs/fsjy/{code}/{fs}/{self.mairui_token}",
         )
@@ -404,7 +562,9 @@ class MairuiTools(StockTools):
         """获取指数代码分时交易的平均移动线数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/zs/ma/{code}/{fs}/{self.mairui_token}",
         )
@@ -415,7 +575,9 @@ class MairuiTools(StockTools):
         """获取指数代码分时交易历史数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/zs/hfsjy/{code}/{fs}/{self.mairui_token}",
         )
@@ -426,7 +588,9 @@ class MairuiTools(StockTools):
         """获取指数代码分时交易的平均移动线历史数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
-        code = self._get_stock_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/zs/hma/{code}/{fs}/{self.mairui_token}",
         )
@@ -533,35 +697,29 @@ class SnowballTools(StockTools):
         ball.set_token(f"xq_a_token={snowball_token};") 
         print(f"snowball token:{snowball_token}")
 
-    def _ball_code(self,code:str):
-        if not code.isnumeric():
-            code = self._get_stock_code(code)
-        if code.startswith("6"):
-            code = "SH"+code
-        elif code.startswith("3") or code.startswith("0"):
-            code = "SZ" + code
-        elif code.startswith("8") or code.startswith("4"):
-            code = "BJ" + code
-        print("???",code)
-        return code
-
     def quotec(self,code:str):
         '''
         查看股票的实时行情
         '''
-        code = self._ball_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         return ball.quotec(code)
     def pankou(self,code:str):
         '''
         查看股票的实时分笔数据，可以实时取得股票当前报价和成交信息
         '''
-        code = self._ball_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         return ball.pankou(code)
     def capital_flow(self,code:str):
         '''
         获取当日资金流入流出数据，每分钟数据
         '''
-        code = self._ball_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         return ball.capital_flow(code)
     def capital_history(self,code:str):
         '''
@@ -584,7 +742,9 @@ class SnowballTools(StockTools):
         '''
         获取大宗交易数据
         '''
-        code = self._ball_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         return ball.blocktrans(code)
     def indicator(self,code:str,*,is_annals:int=1,count:int=10):
         '''
@@ -593,13 +753,17 @@ class SnowballTools(StockTools):
         is_annals -> 只获取年报,默认为1
         count -> 返回数据数量，默认10条
         '''
-        code = self._ball_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         return ball.indicator(symbol=code,is_annals=is_annals,count=count)
     def business(self,code:str,*,count:int=10):
         '''
         获取主营业务构成数据
         '''
-        code = self._ball_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         return ball.business(symbol=code,count=count)
     def top_holders(self,code:str,*,circula=1):
         '''
@@ -607,31 +771,41 @@ class SnowballTools(StockTools):
         code -> 股票代码
         circula -> 只获取流通股,默认为1
         '''
-        code = self._ball_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         return ball.top_holders(symbol=code,circula=circula)
     def main_indicator(self,code:str):
         '''
         获取主要指标
         '''
-        code = self._ball_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         return ball.main_indicator(code)
     def holders(self,code:str):
         '''
         获取股东人数
         '''
-        code = self._ball_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         return ball.holders(code)
     def org_holding_change(self,code:str):
         '''
         获取机构持仓情况
         '''
-        code = self._ball_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         return ball.org_holding_change(code)
     def industry_compare(self,code:str):
         '''
         获取行业对比数据
         '''
-        code = self._ball_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         return ball.industry_compare(code)
     def income(self,code:str,*,is_annals:int=1,count:int=10):
         '''
@@ -640,7 +814,9 @@ class SnowballTools(StockTools):
         is_annals -> 只获取年报,默认为1
         count -> 返回数据数量，默认10条
         '''
-        code = self._ball_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         return ball.income(symbol=code,is_annals=is_annals,count=count)
     def balance(self,code:str,*,is_annals:int=1,count:int=10):
         '''
@@ -649,7 +825,9 @@ class SnowballTools(StockTools):
         is_annals -> 只获取年报,默认为1
         count -> 返回数据数量，如果没有指定，可以设定为10条
         '''
-        code = self._ball_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         return ball.balance(symbol=code,is_annals=is_annals,count=count)
     def cash_flow(self,code:str,*,is_annals:int=1,count:int=10):
         '''
@@ -658,7 +836,9 @@ class SnowballTools(StockTools):
         is_annals -> 只获取年报,默认为1
         count -> 返回数据数量，默认10条
         '''
-        code = self._ball_code(code)
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
         return ball.cash_flow(symbol=code,is_annals=is_annals,count=count)
     
 
@@ -672,8 +852,10 @@ if __name__ == "__main__":
     # toolLib = SnowballTools(stockGraph)
     # data  = toolLib.balance("ST易联众")
     toolLib = MairuiTools(stockGraph)
-    #data = toolLib.get_company_info("ST易联众")
-    data = toolLib.get_hsrl_mmwp("瑞芯微")
+    data = toolLib.get_hsrl_mmwp("中粮资本")
+    #data = toolLib.get_hsrl_zbjy("万达信息")
+    #data = toolLib.get_zs_hfsjy("蒙草生态")
+    #data = toolLib.get_zs_lsgl()
     print(data)
     if isinstance(data,list):
         print(len(data))

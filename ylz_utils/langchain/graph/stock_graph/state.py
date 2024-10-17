@@ -14,7 +14,7 @@ class HSLT_LIST(BaseModel):
 class HSCP_GSJJ(BaseModel):
     '''某只股票的基本信息和上市信息'''
     t: str = Field(..., description="服务器更新时间yyyy-MM-dd HH:mm:ss")
-    dm: str = Field(..., description="股票代码")
+    mr_code: str = Field(..., description="股票代码")
     name: str = Field(..., description="公司名称")
     ename: str = Field(..., description="公司英文名称")
     market: str = Field(..., description="上市市场")
@@ -197,9 +197,10 @@ class SSJY(BaseModel):
     zdfnc: Optional[float] = Field(None, description="年初至今涨跌幅（%）")
     t: str = Field(..., description="更新时间YYYY-MM-DD HH:MM")
 
-class MMWP(BaseModel):
+class HSRL_MMWP(BaseModel):
     '''某只股票当前的5档盘口信息'''
     t: str = Field(..., description="更新时间YYYY-MM-DD HH:MM")
+    mr_code: str = Field(...,description="股票代码")
     vc: Optional[float] = Field(None, description="委差（股）")
     vb: Optional[float] = Field(None, description="委比（%）")
     
@@ -341,6 +342,24 @@ class JDDXT(BaseModel):
     jlrl3:float = Field(...,description="近3日主力净流入率(%）")
     jlrl5:float = Field(...,description="近5日主力净流入率(%）")
     jlrl10:float = Field(...,description="近10日主力净流入率(%）")
+
+class ZS_LSGL(BaseModel):
+    '''沪深两市涨跌幅数量统计'''
+    t: str = Field(..., description="服务器更新时间yyyy-MM-dd HH:mm:ss")
+    totalUp: int = Field(..., description="上涨总数")
+    totalDown: int = Field(..., description="下跌总数")
+    zt: int = Field(..., description="涨停总数")
+    dt: int = Field(..., description="跌停总数")
+    up8ToZt: int = Field(..., description="上涨8%~涨停的数量")
+    up6To8: int = Field(..., description="上涨6%~8%的数量")
+    up4To6: int = Field(..., description="上涨4%~6%的数量")
+    up2To4: int = Field(..., description="上涨2%~4%的数量")
+    up0To2: int = Field(..., description="上涨0%~2%的数量")
+    down0To2: int = Field(..., description="下跌0%~-2%的数量")
+    down2To4: int = Field(..., description="下跌-2%~-4%的数量")
+    down4To6: int = Field(..., description="下跌-4%~-6%的数量")
+    down6To8: int = Field(..., description="下跌-6%~-8%的数量")
+    down8ToDt: int = Field(..., description="下跌-8%~跌停的数量")
 
 class NewState(MessagesState):
     summary:str
