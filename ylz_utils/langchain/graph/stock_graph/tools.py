@@ -348,7 +348,7 @@ class MairuiTools(StockTools):
         )
         data = res.json()        
         return [SSJY(**item) for item in data]
-    def _load_data_by_code(self,code:str,file_name:str,method_path:str,dataframe:pd.DataFrame,keys=['mr_code']):
+    def _load_data_by_code(self,code:str,file_name:str,method_path:str,dataframe:pd.DataFrame,add_fields:dict={},reload_condition=None,keys=['mr_code']):
         try:
             code_info = self._get_stock_code(code)
             code=code_info['code']
@@ -356,17 +356,21 @@ class MairuiTools(StockTools):
             if dataframe.empty:
                 try:
                     dataframe = pd.read_csv(file_name)
+                    if reload_condition and not dataframe[reload_condition]:
+                        res = requests.get(                                                               f"{self.mairui_api_url}/{method_path}/{code}/{self.mairui_token}",                                                                                                  )                                                                                 data = res.json()
+                    if isinstance(data,list):
+                        data = [{**item,**add_fields,"mr_code":mr_code} for item in data]                                                                                               else:
+                        data = [{**data,**add_fields,"mr_code":mr_code}]                              df = pd.DataFrame(data)
                 except:
-                    pass
-            res = requests.get( 
-                f"{self.mairui_api_url}/{method_path}/{code}/{self.mairui_token}",
-            )
-            data = res.json()
-            if isinstance(data,list):
-                data = [{**item,"mr_code":mr_code} for item in data]
-            else:
-                data = [{**data,"mr_code":mr_code}]
-            df = pd.DataFrame(data)
+                    res = requests.get( 
+                    f"{self.mairui_api_url}/{method_path}/{code}/{self.mairui_token}",
+                    )
+                    data = res.json()
+                    if isinstance(data,list):
+                        data = [{**item,**add_fields,"mr_code":mr_code} for item in data]
+                    else:
+                        data = [{**data,**add_fields,"mr_code":mr_code}]
+                    df = pd.DataFrame(data)
             if not dataframe.empty:
                 condition = pd.Series([True] * len(df))
                 # 根据字段名列表构建动态筛选条件
@@ -384,7 +388,16 @@ class MairuiTools(StockTools):
         except Exception as e:
             raise Exception(f"error on _load_data_by_code,the error is :{e}")
         return df
-
+    def get_hszg_zg(self,code:str):
+        #http://api.mairui.club/hszg/zg/股票代码(如000001)/您的licence
+        if not hasattr(self,"df_hszg_zg"):
+            self.df_hszg_zg = pd.DataFrame([])
+        df = self._load_data_by_code(code,"hszg_zg.csv","hszg/zg",
+                                     dataframe=self.df_hszg_zg,
+                                     add_fields={"t":"1234"},
+                                     reload="t=1234",
+                                     keys=["mr_code"])
+        return df
     def get_hsrl_mmwp(self,code:str,state: Annotated[NewState, InjectedState]=None)->list[HSRL_MMWP]:
         """获取某个股票的盘口交易数据,返回值没有当前股价，仅有5档买卖需求量价以及委托统计"""
         #数据更新：交易时间段每2分钟
@@ -852,10 +865,12 @@ if __name__ == "__main__":
     # toolLib = SnowballTools(stockGraph)
     # data  = toolLib.balance("ST易联众")
     toolLib = MairuiTools(stockGraph)
-    data = toolLib.get_hsrl_mmwp("中粮资本")
+    #data = toolLib.get_hsrl_mmwp("中粮资本")
     #data = toolLib.get_hsrl_zbjy("万达信息")
     #data = toolLib.get_zs_hfsjy("蒙草生态")
     #data = toolLib.get_zs_lsgl()
+    data = toolLib.get_hszg_zg("蒙草生态")
+    #data = toolLib.get_hscp_cwzb("蒙草生态")
     print(data)
     if isinstance(data,list):
         print(len(data))
