@@ -436,7 +436,7 @@ class MairuiTools(StockTools):
         mr_code = code_info['mr_code']
         add_fields = {"t":datetime.strftime(datetime.now(),"%Y-%m-%d 00:00:00"),"mr_code":mr_code}
         skip_condition = f"mr_code == '{mr_code}'"
-        df = self._load_data(code,"hszg_zg.csv",f"hszg/zg/{code}",
+        df = self._load_data("hszg_zg.csv",f"hszg/zg/{code}",
                                      dataframe=self.df_hszg_zg,
                                      add_fields=add_fields,
                                      skip_condition=skip_condition,
@@ -452,7 +452,7 @@ class MairuiTools(StockTools):
         code=code_info['code']
         mr_code = code_info['mr_code']
         add_fields = {"mr_code":mr_code}
-        df = self._load_data(code,"hsrl_wwmp.csv",f"hsrl/mmwp/{code}",self.df_hsrl_mmwp,
+        df = self._load_data("hsrl_wwmp.csv",f"hsrl/mmwp/{code}",self.df_hsrl_mmwp,
                                      add_fields = add_fields,
                                      keys=['t','mr_code'])
         #return [HSRL_MMWP(**item) for idx,item in self.df_hsrl_mmwp[self.df_hsrl_mmwp['mr_code']==mr_code].iterrows()]
@@ -468,7 +468,7 @@ class MairuiTools(StockTools):
         code=code_info['code']
         mr_code = code_info['mr_code']
         add_fields = {"mr_code":mr_code}
-        df = self._load_data(code,"hsrl_zbjy.csv",f"hsrl/zbjy/{code}",self.df_hsrl_zbjy,add_fields = add_fields,keys=['d','t','mr_code'])
+        df = self._load_data("hsrl_zbjy.csv",f"hsrl/zbjy/{code}",self.df_hsrl_zbjy,add_fields = add_fields,keys=['d','t','mr_code'])
         return df
     def get_hsrl_fscj(self,code:str):
         """获取某个股票的当天分时成交数据"""
@@ -533,19 +533,24 @@ class MairuiTools(StockTools):
         data = res.json()        
         return data
     
-    def get_hszbl_fsjy(self,code:str,fs:Literal["5m","15m","30m","60m","dn","wn","mn","yn"]="5m"):
+    def get_hszbl_fsjy(self,code:str,fsjb:Literal["5m","15m","30m","60m","dn","wn","mn","yn"]="5m"):
         """获取股票代码分时交易历史数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
+        if not hasattr(self,"df_hszbc_fsjy"):
+            self.df_hszbc_fsjy = pd.DataFrame(columns=HSZBC_FSJY.model_fields.keys())
         code_info = self._get_stock_code(code)
         code=code_info['code']
         mr_code = code_info['mr_code']
-        res = requests.get( 
-            f"{self.mairui_api_url}/hszbl/fsjy/{code}/{fs}/{self.mairui_token}",
-        )
-        data = res.json()        
-        return data
-
+        add_fields = {"mr_code":mr_code,"fsjb":fsjb}
+        skip_condition = f"mr_code == '{mr_code}' & fsjb == '{fsjb}'"
+        df = self._load_data("hszbl_fsjy.csv",
+                f"hszbl/fsjy/{code}/{fsjb}",
+                dataframe=self.df_hszbc_fsjy,
+                add_fields = add_fields,
+                skip_condition = skip_condition,
+                keys=["mr_code","fsjb"])
+        return df
     def get_hszbl_ma(self,code:str,fs:Literal["5m","15m","30m","60m","dn","wn","mn","yn"]="5m"):
         """获取股票代码分时交易的平均移动线历史数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
@@ -925,10 +930,11 @@ if __name__ == "__main__":
     #data = toolLib.get_hsrl_zbjy("万达信息")
     #data = toolLib.get_zs_hfsjy("蒙草生态")
     #data = toolLib.get_zs_lsgl()
-    #data = toolLib.get_hszg_zg("全志科技")
+    #data = toolLib.get_hszg_zg("旗天科技")
     #data = toolLib.get_hscp_cwzb("蒙草生态")
     #data = toolLib.get_hsrl_mmwp("全志科技")
-    data = toolLib.get_hszbc_fsjy("蒙草生态","2024-01-01","2024-02-01",'dn')
+    #data = toolLib.get_hszbc_fsjy("蒙草生态","2024-08-30","2024-08-30",'5m')
+    data = toolLib.get_hszbl_fsjy("蒙草生态","dn")
     print(data)
     if isinstance(data,list):
         print(len(data))
