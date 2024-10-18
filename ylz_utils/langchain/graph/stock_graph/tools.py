@@ -348,61 +348,113 @@ class MairuiTools(StockTools):
         )
         data = res.json()        
         return [SSJY(**item) for item in data]
-    def _load_data_by_code(self,code:str,file_name:str,method_path:str,dataframe:pd.DataFrame,add_fields:dict={},reload_condition=None,keys=['mr_code']):
+    def get_hszbc_fsjy(self,code:str,sdt:str,edt:str,fsjb:Literal["5m","15m","30m","60m","dn","wn","mn","yn"]="15m"):
+        """获取股票代码某段时间分时交易历史数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
+        #数据更新：交易时间段每1分钟
+        #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
+    
+        #  http://api.mairui.club/hszbc/fsjy/股票代码(如000001)/分时级别/起始时间/结束时间/您的licence
+        if not hasattr(self,"df_hszbc_fsjy"):
+            self.df_hszbc_fsjy = pd.DataFrame(columns=HSZBC_FSJY.model_fields.keys())
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
+        add_fields = {"mr_code":mr_code,"fsjb":fsjb}
+        skip_condition = f"mr_code == '{mr_code}' & fsjb == '{fsjb}'"
+        df = self._load_data("hszbc_fsjy.csv",f"hszbc/fsjy/{code}/{fsjb}/{sdt}/{edt}",
+                                     dataframe=self.df_hszbc_fsjy,
+                                     add_fields=add_fields,
+                                     skip_condition=skip_condition,
+                                     keys=["mr_code",'fsjb'])
+        return df
+    def _load_data(self,file_name:str,method_path:str,dataframe:pd.DataFrame,
+                           add_fields:dict={},skip_condition:str=None,keys=['mr_code']):
         try:
-            code_info = self._get_stock_code(code)
-            code=code_info['code']
-            mr_code = code_info['mr_code']
+            df=None
+            get_df = None
+            cache_df = None
             if dataframe.empty:
                 try:
                     dataframe = pd.read_csv(file_name)
-                    if reload_condition and not dataframe[reload_condition]:
-                        res = requests.get(                                                               f"{self.mairui_api_url}/{method_path}/{code}/{self.mairui_token}",                                                                                                  )                                                                                 data = res.json()
-                    if isinstance(data,list):
-                        data = [{**item,**add_fields,"mr_code":mr_code} for item in data]                                                                                               else:
-                        data = [{**data,**add_fields,"mr_code":mr_code}]                              df = pd.DataFrame(data)
-                except:
-                    res = requests.get( 
-                    f"{self.mairui_api_url}/{method_path}/{code}/{self.mairui_token}",
-                    )
-                    data = res.json()
-                    if isinstance(data,list):
-                        data = [{**item,**add_fields,"mr_code":mr_code} for item in data]
-                    else:
-                        data = [{**data,**add_fields,"mr_code":mr_code}]
-                    df = pd.DataFrame(data)
+                    # 判断是否rload
+                    print("skip_condition:",skip_condition)
+                    if not skip_condition:
+                        print("!!!!! ALWAYS RELOAD !!!!")
+                        raise Exception("always reload")
+                    cache_df = dataframe.query(skip_condition) 
+                    if cache_df.empty:
+                        print("!!!!! NEED RELOAD !!!!!")
+                        raise Exception("need reload")
+                except Exception as e:
+                    try:
+                        print("?????? method path:",method_path)
+                        res = requests.get(f"{self.mairui_api_url}/{method_path}/{self.mairui_token}")
+                        data = res.json()
+                        print("!!!!!!! get data count:",len(data))
+                        if isinstance(data,list):
+                            data = [{**item,**add_fields} for item in data]
+                        else:
+                            data = [{**data,**add_fields}]
+                        get_df = pd.DataFrame(data) 
+                        if dataframe.empty:
+                            dataframe = get_df
+                            dataframe.to_csv(file_name,index=False)                       
+                    except Exception as e:
+                        print("network error:",e)
+                        raise  
+            if not (get_df is None):
+                print("get_df.count=",get_df.shape)                  
+            if not (cache_df is None):
+                print("cache_df.count=",cache_df.shape)
+            if not (dataframe is None):
+                print("dataframe.count=",dataframe.shape)                  
             if not dataframe.empty:
-                condition = pd.Series([True] * len(df))
-                # 根据字段名列表构建动态筛选条件
-                for k in keys:
-                    if k in df.columns:
-                        condition = condition & (dataframe[k] == df[k][0])
-                # 应用筛选条件
-                find_row:pd.DataFrame = dataframe[condition]
-                if find_row.empty:
-                    dataframe = pd.concat([dataframe,df], ignore_index=True)
-                    dataframe.to_csv(file_name,index=False)
-            else:
-                dataframe = df
-                dataframe.to_csv(file_name,index=False)    
+                if not (get_df is None):
+                    condition = pd.Series([True] * len(dataframe))
+                    # 根据字段名列表构建动态筛选条件
+                    for k in keys:
+                        if k in get_df.columns:
+                            condition = condition & (dataframe[k] == get_df[k][0])
+                    # 应用筛选条件
+                    find_row:pd.DataFrame = dataframe[condition]
+                    if find_row.empty:
+                        dataframe = pd.concat([dataframe,get_df], ignore_index=True)
+                        dataframe.to_csv(file_name,index=False)
+                    df = get_df
+                elif not (cache_df is None):
+                    df = cache_df
         except Exception as e:
             raise Exception(f"error on _load_data_by_code,the error is :{e}")
         return df
     def get_hszg_zg(self,code:str):
+        '''根据股票找相关指数、行业、概念'''
         #http://api.mairui.club/hszg/zg/股票代码(如000001)/您的licence
         if not hasattr(self,"df_hszg_zg"):
-            self.df_hszg_zg = pd.DataFrame([])
-        df = self._load_data_by_code(code,"hszg_zg.csv","hszg/zg",
+            self.df_hszg_zg = pd.DataFrame(columns=HSZG_ZG.model_fields.keys())
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
+        add_fields = {"t":datetime.strftime(datetime.now(),"%Y-%m-%d 00:00:00"),"mr_code":mr_code}
+        skip_condition = f"mr_code == '{mr_code}'"
+        df = self._load_data(code,"hszg_zg.csv",f"hszg/zg/{code}",
                                      dataframe=self.df_hszg_zg,
-                                     add_fields={"t":"1234"},
-                                     reload="t=1234",
+                                     add_fields=add_fields,
+                                     skip_condition=skip_condition,
                                      keys=["mr_code"])
         return df
     def get_hsrl_mmwp(self,code:str,state: Annotated[NewState, InjectedState]=None)->list[HSRL_MMWP]:
         """获取某个股票的盘口交易数据,返回值没有当前股价，仅有5档买卖需求量价以及委托统计"""
         #数据更新：交易时间段每2分钟
         #请求频率：1分钟300次
-        df = self._load_data_by_code(code,"hsrl_wwmp.csv","hsrl/mmwp",self.df_hsrl_mmwp,keys=['t','mr_code'])
+        if not hasattr(self,"df_hsrl_mmwp"):
+            self.df_hsrl_mmwp = pd.DataFrame(columns=HSRL_MMWP.model_fields.keys())
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
+        add_fields = {"mr_code":mr_code}
+        df = self._load_data(code,"hsrl_wwmp.csv",f"hsrl/mmwp/{code}",self.df_hsrl_mmwp,
+                                     add_fields = add_fields,
+                                     keys=['t','mr_code'])
         #return [HSRL_MMWP(**item) for idx,item in self.df_hsrl_mmwp[self.df_hsrl_mmwp['mr_code']==mr_code].iterrows()]
         return [HSRL_MMWP(**item) for idx,item in df.iterrows()]
     
@@ -410,15 +462,13 @@ class MairuiTools(StockTools):
         """获取某个股票的当天逐笔交易数据"""
         #数据更新：每天20:00开始更新，当日23:59前完成
         #请求频率：1分钟300次
-        # code_info = self._get_stock_code(code)
-        # code=code_info['code']
-        # mr_code = code_info['mr_code']
-        # res = requests.get( 
-        #     f"{self.mairui_api_url}/hsrl/zbjy/{code}/{self.mairui_token}",
-        # )
-        # data = res.json()        
-        # return data
-        df = self._load_data_by_code(code,"hsrl_zbjy.csv","hsrl/zbjy",self.df_hsrl_zbjy,keys=['d','mr_code'])
+        if not hasattr(self,"df_hsrl_zbjy"):
+            self.df_hsrl_zbjy = pd.DataFrame(columns=HSRL_ZBJY.model_fields.keys())
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
+        add_fields = {"mr_code":mr_code}
+        df = self._load_data(code,"hsrl_zbjy.csv",f"hsrl/zbjy/{code}",self.df_hsrl_zbjy,add_fields = add_fields,keys=['d','t','mr_code'])
         return df
     def get_hsrl_fscj(self,code:str):
         """获取某个股票的当天分时成交数据"""
@@ -509,19 +559,6 @@ class MairuiTools(StockTools):
         data = res.json()        
         return data
     
-    def get_hszbc_fsjy(self,code:str,sdt:str,edt:str,fs:Literal["5m","15m","30m","60m","dn","wn","mn","yn"]="5m"):
-        """获取股票代码某段时间分时交易历史数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
-        #数据更新：交易时间段每1分钟
-        #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
-        code_info = self._get_stock_code(code)
-        code=code_info['code']
-        mr_code = code_info['mr_code']
-        res = requests.get( 
-            f"{self.mairui_api_url}/hszbc/fsjy/{code}/{fs}/{sdt}/{edt}/{self.mairui_token}",
-        )
-        data = res.json()        
-        return data
-
     def get_hszbc_ma(self,code:str,sdt:str,edt:str,fs:Literal["5m","15m","30m","60m","dn","wn","mn","yn"]="5m"):
         """获取股票代码某段时间分时交易的平均移动线历史数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
@@ -715,50 +752,58 @@ class SnowballTools(StockTools):
         查看股票的实时行情
         '''
         code_info = self._get_stock_code(code)
-        code=code_info['code']
+        ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.quotec(code)
+        return ball.quotec(ball_code)
     def pankou(self,code:str):
         '''
         查看股票的实时分笔数据，可以实时取得股票当前报价和成交信息
         '''
         code_info = self._get_stock_code(code)
-        code=code_info['code']
+        ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.pankou(code)
+        return ball.pankou(ball_code)
     def capital_flow(self,code:str):
         '''
         获取当日资金流入流出数据，每分钟数据
         '''
         code_info = self._get_stock_code(code)
-        code=code_info['code']
+        ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.capital_flow(code)
+        return ball.capital_flow(ball_code)
     def capital_history(self,code:str):
         '''
         获取历史资金流入流出数据，每日数据
         输出中sum3、sum5、sum10、sum20分别代表3天、5天、10天、20天的资金流动情况
         '''
-        return ball.capital_history(code)
+        code_info = self._get_stock_code(code)
+        ball_code=code_info['ball_code']
+        mr_code = code_info['mr_code']
+        return ball.capital_history(ball_code)
     def earningforecast(self,code:str):
         '''
         按年度获取业绩预告数据
         '''
-        return ball.earningforecast(code)
+        code_info = self._get_stock_code(code)
+        ball_code=code_info['ball_code']
+        mr_code = code_info['mr_code']
+        return ball.earningforecast(ball_code)
     def capital_assort(self,code:str):
         '''
         获取资金成交分布数据
         '''
-        code = self._ball_code(code)
-        return ball.capital_assort(code)
+        code_info = self._get_stock_code(code)
+        ball_code=code_info['ball_code']
+        mr_code = code_info['mr_code']
+        return ball.capital_assort(ball_code)
     def blocktrans(self,code:str):
         '''
         获取大宗交易数据
         '''
         code_info = self._get_stock_code(code)
-        code=code_info['code']
+        ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.blocktrans(code)
+        return ball.blocktrans(ball_code)
     def indicator(self,code:str,*,is_annals:int=1,count:int=10):
         '''
         按年度、季度获取业绩报表数据。
@@ -767,17 +812,17 @@ class SnowballTools(StockTools):
         count -> 返回数据数量，默认10条
         '''
         code_info = self._get_stock_code(code)
-        code=code_info['code']
+        ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.indicator(symbol=code,is_annals=is_annals,count=count)
+        return ball.indicator(symbol=ball_code,is_annals=is_annals,count=count)
     def business(self,code:str,*,count:int=10):
         '''
         获取主营业务构成数据
         '''
         code_info = self._get_stock_code(code)
-        code=code_info['code']
+        ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.business(symbol=code,count=count)
+        return ball.business(symbol=ball_code,count=count)
     def top_holders(self,code:str,*,circula=1):
         '''
         获取十大股东
@@ -785,41 +830,41 @@ class SnowballTools(StockTools):
         circula -> 只获取流通股,默认为1
         '''
         code_info = self._get_stock_code(code)
-        code=code_info['code']
+        ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.top_holders(symbol=code,circula=circula)
+        return ball.top_holders(symbol=ball_code,circula=circula)
     def main_indicator(self,code:str):
         '''
         获取主要指标
         '''
         code_info = self._get_stock_code(code)
-        code=code_info['code']
+        ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.main_indicator(code)
+        return ball.main_indicator(ball_code)
     def holders(self,code:str):
         '''
         获取股东人数
         '''
         code_info = self._get_stock_code(code)
-        code=code_info['code']
+        ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.holders(code)
+        return ball.holders(ball_code)
     def org_holding_change(self,code:str):
         '''
         获取机构持仓情况
         '''
         code_info = self._get_stock_code(code)
-        code=code_info['code']
+        ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.org_holding_change(code)
+        return ball.org_holding_change(ball_code)
     def industry_compare(self,code:str):
         '''
         获取行业对比数据
         '''
         code_info = self._get_stock_code(code)
-        code=code_info['code']
+        ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.industry_compare(code)
+        return ball.industry_compare(ball_code)
     def income(self,code:str,*,is_annals:int=1,count:int=10):
         '''
         获取利润表
@@ -828,9 +873,9 @@ class SnowballTools(StockTools):
         count -> 返回数据数量，默认10条
         '''
         code_info = self._get_stock_code(code)
-        code=code_info['code']
+        ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.income(symbol=code,is_annals=is_annals,count=count)
+        return ball.income(symbol=ball_code,is_annals=is_annals,count=count)
     def balance(self,code:str,*,is_annals:int=1,count:int=10):
         '''
         获取资产负债表
@@ -839,9 +884,9 @@ class SnowballTools(StockTools):
         count -> 返回数据数量，如果没有指定，可以设定为10条
         '''
         code_info = self._get_stock_code(code)
-        code=code_info['code']
+        ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.balance(symbol=code,is_annals=is_annals,count=count)
+        return ball.balance(symbol=ball_code,is_annals=is_annals,count=count)
     def cash_flow(self,code:str,*,is_annals:int=1,count:int=10):
         '''
         获取现金流量表
@@ -850,27 +895,43 @@ class SnowballTools(StockTools):
         count -> 返回数据数量，默认10条
         '''
         code_info = self._get_stock_code(code)
-        code=code_info['code']
+        ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.cash_flow(symbol=code,is_annals=is_annals,count=count)
+        return ball.cash_flow(symbol=ball_code,is_annals=is_annals,count=count)
     
 
 if __name__ == "__main__":
     from ylz_utils.langchain import LangchainLib
     from ylz_utils.langchain.graph.stock_graph import StockGraph
-    
+    import time
+
     Config.init('ylz_utils')
     langchainLib = LangchainLib()
     stockGraph = StockGraph(langchainLib)
     # toolLib = SnowballTools(stockGraph)
     # data  = toolLib.balance("ST易联众")
     toolLib = MairuiTools(stockGraph)
-    #data = toolLib.get_hsrl_mmwp("中粮资本")
+
+    #data1=data2=data3=data4=data5=[]
+    # for i in range(30):
+    #     print("index======>",i,len(data1),len(data2),len(data3),len(data4),len(data5))
+    #     data1 = toolLib.get_hsrl_mmwp("中粮资本")
+    #     data2 = toolLib.get_hsrl_mmwp("蒙草生态")
+    #     data3 = toolLib.get_hsrl_mmwp("瑞芯微")
+    #     data4 = toolLib.get_hsrl_mmwp("万达信息")
+    #     data5 = toolLib.get_hsrl_mmwp("全志科技")
+    #     time.sleep(60)
+    #data = toolLib.get_hsrl_zbjy("万达信息")
     #data = toolLib.get_hsrl_zbjy("万达信息")
     #data = toolLib.get_zs_hfsjy("蒙草生态")
     #data = toolLib.get_zs_lsgl()
-    data = toolLib.get_hszg_zg("蒙草生态")
+    #data = toolLib.get_hszg_zg("全志科技")
     #data = toolLib.get_hscp_cwzb("蒙草生态")
+    #data = toolLib.get_hsrl_mmwp("全志科技")
+    data = toolLib.get_hszbc_fsjy("蒙草生态","2024-01-01","2024-02-01",'dn')
     print(data)
     if isinstance(data,list):
         print(len(data))
+    # print("雪球--->")
+    # lib = SnowballTools(stockGraph)
+    # print(lib.pankou('蒙草生态'))

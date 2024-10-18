@@ -55,6 +55,12 @@ class HSCP_GSJJ(BaseModel):
     signfee: str = Field(..., description="承销费用（万元）")
     pdate: datetime = Field(..., description="招股公告日")
 
+class HSZG_ZG(BaseModel):
+    mr_code:str = Field(description="股票代码")
+    t: str = Field(..., description="服务器更新时间yyyy-MM-dd HH:mm:ss")
+    code:str = Field(description="指数、行业、概念代码，如：sw2_650300")
+    name:str = Field(description="指数、行业、概念名称，如：沪深股市-申万二级-国防军工-地面兵装")
+
 class CWZB(BaseModel):
     '''某只股票的财务指标信息'''
     date: str = Field(..., description="报告日期yyyy-MM-dd")
@@ -227,6 +233,22 @@ class HSRL_MMWP(BaseModel):
     vs4: Optional[float] = Field(None, description="卖4量（股）")
     ps5: Optional[float] = Field(None, description="卖5价（元）")
     vs5: Optional[float] = Field(None, description="卖5量（股）")
+class HSRL_ZBJY(BaseModel):
+    '''当天的股票逐笔交易'''
+    mr_code:str = Field(description="股票代码")
+    d:str = Field(description="数据归属日期（yyyy-MM-dd）")
+    t:str = Field(description="数据归属日期下的时间（HH:mm:dd）")
+    v:float = Field(description="成交量（股）")
+    p:float = Field(description="成交价")
+    ts:float = Field(description="交易方向（0：中性盘，1：买入，2：卖出）")
+class HSRL_ZBDD(BaseModel):
+    '''当天的股票逐笔大单交易'''
+    mr_code:str = Field(description="股票代码")
+    d:str = Field(description="数据归属日期（yyyy-MM-dd）")
+    t:str = Field(description="数据归属日期下的时间（HH:mm:dd）")
+    v:float = Field(description="成交量（股）")
+    p:float = Field(description="成交价")
+    ts:float = Field(description="交易方向（0：中性盘，1：买入，2：卖出）")
 
 class JRTS(BaseModel):
     '''今日提示'''
@@ -360,6 +382,21 @@ class ZS_LSGL(BaseModel):
     down4To6: int = Field(..., description="下跌-4%~-6%的数量")
     down6To8: int = Field(..., description="下跌-6%~-8%的数量")
     down8ToDt: int = Field(..., description="下跌-8%~跌停的数量")
+
+class HSZBC_FSJY(BaseModel):
+    mr_code: str = Field(...,description="股票代码")
+    d: str = Field(..., description="交易时间，短分时级别格式为YYYY-MM-DD HH:MM，日线级别为yyyy-MM-dd")
+    o: float = Field(..., description="开盘价（元）")
+    h: float = Field(..., description="最高价（元）")
+    l: float = Field(..., description="最低价（元）")
+    c: float = Field(..., description="收盘价（元）")
+    v: float = Field(..., description="成交量（手）")
+    e: float = Field(..., description="成交额（元）")
+    zf: float = Field(..., description="振幅（%）")
+    hs: float = Field(..., description="换手率（%）")
+    zd: float = Field(..., description="涨跌幅（%）")
+    zde: float = Field(..., description="涨跌额（元）")
+    ud: str = Field(...,description="系统更新的时间，格式为YYYY-MM-DD HH:MM:SS")
 
 class NewState(MessagesState):
     summary:str
