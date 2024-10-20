@@ -75,7 +75,12 @@ LLM:
             - ${ZHIPU_API_KEY}
         BASE_URL: https://open.bigmodel.cn/api/paas/v4
         MODEL: ${ZHIPU_LLM_MODEL}
-    
+    FREE:
+        API_KEYS:
+            - ${FREE_API_KEYS}
+            - ${FREE_API_KEY}
+        BASE_URL: https://api.chatanywhere.tech
+        MODEL: ${FREE_LLM_MODEL}
 EMBEDDING:
     DEFAULT: EMBEDDING.DASHSCOPE
     TOGETHER: 

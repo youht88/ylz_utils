@@ -260,8 +260,10 @@ class LLMLib():
                     "LLM.DASHSCOPE":
                       {"model":"qwen-max","temperature":0},
                     "LLM.ZHIPU":
-                      {"model":"glm-4-flash","temperature":0}
-                      }
+                      {"model":"glm-4-flash","temperature":0},
+                    "LLM.FREE":
+                        {"model":"gpt-4o-mini","temperature":0}
+                    }
         for key in defaults:
             default = defaults[key]
             llm = self.config.get(key)
