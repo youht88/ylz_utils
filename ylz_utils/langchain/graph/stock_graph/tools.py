@@ -973,16 +973,11 @@ if __name__ == "__main__":
         print(len(data))
     
     esLib = ESLib(using='es')
-    actions = [
-    {
-        "_index": "example_index",
-        "_id": record['mr_code'] + '_' + record['fsjb'] + '_' + record['d'],
-        "_source": record
-    }
-    for record in data.to_dict(orient='records')
-]
-    esLib.bulk(esLib.client,actions)
-    
+    data["_id"] = data['mr_code'] + '_' + data['fsjb'] + '_' + data['d']
+    result = esLib.delete("example_index")
+    print(result)    
+    result = esLib.search("example_index",{"query":{"match":{"mr_code":"sz300355"}}})
+    print(result)
     # print("雪球--->")
     # lib = SnowballTools(stockGraph)
     # res = lib.pankou('福日电子')

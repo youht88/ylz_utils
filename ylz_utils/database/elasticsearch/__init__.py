@@ -7,7 +7,7 @@ from elasticsearch_dsl import Search,Q,FacetedSearch,MultiSearch
 from elasticsearch_dsl.query import MultiMatch
 from typing import Optional,Union,Literal
 from elasticsearch.helpers import bulk
-
+import pandas as pd
 from ylz_utils.config import Config
 
 class ESLib():
@@ -173,7 +173,49 @@ class ESLib():
         return doc.update(using=self.using,**kwargs)
     def doc_delete(self,doc):
         return doc.delete(using=self.using)
-        
+    def save(self,index_name:str,records):
+        if isinstance(records,pd.DataFrame):
+            actions = [
+                {
+                    "_index": index_name,
+                    "_source": record
+                }
+                for record in records.to_dict(orient='records')
+            ]
+            results = self.client.bulk(operations=actions)
+        else:
+            actions = [
+                {
+                    "_index": index_name,
+                    "_source": record
+                }
+                for record in records
+            ]
+            results = self.client.bulk(operations=actions)
+        return results    
+    def search(self,index_name:str,query):
+        results  = self.client.search(index=index_name,body=query) 
+        if results.get('hits'):
+            hit = results['hits']['hits'][0]
+            source = hit['_source']
+            return source
+        else:
+            return []
+    def delete(self,index_name:str):
+        if self.client.indices.exists(index=index_name):
+            self.client.delete(index=index_name)
+        else:
+            print(f"{index_name}不存在!")
+    def delete_by_query(self,index_name:str,query):
+        results  = self.client.delete_by_query(index=index_name,body=query) 
+        if results.get('deleted')>0:
+            print(f"成功删除 {results['deleted']} 条文档")
+
+    def update_by_query(self,index_name:str,query):
+        results  = self.client.update_by_query(index=index_name,body=query) 
+        if results.get('updated')>0:
+            print(f"成功更新 {results['updated']} 条文档")
+
 if __name__ == '__main__':
     Config.init('ylz_utils')
     esLib = ESLib(using='es')
