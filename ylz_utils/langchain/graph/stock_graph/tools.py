@@ -974,7 +974,7 @@ if __name__ == "__main__":
     
     esLib = ESLib(using='es')
     data["_id"] = data['mr_code'] + '_' + data['fsjb'] + '_' + data['d']
-    result = esLib.delete("example_index")
+    result = esLib.drop("example_index")
     print(result)    
     result = esLib.search("example_index",{"query":{"match":{"mr_code":"sz300355"}}})
     print(result)

@@ -201,9 +201,9 @@ class ESLib():
             return source
         else:
             return []
-    def delete(self,index_name:str):
+    def drop(self,index_name:str):
         if self.client.indices.exists(index=index_name):
-            self.client.delete(index=index_name)
+            self.client.indices.delete(index=index_name)
         else:
             print(f"{index_name}不存在!")
     def delete_by_query(self,index_name:str,query):
