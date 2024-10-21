@@ -5,6 +5,10 @@ from pydantic import BaseModel, Field
 from typing import Optional,List
 from datetime import datetime
 
+from elasticsearch_dsl import connections,Document, Date, Nested, Boolean, \
+    analyzer, InnerDoc, Completion, Keyword, Text,Integer,Long,Double,Float,\
+    DateRange,IntegerRange,FloatRange,IpRange,Ip,Range
+
 class HSLT_LIST(BaseModel):
     '''沪深两市的公司列表'''
     t: str = Field(..., description="服务器更新时间yyyy-MM-dd HH:mm:ss")
@@ -397,6 +401,23 @@ class HSZBC_FSJY(BaseModel):
     zd: float = Field(..., description="涨跌幅（%）")
     zde: float = Field(..., description="涨跌额（元）")
     ud: str = Field(...,description="系统更新的时间，格式为YYYY-MM-DD HH:MM:SS")
+
+class ES_HSZBC_FSJY(Document):
+    mr_code = Text()
+    d = Date()
+    o = Float()
+    h = Float()
+    l = Float()
+    c = Float()
+    v = Float()
+    e = Float()
+    zf = Float()
+    hs = Float()
+    zd = Float()
+    zde = Float()
+    ud = Text()
+    class Index:
+        name = 'hszbc_fsjy'
 
 class NewState(MessagesState):
     summary:str

@@ -10,6 +10,10 @@ from ylz_utils.config import Config
 from rich import print
 from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt import InjectedState
+from ylz_utils.database.elasticsearch import ESLib
+from elasticsearch_dsl import connections, Field,Document, Date, Nested, Boolean, \
+    analyzer, InnerDoc, Completion, Keyword, Text,Integer,Long,Double,Float,\
+    DateRange,IntegerRange,FloatRange,IpRange,Ip,Range
 from ylz_utils.langchain.graph.stock_graph.state import *
 
 class StockTools:
@@ -767,7 +771,35 @@ class SnowballTools(StockTools):
         code_info = self._get_stock_code(code)
         ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.pankou(ball_code)
+        res =  ball.pankou(ball_code)
+        print(type(res['data']['timestamp']),res)
+        data ={ 
+        "t":datetime.fromtimestamp(res['data']['timestamp']/1000).strftime('%Y-%m-%d %H:%M:%S'),
+        "mr_code":mr_code,
+        "vc":res['data']['diff']/100,
+        "vb":res['data']['ratio'],
+        "pb1":res['data']['bp1'],
+        "vb1":res['data']['bc1']/100,
+        "pb2":res['data']['bp2'],
+        "vb2":res['data']['bc2']/100,
+        "pb3":res['data']['bp3'],
+        "vb3":res['data']['bc3']/100,
+        "pb4":res['data']['bp4'],
+        "vb4":res['data']['bc4']/100,
+        "pb5":res['data']['bp5'],
+        "vb5":res['data']['bc5']/100,
+        "ps1":res['data']['sp1'],
+        "vs1":res['data']['sc1']/100,
+        "ps2":res['data']['sp2'],
+        "vs2":res['data']['sc2']/100,
+        "ps3":res['data']['sp3'],
+        "vs3":res['data']['sc3']/100,
+        "ps4":res['data']['sp4'],
+        "vs4":res['data']['sc4']/100,
+        "ps5":res['data']['sp5'],
+        "vs5":res['data']['sc5']/100,
+        }
+        return [HSRL_MMWP(**item) for item in [data]]
     def capital_flow(self,code:str):
         '''
         获取当日资金流入流出数据，每分钟数据
@@ -932,12 +964,26 @@ if __name__ == "__main__":
     #data = toolLib.get_zs_lsgl()
     #data = toolLib.get_hszg_zg("旗天科技")
     #data = toolLib.get_hscp_cwzb("蒙草生态")
-    #data = toolLib.get_hsrl_mmwp("全志科技")
+    #data = toolLib.get_hsrl_mmwp("福日电子")
     #data = toolLib.get_hszbc_fsjy("蒙草生态","2024-08-30","2024-08-30",'5m')
+    
     data = toolLib.get_hszbl_fsjy("蒙草生态","dn")
-    print(data)
+    print(type(data))
     if isinstance(data,list):
         print(len(data))
+    
+    esLib = ESLib(using='es')
+    actions = [
+    {
+        "_index": "example_index",
+        "_id": record['mr_code'] + '_' + record['fsjb'] + '_' + record['d'],
+        "_source": record
+    }
+    for record in data.to_dict(orient='records')
+]
+    esLib.bulk(esLib.client,actions)
+    
     # print("雪球--->")
     # lib = SnowballTools(stockGraph)
-    # print(lib.pankou('蒙草生态'))
+    # res = lib.pankou('福日电子')
+    # print(res)

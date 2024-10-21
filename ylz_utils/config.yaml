@@ -4,7 +4,7 @@ LANGSMITH:
         - ${LANGSMITH_API_KEYS}
         - ${LANGSMITH_API_KEY}
 LLM:
-    DEFAULT: "LLM.DEEPBRICKS"
+    DEFAULT: "LLM.FREE"
     SILICONFLOW:
         API_KEYS: 
             - ${SILICONFLOW_API_KEYS}
@@ -82,7 +82,7 @@ LLM:
         BASE_URL: https://api.chatanywhere.tech
         MODEL: ${FREE_LLM_MODEL}
 EMBEDDING:
-    DEFAULT: EMBEDDING.DASHSCOPE
+    DEFAULT: EMBEDDING.FREE
     TOGETHER: 
         API_KEYS: 
             - ${TOGETHER_API_KEYS}
@@ -110,6 +110,11 @@ EMBEDDING:
             - ${DASHSCOPE_API_KEYS}
             - ${DASHSCOPE_API_KEY}
         MODEL: ${DASHSCOPE_EMBEDDING_MODEL}
+    FREE:
+        API_KEYS: 
+            - ${FREE_API_KEYS}
+            - ${FREE_API_KEY}
+        MODEL: ${FREE_EMBEDDING_MODEL}
 TTS:
     DASHSCOPE:
         API_KEYS: 
@@ -132,6 +137,11 @@ SEARCH_TOOLS:
         API_KEYS: 
             - ${SERPAPI_API_KEYS}
             - ${SERPAPI_API_KEY}
+DATABASE:
+    ES:
+        HOST: ${ES_HOST}
+        USER: elastic
+        PASSWORD: ${ES_PASSWORD}
 
 VECTORSTORE:
     DEFAULT: chroma

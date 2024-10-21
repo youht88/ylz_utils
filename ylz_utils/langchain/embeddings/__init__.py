@@ -11,6 +11,7 @@ from typing import Optional
 from ylz_utils import Config
 
 from langchain_together import TogetherEmbeddings
+from langchain_openai import OpenAIEmbeddings
 try:
     from langchain_google_genai import GoogleGenerativeAIEmbeddings
 except:
@@ -103,6 +104,10 @@ class EmbeddingLib():
                         else:
                             #embedding['embedding'] = HuggingFaceInferenceAPIEmbeddings(api_key=embedding.get('api_key'), model_name=embedding.get('model'))
                             embedding['embedding'] = HuggingFaceEndpointEmbeddings(huggingfacehub_api_token=embedding.get('api_key'))
+                    elif embed_type == 'EMBEDDING.FREE':
+                        embedding['embedding'] = OpenAIEmbeddings(
+                            api_key = embedding.get('api_key'),model=embedding.get('model'),base_url=embedding.get('base_url'))
+                        print(embedding)
                     else:
                         raise Exception(f"目前不支持{embedding['type']}嵌入模型")
                 embedding['used'] = embedding.get('used',0) + 1 
@@ -121,7 +126,8 @@ class EmbeddingLib():
                       "EMBEDDING.GEMINI": {"model":"models/embedding-001"},
                       "EMBEDDING.OLLAMA": {"model":"mxbai-embed-large"},
                       "EMBEDDING.HF": {"model":"Alibaba-NLP/gte-large-en-v1.5"},  #"sentence-transformers/all-mpnet-base-v2" #"BAAI/bge-large-en"
-                      "EMBEDDING.DASHSCOPE": {"model":"text-embedding-v2"}  
+                      "EMBEDDING.DASHSCOPE": {"model":"text-embedding-v2"},
+                      "EMBEDDING.FREE": {"model":"text-embedding-3-small"}    
                   }
         for key in defaults:
             default = defaults[key]

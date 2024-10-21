@@ -6,6 +6,7 @@ from elasticsearch_dsl import connections, Field,Document, Date, Nested, Boolean
 from elasticsearch_dsl import Search,Q,FacetedSearch,MultiSearch
 from elasticsearch_dsl.query import MultiMatch
 from typing import Optional,Union,Literal
+from elasticsearch.helpers import bulk
 
 from ylz_utils.config import Config
 
@@ -26,12 +27,14 @@ class ESLib():
         self.analyzer = analyzer
         self.search_analyzer = search_analyzer
         connections.create_connection(
-            hosts=hosts or self.config.get("ES.HOST"),
-            basic_auth=(es_user or self.config.get("ES.USER"),es_password or self.config.get("ES.PASSWORD")),
+            hosts=hosts or self.config.get("DATABASE.ES.HOST"),
+            basic_auth=(es_user or self.config.get("DATABASE.ES.USER"),es_password or self.config.get("DATABASE.ES.PASSWORD")),
             alias=using,
             verify_certs=verify_certs,
             ssl_show_warn=ssl_show_warn
         )
+        self.client = connections.get_connection(alias=using)
+        self.bulk = bulk
         self.Q = Q
         self.Search = Search
         self.MultiSearch = MultiSearch
