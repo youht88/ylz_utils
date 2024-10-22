@@ -118,9 +118,80 @@ class MairuiTools(StockTools):
             'get_hsrl_zbdd','get_hsrl_mmwp',
             'get_hscp_.*',
             '.*'
-        ]        
-        self.df_hsrl_mmwp = pd.DataFrame([])       
-        self.df_hsrl_zbjy = pd.DataFrame([])
+        ] 
+        self.dataframe_map:dict[str,pd.DataFrame]={}       
+
+    def _load_data(self,name:str,method_path:str,
+                           add_fields:dict={},skip_condition:str=None,keys=[],date_fields=[])->pd.DataFrame:
+        # dataframe 传入的类实例变量，用于多次检索时的内存cache
+        # add_fields 需要增加的字段，例如 add_fields = {"mr_code":"abcd"}
+        # skip_condition 过滤的字符串，如果过滤条件下没有数据则需要从network中获取
+        # keys 判断是否重复数据的字段名数组,例如 keys=["mr_code"]
+        # date_fields 指定日期类型的字段名
+        try:
+            file_name = f"{name}.csv"
+            df_name = f"df_{name}" 
+            if not self.dataframe_map.get(df_name):
+                self.dataframe_map[df_name] = pd.DataFrame([])
+            dataframe = self.dataframe_map[df_name]
+            df=None
+            get_df = None
+            cache_df = None
+            if dataframe.empty:
+                try:
+                    dataframe = pd.read_csv(file_name,parse_dates=date_fields)
+                    # 判断是否rload
+                    print("skip_condition:",skip_condition)
+                    if not skip_condition:
+                        print("!!!!! ALWAYS LOAD FROM NETWORK !!!!")
+                        raise Exception("always reload")
+                    cache_df = dataframe.query(skip_condition) 
+                    if cache_df.empty:
+                        print("!!!!! NEED LOAD FROM NETWORK !!!!!")
+                        raise Exception("need load from network")
+                except Exception as e:
+                    print("start retrieve data from network...")
+                    try:
+                        res = requests.get(f"{self.mairui_api_url}/{method_path}/{self.mairui_token}")
+                        data = res.json()
+                        if isinstance(data,list):
+                            data = [{**item,**add_fields} for item in data]
+                        else:
+                            data = [{**data,**add_fields}]
+                        get_df = pd.DataFrame(data)
+                        for col in date_fields:
+                            get_df[col] = pd.to_datetime(get_df[col]) 
+                        if dataframe.empty:
+                            dataframe = get_df
+                            dataframe.to_csv(file_name,index=False)                       
+                    except Exception as e:
+                        print("network error:",e)
+                        raise  
+            if not (get_df is None):
+                print("get_df.count=",get_df.shape)                  
+            if not (cache_df is None):
+                print("cache_df.count=",cache_df.shape)
+            if not (dataframe is None):
+                print("dataframe.count=",dataframe.shape)                  
+            if not dataframe.empty:
+                if not (get_df is None):
+                    condition = pd.Series([True] * len(dataframe))
+                    # 根据字段名列表构建动态筛选条件
+                    for k in keys:
+                        if k in get_df.columns:
+                            condition = condition & (dataframe[k] == get_df[k][0])
+                    # 应用筛选条件
+                    find_row:pd.DataFrame = dataframe[condition]
+                    if find_row.empty:
+                        dataframe = pd.concat([dataframe,get_df], ignore_index=True)
+                        dataframe.to_csv(file_name,index=False)
+                    df = get_df
+                elif not (cache_df is None):
+                    df = cache_df
+        except Exception as e:
+            raise Exception(f"error on _load_data_by_code,the error is :{e}")
+        return df
+
     def get_hslt_list(self)->list[HSLT_LIST]:
         """获取沪深两市的公司列表"""
         res = requests.get( 
@@ -253,6 +324,7 @@ class MairuiTools(StockTools):
         )
         data = res.json()        
         return data
+    ############### 个股资金流 #######################
     def get_hsmy_zlzj(self,code:str):
         """获取某个股票的每分钟主力资金走势"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）
@@ -260,11 +332,14 @@ class MairuiTools(StockTools):
         code_info = self._get_stock_code(code)
         code=code_info['code']
         mr_code = code_info['mr_code']
-        res = requests.get( 
-            f"{self.mairui_api_url}/hsmy/zlzh/{code}/{self.mairui_token}",
-        )
-        data = res.json()        
-        return data
+        add_fields = {"mr_code":mr_code}
+        skip_condition = f"mr_code == '{mr_code}'"
+        date_fields = ['t']
+        df = self._load_data("hsmy_zlzj",f"hsmy/zlzj/{code}",
+                                     add_fields=add_fields,
+                                     skip_condition=skip_condition,
+                                     keys=["mr_code"],date_fields=date_fields)
+        return df
     def get_hsmy_zjlr(self,code:str):
         """获取某个股票的近十年每天资金流入趋势"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）
@@ -272,23 +347,35 @@ class MairuiTools(StockTools):
         code_info = self._get_stock_code(code)
         code=code_info['code']
         mr_code = code_info['mr_code']
-        res = requests.get( 
-            f"{self.mairui_api_url}/hsmy/zjlr/{code}/{self.mairui_token}",
-        )
-        data = res.json()        
-        return data
+        add_fields = {"mr_code":mr_code}
+        skip_condition = f"mr_code == '{mr_code}'"
+        date_fields = ['t']
+        df = self._load_data("hsmy_zjlr",f"hsmy/zjlr/{code}",
+                                     add_fields=add_fields,
+                                     skip_condition=skip_condition,
+                                     keys=["mr_code"],date_fields=date_fields)
+        return df
+
     def get_hsmy_zhlrt(self,code:str):
         """获取某个股票的近10天资金流入趋势"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）
         #请求频率：1分钟300次 
-        code_info = self._get_stock_code(code)
-        code=code_info['code']
-        mr_code = code_info['mr_code']
         res = requests.get( 
             f"{self.mairui_api_url}/hsmy/zhlrt/{code}/{self.mairui_token}",
         )
-        data = res.json()        
-        return data
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
+        today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+        add_fields = {"mr_code":mr_code,"ud":today}
+        skip_condition = f"mr_code == '{mr_code}' & ud.str[:10] == '{today[:10]}'"
+        date_fields = ['t','ud']
+        df = self._load_data("hsmy_zhlrt",f"hsmy/zhlrt/{code}",
+                                     add_fields=add_fields,
+                                     skip_condition=skip_condition,
+                                     keys=["mr_code"],date_fields=date_fields)
+        return df
+
     def get_hsmy_jddx(self,code:str):
         """获取某个股票的近十年主力阶段资金动向"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）
@@ -340,6 +427,7 @@ class MairuiTools(StockTools):
         )
         data = res.json()        
         return data
+    #################################################
     def get_hsrl_ssjy(self,code:str)-> SSJY:
         """获取某个股票的实时交易数据"""
         #数据更新：交易时间段每1分钟
@@ -370,65 +458,6 @@ class MairuiTools(StockTools):
                                      add_fields=add_fields,
                                      skip_condition=skip_condition,
                                      keys=["mr_code",'fsjb'])
-        return df
-    def _load_data(self,file_name:str,method_path:str,dataframe:pd.DataFrame,
-                           add_fields:dict={},skip_condition:str=None,keys=['mr_code']):
-        try:
-            df=None
-            get_df = None
-            cache_df = None
-            if dataframe.empty:
-                try:
-                    dataframe = pd.read_csv(file_name)
-                    # 判断是否rload
-                    print("skip_condition:",skip_condition)
-                    if not skip_condition:
-                        print("!!!!! ALWAYS RELOAD !!!!")
-                        raise Exception("always reload")
-                    cache_df = dataframe.query(skip_condition) 
-                    if cache_df.empty:
-                        print("!!!!! NEED RELOAD !!!!!")
-                        raise Exception("need reload")
-                except Exception as e:
-                    try:
-                        print("?????? method path:",method_path)
-                        res = requests.get(f"{self.mairui_api_url}/{method_path}/{self.mairui_token}")
-                        data = res.json()
-                        print("!!!!!!! get data count:",len(data))
-                        if isinstance(data,list):
-                            data = [{**item,**add_fields} for item in data]
-                        else:
-                            data = [{**data,**add_fields}]
-                        get_df = pd.DataFrame(data) 
-                        if dataframe.empty:
-                            dataframe = get_df
-                            dataframe.to_csv(file_name,index=False)                       
-                    except Exception as e:
-                        print("network error:",e)
-                        raise  
-            if not (get_df is None):
-                print("get_df.count=",get_df.shape)                  
-            if not (cache_df is None):
-                print("cache_df.count=",cache_df.shape)
-            if not (dataframe is None):
-                print("dataframe.count=",dataframe.shape)                  
-            if not dataframe.empty:
-                if not (get_df is None):
-                    condition = pd.Series([True] * len(dataframe))
-                    # 根据字段名列表构建动态筛选条件
-                    for k in keys:
-                        if k in get_df.columns:
-                            condition = condition & (dataframe[k] == get_df[k][0])
-                    # 应用筛选条件
-                    find_row:pd.DataFrame = dataframe[condition]
-                    if find_row.empty:
-                        dataframe = pd.concat([dataframe,get_df], ignore_index=True)
-                        dataframe.to_csv(file_name,index=False)
-                    df = get_df
-                elif not (cache_df is None):
-                    df = cache_df
-        except Exception as e:
-            raise Exception(f"error on _load_data_by_code,the error is :{e}")
         return df
     def get_hszg_zg(self,code:str):
         '''根据股票找相关指数、行业、概念'''
@@ -553,9 +582,10 @@ class MairuiTools(StockTools):
                 dataframe=self.df_hszbc_fsjy,
                 add_fields = add_fields,
                 skip_condition = skip_condition,
-                keys=["mr_code","fsjb"])
+                keys=["mr_code","fsjb","d"],
+                date_fields=["d","ud"])
         return df
-    def get_hszbl_ma(self,code:str,fs:Literal["5m","15m","30m","60m","dn","wn","mn","yn"]="5m"):
+    def get_hszbl_ma(self,code:str,fs:Literal["5m","15m","30m","60m","dn","wn","mn","yn"]="15m"):
         """获取股票代码分时交易的平均移动线历史数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
@@ -967,18 +997,31 @@ if __name__ == "__main__":
     #data = toolLib.get_hsrl_mmwp("福日电子")
     #data = toolLib.get_hszbc_fsjy("蒙草生态","2024-08-30","2024-08-30",'5m')
     
-    data = toolLib.get_hszbl_fsjy("蒙草生态","dn")
-    print(type(data))
+    data = toolLib.get_hsmy_zlzj("蒙草生态")
+    print(data.head(5))
     if isinstance(data,list):
         print(len(data))
-    
-    esLib = ESLib(using='es')
-    data["_id"] = data['mr_code'] + '_' + data['fsjb'] + '_' + data['d']
-    result = esLib.drop("example_index")
-    print(result)    
-    result = esLib.search("example_index",{"query":{"match":{"mr_code":"sz300355"}}})
-    print(result)
+
+    data = toolLib.get_hsmy_zjlr("蒙草生态")
+    print(data.head(5))
+    if isinstance(data,list):
+        print(len(data))
+
+    data = toolLib.get_hsmy_zhlrt("蒙草生态")
+    print(data.head(5))
+    if isinstance(data,list):
+        print(len(data))
+
+    # esLib = ESLib(using='es')
+    # result = esLib.save("hszbl_fsjy_sz300355",data,keys=['mr_code','fsjb','d'])
+    # print(result['errors'])  
+    # result = esLib.count("hszbl_fsjy_sz300355",{"query":{"match_all":{}}})
+    # print(result)
+
     # print("雪球--->")
     # lib = SnowballTools(stockGraph)
-    # res = lib.pankou('福日电子')
-    # print(res)
+    # res1 = lib.pankou('300096')
+    # res2 = lib.capital_flow('宗申动力')
+    # print(res1)
+    # print(res2)
+
