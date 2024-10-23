@@ -9,6 +9,7 @@ from typing import Optional,Union,Literal
 from elasticsearch.helpers import bulk
 import pandas as pd
 from ylz_utils.config import Config
+import re
 
 class ESLib():
     using = None
@@ -173,18 +174,18 @@ class ESLib():
         return doc.update(using=self.using,**kwargs)
     def doc_delete(self,doc):
         return doc.delete(using=self.using)
-    def save(self,index_name:str,records,keys=[]):
+    def save(self,index_name:str,records,ids=[]):
         actions = []
         if isinstance(records,pd.DataFrame):
             records = records.to_dict(orient='records')
         for record in records:        
-            if keys:
-                _id = '_'.join([str(record[key]) for key in keys])
+            if ids:
+                _id = '_'.join([str(record[key]) for key in ids])
                 actions.append({"index":{"_index":index_name,"_id":_id}})
             else:
                 actions.append({"index":{"_index":index_name}})
             actions.append(record)
-        results = self.client.bulk(body=actions)
+        results = self.client.bulk(body=actions,refresh='wait_for')
         return results    
     def search(self,index_name:str,query):
         results  = self.client.search(index=index_name,body=query) 
@@ -200,6 +201,13 @@ class ESLib():
         else:
             print(f"{index_name}不存在!")
         return result
+    def drop_multi(self,index_name_pattern:str):
+        indices_to_delete = self.client.indices.get(index=index_name_pattern)
+        result=[]
+        for index in indices_to_delete:
+            self.client.indices.delete(index=index, ignore=[400, 404])
+            result.append(index)
+        print(f"已删除:{str(result)}")
     def delete_by_query(self,index_name:str,query):
         results  = self.client.delete_by_query(index=index_name,body=query) 
         if results.get('deleted')>0:
@@ -212,7 +220,9 @@ class ESLib():
     def count(self,index_name:str,query):
         results  = self.client.count(index=index_name,body=query) 
         return results.get('count',0)
-        
+    def sql(self,query):
+        result = self.client.sql.query(query=query) 
+        return result  
 if __name__ == '__main__':
     Config.init('ylz_utils')
     esLib = ESLib(using='es')
