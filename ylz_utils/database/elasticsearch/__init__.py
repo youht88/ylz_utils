@@ -198,6 +198,7 @@ class ESLib():
         result = None
         if self.client.indices.exists(index=index_name):
             result = self.client.indices.delete(index=index_name)
+            print(f"已删除:{index_name}")
         else:
             print(f"{index_name}不存在!")
         return result
