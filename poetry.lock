@@ -1209,6 +1209,28 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 reference = "tsinghua"
 
 [[package]]
+name = "dydantic"
+version = "0.0.7"
+description = "Dynamically generate pydantic models from JSON schema."
+optional = false
+python-versions = ">=3.9,<4.0"
+files = [
+    {file = "dydantic-0.0.7-py3-none-any.whl", hash = "sha256:5531220d876b77451bb045155f83534c69d13bf76d4d628dcaa920d933a7ae89"},
+    {file = "dydantic-0.0.7.tar.gz", hash = "sha256:6430f038fd32b72782722ef1ddf39837ba251fbf7a183ced3e1597fac4e4862e"},
+]
+
+[package.dependencies]
+pydantic = ">=2,<3"
+
+[package.extras]
+email = ["email-validator (>=2.1,<3.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
 name = "elastic-transport"
 version = "8.15.0"
 description = "Transport classes and utilities shared among Python Elastic client libraries"
@@ -6372,6 +6394,27 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 reference = "tsinghua"
 
 [[package]]
+name = "trustcall"
+version = "0.0.22"
+description = "Tenacious & trustworthy tool calling built on LangGraph."
+optional = false
+python-versions = ">=3.9,<4.0"
+files = [
+    {file = "trustcall-0.0.22-py3-none-any.whl", hash = "sha256:0755dc569272d194e532ac187c9e7efe12dad1babe56a7b394e63e3968010032"},
+    {file = "trustcall-0.0.22.tar.gz", hash = "sha256:d04ac5a9435e1a64e658021ae5ba1981d238481d2a4b7ec3a49f7f57084d2e9b"},
+]
+
+[package.dependencies]
+dydantic = ">=0.0.7,<0.0.8"
+jsonpatch = ">=1.33,<2.0"
+langgraph = ">=0.2.25"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
 name = "tushare"
 version = "1.4.13"
 description = "A utility for crawling historical and Real-time Quotes data of China stocks"
@@ -7152,4 +7195,4 @@ reference = "tsinghua"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12,<3.13"
-content-hash = "e46e219beadf56d0d1d23313d9c1750b20f56e96d6dd51be40f6c573c5e35884"
+content-hash = "f326fa8292a13f1b09028134724ab671dc32fc516398270b7d2bfba5494aeab7"

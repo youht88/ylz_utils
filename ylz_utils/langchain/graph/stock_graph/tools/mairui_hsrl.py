@@ -17,22 +17,26 @@ class HSRL(MairuiTools):
         )
         data = res.json()        
         #return [SSJY(**item) for item in data]
-    def get_hsrl_mmwp(self,code:str):
+    def get_hsrl_mmwp(self,code:str,sync_es:bool=False):
         """获取某个股票的盘口交易数据,返回值没有当前股价，仅有5档买卖需求量价以及委托统计"""
         #数据更新：交易时间段每2分钟
         #请求频率：1分钟300次
-        if not hasattr(self,"df_hsrl_mmwp"):
-            self.df_hsrl_mmwp = pd.DataFrame(columns=HSRL_MMWP.model_fields.keys())
         code_info = self._get_stock_code(code)
         code=code_info['code']
         mr_code = code_info['mr_code']
         add_fields = {"mr_code":mr_code}
-        df = self._load_data("hsrl_wwmp.csv",f"hsrl/mmwp/{code}",self.df_hsrl_mmwp,
-                                     add_fields = add_fields,
-                                     keys=['t','mr_code'])
-        #return [HSRL_MMWP(**item) for idx,item in self.df_hsrl_mmwp[self.df_hsrl_mmwp['mr_code']==mr_code].iterrows()]
-        return [HSRL_MMWP(**item) for idx,item in df.iterrows()]
-    
+        date_fields = ['t']
+        skip_condition = None
+        name = f"hsrl_mmwp_{mr_code}"
+        df = self._load_data(name,f"hsrl/mmwp/{code}",
+                                        add_fields=add_fields,
+                                        skip_condition=skip_condition,
+                                        keys=["mr_code","t"],date_fields=date_fields)
+        if sync_es:
+            es_result = self.esLib.save(name,df,ids=['mr_code','t'])
+            print(f"errors:{es_result["errors"]}")
+        return df
+
     def get_hsrl_zbjy(self,code:str):
         """获取某个股票的当天逐笔交易数据"""
         #数据更新：每天20:00开始更新，当日23:59前完成
@@ -81,3 +85,18 @@ class HSRL(MairuiTools):
         )
         data = res.json()        
         return data
+
+if __name__ == "__main__":
+    from ylz_utils.langchain import LangchainLib
+    from ylz_utils.langchain.graph.stock_graph import StockGraph
+    import time
+
+    Config.init('ylz_utils')
+    langchainLib = LangchainLib()
+    stockGraph = StockGraph(langchainLib)
+
+    lib = HSRL(stockGraph)
+    for i in range(5):
+        res = lib._parallel_execute(lib.get_hsrl_mmwp,['全志科技','瑞芯微','欧菲光','宗申动力','银邦股份','蒙草生态','万达信息'],sync_es=True)
+        print(f"****** {i} , {len(res)}  ******")
+        time.sleep(120)

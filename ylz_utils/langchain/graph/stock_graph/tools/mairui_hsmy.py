@@ -40,9 +40,6 @@ class HSMY(MairuiTools):
         """获取某个股票的近10天资金流入趋势"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）
         #请求频率：1分钟300次 
-        res = requests.get( 
-            f"{self.mairui_api_url}/hsmy/zhlrt/{code}/{self.mairui_token}",
-        )
         code_info = self._get_stock_code(code)
         code=code_info['code']
         mr_code = code_info['mr_code']
@@ -166,11 +163,6 @@ if __name__ == "__main__":
     result = toolLib.esLib.count("hsmy_zhlrt_sz001696",{"query":{"match_all":{}}})
     print(result)
 
-    # print("雪球--->")
-    # lib = SnowballTools(stockGraph)
-    # res1 = lib.pankou('300096')
-    # res2 = lib.capital_flow('宗申动力')
-    # print(res1)
-    # print(res2)
+    
 
 

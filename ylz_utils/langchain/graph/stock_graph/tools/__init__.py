@@ -14,6 +14,10 @@ from langgraph.prebuilt import InjectedState
 from ylz_utils.database.elasticsearch import ESLib
 from ylz_utils.langchain.graph.stock_graph.state import *
 
+import concurrent.futures
+import time
+
+
 class StockTools:
     stock:list = []
     def __init__(self,graphLib):
@@ -29,6 +33,13 @@ class StockTools:
         zsdm_file = os.path.join(current_dir, 'zsdm.json')
         with open(zsdm_file, 'r', encoding='utf-8') as f:
             self.zsdm = json.load(f)
+    # 定义一个执行函数的方法
+    def _parallel_execute(self,fun:callable,codes,**kwargs):
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [executor.submit(fun,code,**kwargs) for code in codes]  # 并发执行10次函数
+            results = [future.result() for future in futures]
+            return results
+
     def _get_stock_code(self,stock_name:str)->dict:
         """根据股票或指数名称获取股票/指数代码"""
         if stock_name.startswith('sh') or stock_name.startswith('sz'):
@@ -128,8 +139,8 @@ class MairuiTools(StockTools):
         # date_fields 指定日期类型的字段名
         try:
             file_name = f"{name}.csv"
-            df_name = f"df_{name}" 
-            if not self.dataframe_map.get(df_name):
+            df_name = f"df_{name}"             
+            if not isinstance(self.dataframe_map.get(df_name),pd.DataFrame):
                 self.dataframe_map[df_name] = pd.DataFrame([])
             dataframe = self.dataframe_map[df_name]
             df=None
@@ -246,7 +257,6 @@ class SnowballTools(StockTools):
         ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
         res =  ball.pankou(ball_code)
-        print(type(res['data']['timestamp']),res)
         data ={ 
         "t":datetime.fromtimestamp(res['data']['timestamp']/1000).strftime('%Y-%m-%d %H:%M:%S'),
         "mr_code":mr_code,
@@ -273,7 +283,8 @@ class SnowballTools(StockTools):
         "ps5":res['data']['sp5'],
         "vs5":res['data']['sc5']/100,
         }
-        return [HSRL_MMWP(**item) for item in [data]]
+        #return [HSRL_MMWP(**item) for item in [data]]
+        return data
     def capital_flow(self,code:str):
         '''
         获取当日资金流入流出数据，每分钟数据
@@ -281,7 +292,7 @@ class SnowballTools(StockTools):
         code_info = self._get_stock_code(code)
         ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
-        return ball.capital_flow(ball_code)
+        return [ball.capital_flow(ball_code)]
     def capital_history(self,code:str):
         '''
         获取历史资金流入流出数据，每日数据
@@ -409,4 +420,21 @@ class SnowballTools(StockTools):
         ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
         return ball.cash_flow(symbol=ball_code,is_annals=is_annals,count=count)
+
+if __name__ == "__main__":
+    from ylz_utils.langchain import LangchainLib
+    from ylz_utils.langchain.graph.stock_graph import StockGraph
+    import time
+
+    Config.init('ylz_utils')
+    langchainLib = LangchainLib()
+    stockGraph = StockGraph(langchainLib)
+    print("雪球--->")
+    lib = SnowballTools(stockGraph)
     
+    for i in range(10):
+        res1 = lib._parallel_execute(lib.pankou,['全志科技','欧菲光'])
+        print(f"****** {i} , {len(res1)}  ******")
+        print(res1[0]['t'],res1[0]['mr_code'],res1[0]['vc'],res1[0]['vb'])
+        #lib.esLib.save("capital_flow",[res1],ids=['mr_code','t'])
+        time.sleep(5)

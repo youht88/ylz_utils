@@ -174,7 +174,7 @@ class ESLib():
         return doc.update(using=self.using,**kwargs)
     def doc_delete(self,doc):
         return doc.delete(using=self.using)
-    def save(self,index_name:str,records,ids=[]):
+    def save(self,index_name:str,records:pd.DataFrame|list[dict],ids:list[str]=[]):
         actions = []
         if isinstance(records,pd.DataFrame):
             records = records.to_dict(orient='records')
