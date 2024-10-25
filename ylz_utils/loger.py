@@ -6,7 +6,6 @@ class LoggerLib():
         # 设置logger
         log_file = f"{project_name}.log"
         logging.basicConfig(level=log_level)
-        logger = logging.getLogger()
         
         file_handler = TimedRotatingFileHandler(
             filename= log_file,
@@ -25,7 +24,5 @@ class LoggerLib():
         file_handler.setFormatter(formatter)
         #console_handler.setFormatter(formatter)
         
-        logger.addHandler(file_handler)
+        logging.getLogger().addHandler(file_handler)
         #logger.addHandler(console_handler)
-
-        return logger
