@@ -29,40 +29,45 @@ class SnowballStock(StockLib):
         mr_code = code_info['mr_code']
         name = code_info['name']
         res = ball.quotec(ball_code)
-        data = {
-            "mr_code": mr_code,
-            "t":datetime.fromtimestamp(res['data'][0]['timestamp']/1000).strftime('%Y-%m-%d %H:%M:%S'),
-            "name": name,
-            "current": res['data'][0]['current'],
-            "percent": res['data'][0]['percent'],
-            'chg': res['data'][0]['chg'],
-            'volume': res['data'][0]['volume'],
-            'amount': res['data'][0]['amount'],
-            'market_capital': res['data'][0]['market_capital'],
-            'float_market_capital': res['data'][0]['turnover_rate'],
-            'turnover_rate': res['data'][0]['turnover_rate'],
-            'amplitude': res['data'][0]['amplitude'],
-            'open': res['data'][0]['open'],
-            'last_close': res['data'][0]['last_close'],
-            'high': res['data'][0]['high'],
-            'low': res['data'][0]['low'],
-            'avg_price': res['data'][0]['avg_price'],
-            'trade_volume': res['data'][0]['trade_volume'],
-            'side': res['data'][0]['side'],
-            'is_trade': res['data'][0]['is_trade'],
-            'level': res['data'][0]['level'],
-            'trade_session': res['data'][0]['trade_session'],
-            'trade_type': res['data'][0]['trade_type'],
-            'current_year_percent': res['data'][0]['current_year_percent'],
-            'trade_unique_id': res['data'][0]['trade_unique_id'],
-            'type': res['data'][0]['type'],
-            'bid_appl_seq_num': res['data'][0]['bid_appl_seq_num'],
-            'offer_appl_seq_num': res['data'][0]['offer_appl_seq_num'],
-            'volume_ext': res['data'][0]['volume_ext'],
-            'traded_amount_ext': res['data'][0]['traded_amount_ext'],
-            'trade_type_v2': res['data'][0]['trade_type_v2'],
-            'yield_to_maturity': res['data'][0]['yield_to_maturity']
-        }
+        data =  { **res['data']['quote'],
+                  'mr_code': mr_code,
+                  't':datetime.fromtimestamp(res['data']['quote']['timestamp']/1000),
+                  'name': name,
+                }
+        # data = {
+        #     "mr_code": mr_code,
+        #     "t":datetime.fromtimestamp(res['data'][0]['timestamp']/1000).strftime('%Y-%m-%d %H:%M:%S'),
+        #     "name": name,
+        #     "current": res['data'][0]['current'],
+        #     "percent": res['data'][0]['percent'],
+        #     'chg': res['data'][0]['chg'],
+        #     'volume': res['data'][0]['volume'],
+        #     'amount': res['data'][0]['amount'],
+        #     'market_capital': res['data'][0]['market_capital'],
+        #     'float_market_capital': res['data'][0]['turnover_rate'],
+        #     'turnover_rate': res['data'][0]['turnover_rate'],
+        #     'amplitude': res['data'][0]['amplitude'],
+        #     'open': res['data'][0]['open'],
+        #     'last_close': res['data'][0]['last_close'],
+        #     'high': res['data'][0]['high'],
+        #     'low': res['data'][0]['low'],
+        #     'avg_price': res['data'][0]['avg_price'],
+        #     'trade_volume': res['data'][0]['trade_volume'],
+        #     'side': res['data'][0]['side'],
+        #     'is_trade': res['data'][0]['is_trade'],
+        #     'level': res['data'][0]['level'],
+        #     'trade_session': res['data'][0]['trade_session'],
+        #     'trade_type': res['data'][0]['trade_type'],
+        #     'current_year_percent': res['data'][0]['current_year_percent'],
+        #     'trade_unique_id': res['data'][0]['trade_unique_id'],
+        #     'type': res['data'][0]['type'],
+        #     'bid_appl_seq_num': res['data'][0]['bid_appl_seq_num'],
+        #     'offer_appl_seq_num': res['data'][0]['offer_appl_seq_num'],
+        #     'volume_ext': res['data'][0]['volume_ext'],
+        #     'traded_amount_ext': res['data'][0]['traded_amount_ext'],
+        #     'trade_type_v2': res['data'][0]['trade_type_v2'],
+        #     'yield_to_maturity': res['data'][0]['yield_to_maturity']
+        # }
         return data
     def quotec_detail(self,code:str,sync_es:bool=False):
         '''
@@ -73,12 +78,12 @@ class SnowballStock(StockLib):
         mr_code = code_info['mr_code']
         name = code_info['name']
         res = ball.quote_detail(ball_code)
-        data = { **res['data']['quote'],
-                 'mr_code': mr_code,
-                 't':datetime.fromtimestamp(res['data']['quote']['timestamp']/1000),
-                 'name': name,
-                 'pankou_ratio': res['data']['others'].get('pankou_ratio'),
-                 'cyb_switch': res['data']['others'].get('cyb_switch')
+        data =  { **res['data']['quote'],
+                  'mr_code': mr_code,
+                  't':datetime.fromtimestamp(res['data']['quote']['timestamp']/1000),
+                  'name': name,
+                  'pankou_ratio': res['data']['others'].get('pankou_ratio'),
+                  'cyb_switch': res['data']['others'].get('cyb_switch')
                 }
         # data = {
         #     "mr_code": mr_code,
