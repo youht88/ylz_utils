@@ -151,9 +151,10 @@ if __name__ == "__main__":
     from ylz_utils.stock.snowball import SnowballStock
     from ylz_utils.stock.mairui.mairui_hszg import HSZG
     from ylz_utils.stock.mairui.mairui_zs import ZS
+    from ylz_utils.stock.mairui.mairui_hizj import HIZJ
 
     Config.init('ylz_utils')
-    LoggerLib.init('ylz_utils',logging.DEBUG)
+    logger = LoggerLib.init('ylz_utils')
     print("雪球--->")
 
     lib:SnowballStock = SnowballStock()
@@ -191,9 +192,16 @@ if __name__ == "__main__":
     lib.scheduler.add_job(lib.parallel_execute, trigger=CronTrigger(hour='9',minute='30-59',second='*/3'),kwargs=kwargs)
     lib.scheduler.add_job(lib.parallel_execute, trigger=CronTrigger(hour='10',minute='00-59',second='*/3'),kwargs=kwargs)
     lib.scheduler.add_job(lib.parallel_execute, trigger=CronTrigger(hour='11',minute='00-30',second='*/3'),kwargs=kwargs)
-    lib.scheduler.add_job(lib.parallel_execute, trigger=CronTrigger(hour='13-18',minute='00-59',second='*/3'),kwargs=kwargs)
+    lib.scheduler.add_job(lib.parallel_execute, trigger=CronTrigger(hour='13-14',minute='00-59',second='*/3'),kwargs=kwargs)
+    lib.scheduler.add_job(lib.parallel_execute, trigger=CronTrigger(hour='9',minute='30-59',second='*/3'),kwargs=kwargs)
     lib.scheduler.start()
+
+    hizjLib = HIZJ()
+    hizjLib.scheduler.add_job(hizjLib.get_hizj_bk, 
+                              trigger=CronTrigger(hour='16',day_of_week='mon-fri'),kwargs={"sync_es":True})
+    
     # 循环执行任务
+    logging.info("hello world")
     try:
         while True:
             try:
