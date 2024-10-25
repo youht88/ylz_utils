@@ -224,6 +224,10 @@ class ESLib():
     def sql(self,query):
         result = self.client.sql.query(query=query) 
         return result  
+    def sql_as_df(self,query):
+        data = self.client.sql.query(query=query) 
+        df = pd.DataFrame(data['rows'],columns=[item['name'] for item in data['columns']])
+        return df  
 if __name__ == '__main__':
     Config.init('ylz_utils')
     esLib = ESLib(using='es')

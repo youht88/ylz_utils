@@ -1,11 +1,9 @@
 from datetime import datetime, timedelta
 from typing import Literal
 import requests
-from rich import print
-from ylz_utils.config import Config
-from ylz_utils.langchain.graph.stock_graph.tools import MairuiTools
+from . import MairuiStock
 
-class HSZB(MairuiTools):
+class HSZB(MairuiStock):
     def get_hszb_fsjy(self,code:str,fsjb:Literal["5m","15m","30m","60m","dn","wn","mn","yn"]="5m",sync_es:bool=False):
         """获取股票代码分时交易实时数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
@@ -120,25 +118,4 @@ class HSZB(MairuiTools):
         )
         data = res.json()        
         return data
-
-if __name__ == "__main__":
-    from ylz_utils.langchain import LangchainLib
-    from ylz_utils.langchain.graph.stock_graph import StockGraph
-    import time
-
-    Config.init('ylz_utils')
-    langchainLib = LangchainLib()
-    stockGraph = StockGraph(langchainLib)
-    toolLib = HSZB(stockGraph)
-
-    result = toolLib.esLib.sql("select avg(o),avg(c) from hszbl_fsjy_dn_sh603893 where d>'2024-10-20'")
-    print(result)
-    # data = toolLib.get_hszbl_fsjy("瑞芯微",fsjb='dn',sync_es=True)
-    # print(data.head(20))
-    # if isinstance(data,list):
-    #     print(len(data))
-
-    # result = toolLib.esLib.count("hszbl_fsjy_*",{"query":{"match_all":{}}})
-    # print(result)
-
 

@@ -1,10 +1,8 @@
 from datetime import datetime, timedelta
 import requests
-from rich import print
-from ylz_utils.config import Config
-from ylz_utils.langchain.graph.stock_graph.tools import MairuiTools
+from . import MairuiStock
 
-class HSRL(MairuiTools):
+class HSRL(MairuiStock):
     def get_hsrl_ssjy(self,code:str,sync_es:bool=False):
         """获取某个股票的实时交易数据"""
         #数据更新：交易时间段每1分钟
@@ -121,21 +119,4 @@ class HSRL(MairuiTools):
             es_result = self.esLib.save(name,df,ids=['mr_code','d','t'])
             print(f"errors:{es_result["errors"]}")
         return df
-
-if __name__ == "__main__":
-    from ylz_utils.langchain import LangchainLib
-    from ylz_utils.langchain.graph.stock_graph import StockGraph
-    import time
-
-    Config.init('ylz_utils')
-    langchainLib = LangchainLib()
-    stockGraph = StockGraph(langchainLib)
-
-    lib = HSRL(stockGraph)
-    #lib.esLib.drop_multi("hsrl_zbdd*")
-    # for i in range(1):
-    #     res = lib._parallel_execute(lib.get_hsrl_zbdd,['全志科技','瑞芯微','欧菲光','宗申动力','银邦股份','蒙草生态','万达信息'],sync_es=True)
-    #     print(f"****** {i} , {len(res)}  ******")
-    #     #time.sleep(120)
-
     

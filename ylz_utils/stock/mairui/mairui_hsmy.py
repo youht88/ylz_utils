@@ -1,10 +1,8 @@
 from datetime import datetime, timedelta
 import requests
-from rich import print
-from ylz_utils.config import Config
-from ylz_utils.langchain.graph.stock_graph.tools import MairuiTools
+from . import MairuiStock
 
-class HSMY(MairuiTools):
+class HSMY(MairuiStock):
     def get_hsmy_zlzj(self,code:str):
         """获取某个股票的每分钟主力资金走势"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）
@@ -114,55 +112,4 @@ class HSMY(MairuiTools):
         )
         data = res.json()        
         return data
-
-if __name__ == "__main__":
-    from ylz_utils.langchain import LangchainLib
-    from ylz_utils.langchain.graph.stock_graph import StockGraph
-    import time
-
-    Config.init('ylz_utils')
-    langchainLib = LangchainLib()
-    stockGraph = StockGraph(langchainLib)
-    # toolLib = SnowballTools(stockGraph)
-    # data  = toolLib.balance("ST易联众")
-    toolLib = HSMY(stockGraph)
-
-    #data1=data2=data3=data4=data5=[]
-    # for i in range(30):
-    #     print("index======>",i,len(data1),len(data2),len(data3),len(data4),len(data5))
-    #     data1 = toolLib.get_hsrl_mmwp("中粮资本")
-    #     data2 = toolLib.get_hsrl_mmwp("蒙草生态")
-    #     data3 = toolLib.get_hsrl_mmwp("瑞芯微")
-    #     data4 = toolLib.get_hsrl_mmwp("万达信息")
-    #     data5 = toolLib.get_hsrl_mmwp("全志科技")
-    #     time.sleep(60)
-    #data = toolLib.get_hsrl_zbjy("万达信息")
-    #data = toolLib.get_hsrl_zbjy("万达信息")
-    #data = toolLib.get_zs_hfsjy("蒙草生态")
-    #data = toolLib.get_zs_lsgl()
-    #data = toolLib.get_hszg_zg("旗天科技")
-    #data = toolLib.get_hscp_cwzb("蒙草生态")
-    #data = toolLib.get_hsrl_mmwp("福日电子")
-    #data = toolLib.get_hszbc_fsjy("蒙草生态","2024-08-30","2024-08-30",'5m')
-    
-    # data = toolLib.get_hsmy_zlzj("蒙草生态")
-    # print(data.head(5))
-    # if isinstance(data,list):
-    #     print(len(data))
-
-    # data = toolLib.get_hsmy_zjlr("蒙草生态")
-    # print(data.head(5))
-    # if isinstance(data,list):
-    #     print(len(data))
-
-    data = toolLib.get_hsmy_zhlrt("瑞芯微",sync_es=True)
-    print(data.head(20))
-    if isinstance(data,list):
-        print(len(data))
-
-    result = toolLib.esLib.count("hsmy_zhlrt_sz001696",{"query":{"match_all":{}}})
-    print(result)
-
-    
-
 

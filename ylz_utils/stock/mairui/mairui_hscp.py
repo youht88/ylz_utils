@@ -1,10 +1,7 @@
-from datetime import datetime, timedelta
 import requests
-from rich import print
-from ylz_utils.config import Config
-from ylz_utils.langchain.graph.stock_graph.tools import MairuiTools
+from . import MairuiStock
 
-class HSCP(MairuiTools):
+class HSCP(MairuiStock):
     def get_hscp_gsjj(self, code:str):
         """获取公司基本信息和IPO基本信息"""
         code_info = self._get_stock_code(code)
@@ -56,7 +53,7 @@ class HSCP(MairuiTools):
         )
         data = res.json()        
         return data
-    def get_hscp_jdlr(self, code:str)-> list[JDLR]:
+    def get_hscp_jdlr(self, code:str):
         """获取公司近一年各季度利润"""
         code_info = self._get_stock_code(code)
         code=code_info['code']
@@ -65,9 +62,9 @@ class HSCP(MairuiTools):
             f"{self.mairui_api_url}/hscp/jdlr/{code}/{self.mairui_token}",
         )
         data = res.json()        
-        return [JDLR(**item) for item in data]
+        return data
 
-    def get_hscp_jdxj(self, code:str) -> list[JDXJ]:
+    def get_hscp_jdxj(self, code:str):
         """获取公司近一年各季度现金流"""
         code_info = self._get_stock_code(code)
         code=code_info['code']
@@ -76,8 +73,8 @@ class HSCP(MairuiTools):
             f"{self.mairui_api_url}/hscp/jdxj/{code}/{self.mairui_token}",
         )
         data = res.json()        
-        return [JDXJ(**item) for item in data]
-    def get_hscp_cwzb(self, code:str)->list[CWZB]:
+        return data
+    def get_hscp_cwzb(self, code:str):
         """获取公司近一年各季度主要财务指标"""
         code_info = self._get_stock_code(code)
         code=code_info['code']
@@ -86,7 +83,7 @@ class HSCP(MairuiTools):
             f"{self.mairui_api_url}/hscp/cwzb/{code}/{self.mairui_token}",
         )
         data = res.json()        
-        return [CWZB(**item) for item in data]
+        return data
         #return list(map(lambda item:FinancialReport(**item),data))
     def get_hscp_sdgd(self, code:str):
         """获取公司十大股东"""

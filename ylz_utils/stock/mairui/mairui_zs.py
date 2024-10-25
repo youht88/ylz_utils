@@ -1,11 +1,30 @@
 from datetime import datetime, timedelta
 from typing import Literal
 import requests
-from rich import print
-from ylz_utils.config import Config
-from ylz_utils.langchain.graph.stock_graph.tools import MairuiTools
+from . import MairuiStock
 
-class ZS(MairuiTools):
+class ZS(MairuiStock):
+    def get_zs_all(self):
+        """获取沪深两市的主要指数列表"""
+        res = requests.get( 
+            f"{self.mairui_api_url}/zs/all/{self.mairui_token}",
+        )
+        data = res.json()        
+        return data
+    def get_zs_sh(self):
+        """获取沪市的指数列表"""
+        res = requests.get( 
+            f"{self.mairui_api_url}/zs/sh/{self.mairui_token}",
+        )
+        data = res.json()        
+        return data
+    def get_zs_all(self):
+        """获取深市的指数列表"""
+        res = requests.get( 
+            f"{self.mairui_api_url}/zs/sz/{self.mairui_token}",
+        )
+        data = res.json()        
+        return data
     def get_zs_sssj(self,code:str):
         """获取某个指数的实时交易数据"""
         #数据更新：交易时间段每1分钟
@@ -19,7 +38,7 @@ class ZS(MairuiTools):
         data = res.json()        
         return data
     
-    def get_zs_lsgl(self)->list[ZS_LSGL]:
+    def get_zs_lsgl(self):
         """获取沪深两市不同涨跌幅的股票数统计"""
         #数据更新：交易时间段每2分钟
         #请求频率：1分钟600次 | 包年版1分钟3千次 | 钻石版1分钟6千次
@@ -27,8 +46,8 @@ class ZS(MairuiTools):
             f"{self.mairui_api_url}/zs/lsgl/{self.mairui_token}",
         )
         data = res.json()        
-        return [ZS_LSGL(**{**item,"t":datetime.today().strftime("%Y-%m-%d %H:%M:%S")}) for item in [data]]
-
+        return data
+    
     def get_zs_fsjy(self,code:str,fs:Literal["5m","15m","30m","60m","dn","wn","mn","yn"]="5m"):
         """获取指数代码分时交易实时数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟

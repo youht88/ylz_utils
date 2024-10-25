@@ -1,10 +1,8 @@
 from datetime import datetime, timedelta
 import requests
-from rich import print
-from ylz_utils.config import Config
-from ylz_utils.langchain.graph.stock_graph.tools import MairuiTools
+from . import MairuiStock
 
-class HIZJ(MairuiTools):
+class HIZJ(MairuiStock):
     def get_hizj_zjh(self,sync_es:bool=False):   
         """获取近3、5、10天证监会行业资金流入情况"""
         #数据更新：每天15:30开始更新（更新耗时约10分钟）
@@ -128,42 +126,3 @@ class HIZJ(MairuiTools):
             es_result = self.esLib.save(name,df,ids=['dm','ud'])
             print(f"errors:{es_result["errors"]}")
         return df
-
-if __name__ == "__main__":
-    from ylz_utils.langchain import LangchainLib
-    from ylz_utils.langchain.graph.stock_graph import StockGraph
-    import time
-
-    Config.init('ylz_utils')
-    langchainLib = LangchainLib()
-    stockGraph = StockGraph(langchainLib)
-    toolLib = HIZJ(stockGraph)
-
-    data = toolLib.get_hizj_zjh(sync_es=True)
-    print("证监会板块资金流入情况\n",data.head(20))
-    if isinstance(data,list):
-        print(len(data))
-    
-    data = toolLib.get_hizj_bk(sync_es=True)
-    print("概念资金流入情况\n",data.head(20))
-    if isinstance(data,list):
-        print(len(data))
-    
-    data = toolLib.get_hizj_ggzl(sync_es=True)
-    print("个股资金流入情况总览入\n",data.head(20))
-    if isinstance(data,list):
-        print(len(data))
-
-    data = toolLib.get_hizj_lxlr(sync_es=True)
-    print("主力连续流入\n",data.head(20))
-    if isinstance(data,list):
-        print(len(data))
-
-    data = toolLib.get_hizj_lxlc(sync_es=True)
-    print("主力连续流出\n",data.head(20))
-    if isinstance(data,list):
-        print(len(data))
-
-    #result = toolLib.esLib.sql("select avg(o),avg(c) from hszbl_fsjy_dn_sh603893 where d>'2024-10-20'")
-    #print(result)
-    
