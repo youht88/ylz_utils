@@ -1,8 +1,10 @@
 from datetime import datetime,timedelta
 from functools import partial
+import logging
 from typing import Annotated, Literal
 import pysnowball as ball
-import schedule
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 import tushare
 import pandas as pd
 import requests
@@ -18,6 +20,8 @@ from ylz_utils.langchain.graph.stock_graph.state import *
 
 import concurrent.futures
 import time
+
+from ylz_utils.loger import LoggerLib
 
 
 class StockTools:
@@ -35,13 +39,21 @@ class StockTools:
         zsdm_file = os.path.join(current_dir, 'zsdm.json')
         with open(zsdm_file, 'r', encoding='utf-8') as f:
             self.zsdm = json.load(f)
-    # 定义一个执行函数的方法
-    def _parallel_execute(self,fun:callable,codes,**kwargs):
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [executor.submit(fun,code,**kwargs) for code in codes]  # 并发执行10次函数
-            results = [future.result() for future in futures]
-            print(len(results))
-            return results
+        self.scheduler = BackgroundScheduler()
+    # 定义一个执行函数的方法k
+    def parallel_execute(self,**kwargs):
+        func = kwargs.pop("func")
+        codes = kwargs.get("codes")
+        if func:
+            logging.info(f"run {func.__name__} as {datetime.now()}")
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                if codes:
+                    kwargs.pop("codes")
+                    futures = [executor.submit(func,code,**kwargs) for code in codes]
+                else:
+                    futures = [executor.submit(func,**kwargs)]
+                results = [future.result() for future in futures]
+                return results
 
     def _get_stock_code(self,stock_name:str)->dict:
         """根据股票或指数名称获取股票/指数代码"""
@@ -117,6 +129,18 @@ class StockTools:
                     ball_code = f"{jys.upper()}{code}"
                     return {"code":code,"mr_code":mr_code,"ts_code":ts_code,"name":name,"jys":jys,"ball_code":ball_code}
  
+    def _job(self,executer,fun,**kwargs):
+        now = datetime.now()
+        time_9_15 = now.replace(hour=9, minute=15, second=0, microsecond=0)
+        time_11_30 = now.replace(hour=11, minute=30, second=0, microsecond=0)
+        time_13_00 = now.replace(hour=13, minute=00, second=0, microsecond=0)
+        time_15_00 = now.replace(hour=15, minute=00, second=0, microsecond=0)
+        if (now >= time_9_15 and now < time_11_30 ) or (now >= time_13_00 and now < time_15_00 ): 
+            print("执行任务 {}:{}".format(now.strftime("%Y-%m-%d %H:%M:%S"), fun.__name__))
+            executer(fun,**kwargs)
+        else:
+            #pass
+            print("非交易时间 {}".format(now.strftime("%Y-%m-%d %H:%M:%S"), ))
         
 class MairuiTools(StockTools):
     def __init__(self,graphLib):
@@ -295,7 +319,7 @@ class SnowballTools(StockTools):
             'yield_to_maturity': res['data'][0]['yield_to_maturity']
         }
         return data
-    def quotec_detail(self,code:str,sync_es:bool=False,ids:list[str]=[]):
+    def quotec_detail(self,code:str,sync_es:bool=False):
         '''
         查看股票的实时行情细节
         '''
@@ -348,11 +372,11 @@ class SnowballTools(StockTools):
             'pe_forecast': res['data']['quote']['pe_forecast'],
             'total_shares': res['data']['quote']['total_shares'],
             'status': res['data']['quote']['status'],
-            'is_vie_desc': res['data']['quote']['is_vie_desc'],
-            'security_status': res['data']['quote']['security_status'],
+            'is_vie_desc': res['data']['quote'].get('is_vie_desc'),
+            'security_status': res['data']['quote'].get('security_status'),
             'goodwill_in_net_assets': res['data']['quote']['goodwill_in_net_assets'],
             'weighted_voting_rights_desc': res['data']['quote']['weighted_voting_rights_desc'],
-            'is_vie': res['data']['quote']['is_vie'],
+            'is_vie': res['data']['quote'].get('is_vie'),
             'issue_date': res['data']['quote']['issue_date'],
             'sub_type': res['data']['quote']['sub_type'],
             'is_registration_desc': res['data']['quote']['is_registration_desc'],
@@ -386,10 +410,8 @@ class SnowballTools(StockTools):
         #     'yield_to_maturity': res['data'][0]['yield_to_maturity']
         # }
         if sync_es:
-            id = None
-            if ids:
-                id = '_'.join([str(data[id]) for id in ids])
-            self.esLib.client.index(index="snowball_price",document=data,id=id)
+            id = '_'.join([str(data[id]) for id in ["mr_code","t"]])
+            self.esLib.client.index(index="snowball_ssjy_20241025",document=data,id=id)
         return data
 
     def pankou(self,code:str):
@@ -570,6 +592,7 @@ if __name__ == "__main__":
     import time
 
     Config.init('ylz_utils')
+    LoggerLib.init('ylz_utils')
     langchainLib = LangchainLib()
     stockGraph = StockGraph(langchainLib)
     print("雪球--->")
@@ -584,25 +607,32 @@ if __name__ == "__main__":
     #     print(res1[0]['t'],res1[0]['mr_code'],res1[0]['vc'],res1[0]['vb'])
     #     #lib.esLib.save("capital_flow",[res1],ids=['mr_code','t'])
     #     time.sleep(3)
-    #lib.esLib.drop("snowball_price")
-    def job(executer,fun,codes,**kwargs):
-        now = datetime.now()
-        time_9_20 = now.replace(hour=9, minute=20, second=0, microsecond=0)
-        time_11_30 = now.replace(hour=11, minute=30, second=0, microsecond=0)
-        time_13_00 = now.replace(hour=13, minute=00, second=0, microsecond=0)
-        time_15_00 = now.replace(hour=15, minute=00, second=0, microsecond=0)
-        if (now >= time_9_20 and now < time_11_30 ) or (now >= time_13_00 and now < time_15_00 ): 
-            print("执行任务 {}:{}".format(now.strftime("%Y-%m-%d %H:%M:%S"), fun.__name__))
-            executer(fun,codes,**kwargs)
-        else:
-            pass
-            #print("非交易时间 {}".format(now.strftime("%Y-%m-%d %H:%M:%S"), ))
-    schedule.every(3).seconds.do(partial(job,
-                                         lib._parallel_execute, 
-                                         lib.quotec_detail,['全志科技','瑞芯微','欧菲光'],
-                                         sync_es=True,ids=['mr_code','t']))
+    
+    #lib.esLib.drop("snowball_ssjy")
+    codes=['全志科技','瑞芯微','欧菲光',"永辉超市","乐鑫科技","联创电子","万达信息","银邦股份","蒙草生态","拉卡拉",
+           "新华传媒","宗申动力","隆基绿能","常山北明","旗天科技","国泰君安"]
+    kwargs = {
+        "func":lib.quotec_detail,
+        "codes":codes,
+        "sync_es":True
+    }
+    lib.scheduler.add_job(lib.parallel_execute, trigger=CronTrigger(hour='9',minute='30-59',second='*/3'),kwargs=kwargs)
+    lib.scheduler.add_job(lib.parallel_execute, trigger=CronTrigger(hour='10',minute='00-59',second='*/3'),kwargs=kwargs)
+    lib.scheduler.add_job(lib.parallel_execute, trigger=CronTrigger(hour='11',minute='00-30',second='*/3'),kwargs=kwargs)
+    lib.scheduler.add_job(lib.parallel_execute, trigger=CronTrigger(hour='13-15',minute='00-59',second='*/3'),kwargs=kwargs)
+    lib.scheduler.start()
+    logging.info("schedule started!")
     # 循环执行任务
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+    try:
+        while True:
+            try:
+                res = lib.esLib.sql("select count(*) from snowball_ssjy_20241025")
+                #df = pd.DataFrame(res["rows"],columns=[item["name"] for item in res["columns"]])
+                print("count=",res)        
+            except:
+                pass
+            time.sleep(60)
+    except (KeyboardInterrupt, SystemExit):
+        lib.scheduler.shutdown()
+        
     
