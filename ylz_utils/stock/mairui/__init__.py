@@ -1,7 +1,10 @@
+from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse
 import pandas as pd
 import requests
 
 from ylz_utils.stock import StockLib
+from rich.progress import Progress
 
 class MairuiStock(StockLib):
     def __init__(self):
@@ -87,3 +90,74 @@ class MairuiStock(StockLib):
         except Exception as e:
             raise Exception(f"error on _load_data_by_code,the error is :{e}")
         return df
+    
+    def setup_router(self):
+        from .mairui_hizj import HIZJ
+        hizj = HIZJ()
+            
+        self.router = APIRouter()
+        @self.router.get("/refresh_hizj")
+        async def refresh_hizj():
+            progress = Progress()
+            task = progress.add_task("[green]Refreshing...", total=100)
+            funcs = [hizj.get_hizj_bk,hizj.get_hizj_zjh,hizj.get_hizj_lxlr,hizj.get_hizj_lxlc]
+            for func in funcs:
+                func(sync_es = True)
+                progress.update(task, advance=1)
+                progress.refresh()
+            progress.complete(task)
+            return {"message":"refresh_hizj completed!"}
+        @self.router.get("/get_hizj_bk",response_class=HTMLResponse)
+        async def get_hizj_bk(req:Request):
+            o = req.query_params.get('o')
+            #asc = bool(req.query_params.get('asc','False'))
+            num = int(req.query_params.get('num',0))
+            df = hizj.get_hizj_bk()
+            if o:
+                df = df.sort_values(by=o,ascending=False)
+            if num:
+                df = df.head(num)
+            content = df.to_html()
+            return HTMLResponse(content=content)
+        @self.router.get("/get_hizj_zjh",response_class=HTMLResponse)
+        async def get_hizj_zjh(req:Request):
+            o = req.query_params.get('o')
+            #asc = bool(req.query_params.get('asc','False'))
+            num = int(req.query_params.get('num',0))
+            df = hizj.get_hizj_zjh()
+            if o:
+                df = df.sort_values(by=o,ascending=False)
+            if num:
+                df = df.head(num)
+            content = df.to_html()
+            return HTMLResponse(content=content)
+        @self.router.get("/get_hizj_lxlr",response_class=HTMLResponse)
+        async def get_hizj_lxlr(req:Request):
+            o = req.query_params.get('o')
+            #asc = bool(req.query_params.get('asc','False'))
+            num = int(req.query_params.get('num',0))
+            df = hizj.get_hizj_lxlr()
+            if o:
+                df = df.sort_values(by=o,ascending=False)
+            if num:
+                df = df.head(num)
+            content = df.to_html()
+            return HTMLResponse(content=content)
+        
+        @self.router.get("/get_hizj_lxlc",response_class=HTMLResponse)
+        async def get_hizj_lxlc(req:Request):
+            o = req.query_params.get('o')
+            #asc = bool(req.query_params.get('asc','False'))
+            num = int(req.query_params.get('num',0))
+            df = hizj.get_hizj_lxlc()
+            if o:
+                df = df.sort_values(by=o,ascending=False)
+            if num:
+                df = df.head(num)
+            content = df.to_html()
+            return HTMLResponse(content=content)
+        
+        return self.router
+        
+
+        

@@ -9,6 +9,7 @@ class HIZJ(MairuiStock):
         #请求频率：1分钟20次 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
+        print("run get_hizj_zjh",today)
         if today.hour>16:
             ud = today.strftime("%Y-%m-%d")
         else:

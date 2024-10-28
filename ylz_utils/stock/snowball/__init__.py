@@ -1,10 +1,13 @@
 from datetime import datetime
 
+from fastapi import APIRouter
 import pysnowball as ball
 
 from ylz_utils.config import Config
 from ylz_utils.stock import StockLib
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 class SnowballStock(StockLib): 
     def __init__(self):
@@ -343,3 +346,37 @@ class SnowballStock(StockLib):
         ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
         return ball.cash_flow(symbol=ball_code,is_annals=is_annals,count=count)
+    def setup_router(self):
+        self.router = APIRouter()
+        @self.router.get("/start_ssjy")
+        async def start():
+            scheduler = BackgroundScheduler()
+ 
+            codes=['全志科技','瑞芯微','欧菲光',"永辉超市","乐鑫科技","联创电子","万达信息","银邦股份","蒙草生态","拉卡拉",
+           "新华传媒","宗申动力","隆基绿能","常山北明","旗天科技","国泰君安",
+           "国新健康","普洛药业","隆基绿能","中船应急","福日电子","立讯精密","华力创通","中粮资本",
+           "东方财富","中国中免","国金证券",
+           "中际旭创","小商品城","源杰科技",
+           "新元科技","金三江","海达股份","科创新源","华盛锂电","矩阵股份","民德电子","帝尔激光","宇邦新材","乾照光电",
+           "保变电气","新诺威","珠江啤酒","国电电力","协创数据","神宇股份","北新建材","未名医药","蜂助手","如通股份",
+           "锐捷网络","吉比特","宁德时代","迈为股份","中熔电气","同花顺","光智科技","韦尔股份",
+           "上证指数","深证成指","创业板指","中证500"
+           ]
+            kwargs = {
+                "func":self.quotec_detail,
+                "codes":codes,
+                "sync_es":True
+            }
+            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='9',minute='20-59',second='*/3'),kwargs=kwargs)
+            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='10',minute='00-59',second='*/3'),kwargs=kwargs)
+            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='11',minute='00-30',second='*/3'),kwargs=kwargs)
+            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='13-14',minute='00-59',second='*/3'),kwargs=kwargs)
+            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='15',minute='00-20',second='*/3'),kwargs=kwargs)
+            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='9',minute='30-59',second='*/3'),kwargs=kwargs)
+            scheduler.start()   
+            return {"message":"服务已启动！"}
+        @self.router.get("/sql/{sql_str}")
+        async def sql(sql_str):
+            data = self.esLib.sql(sql_str)
+            return {"sql":sql_str,"data":data}
+        return self.router
