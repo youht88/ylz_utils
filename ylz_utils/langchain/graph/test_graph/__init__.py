@@ -8,7 +8,7 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import SystemMessage,HumanMessage
 
 from ylz_utils.langchain.graph.stock_graph import StockGraph
-from ylz_utils.langchain.graph.stock_graph.tools import MairuiTools
+from ylz_utils.stock.mairui import MairuiStock
 from .configurable import ConfigSchema
 from .function import FunctionGraph
 from ..public_graph.summary import SummaryGraph
@@ -27,7 +27,7 @@ class TestGraph(GraphLib):
     def __init__(self,langchainLib):
         super().__init__(langchainLib)
         stockGraph = StockGraph(langchainLib)
-        self.toolLib = MairuiTools(stockGraph)
+        self.toolLib = MairuiStock()
         #data = toolLib.get_company_info("ST易联众")
         #self.stockData = toolLib.get_hsmy_jddxt("瑞芯微")
     def load_data(self,func,csv_file_name,time_str,trans_to_datamodel:Optional[BaseModel]=None) ->pd.DataFrame|BaseModel:
@@ -35,30 +35,6 @@ class TestGraph(GraphLib):
         try:
             df = pd.read_csv(csv_file_name)
             given_date = datetime.strptime(df.loc[0][time_str], "%Y-%m-%d %H:%M:%S")
-            # 获取当前日期
-            now = datetime.now()
-            # 创建当前日期的下午 4 点钟的 datetime 对象
-            newdata_today = now.replace(hour=16, minute=0, second=0, microsecond=0)
-            if given_date.date() < now.date() and now > newdata_today:
-                data = func()
-                df = pd.DataFrame([item.model_dump() for item in data])
-                df.to_csv(csv_file_name) 
-            else:
-                print(f"正在转换{csv_file_name}")
-                data = [trans_to_datamodel(**row) for index, row in df.iterrows()]  
-                print("转换完毕!")
-        except Exception as e:
-            print("error on retrieve data,now re retrieve",e)
-            data = func()
-            df = pd.DataFrame([item.model_dump() for item in data])
-            df.to_csv(csv_file_name)
-        print(f"{csv_file_name} counts=",len(data))
-        return data
-    def load_data_by_code(self,code,func,csv_file_name,time_str,trans_to_datamodel:Optional[BaseModel]=None) ->pd.DataFrame|BaseModel:
-        # self.data = self.load_data("sz300096",self.toolLib.get_hscp_gsjj,"hicp_gscp.csv","t",trans_to_datamodel=GSJJ)
-        try:
-            df = pd.read_csv(csv_file_name)
-            name = df.loc[0][time_str]
             # 获取当前日期
             now = datetime.now()
             # 创建当前日期的下午 4 点钟的 datetime 对象
