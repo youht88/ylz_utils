@@ -367,7 +367,7 @@ class SnowballStock(StockLib):
                 "codes":codes,
                 "sync_es":True
             }
-            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='9',minute='20-59',second='*/3'),kwargs=kwargs)
+            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='9',minute='15-59',second='*/3'),kwargs=kwargs)
             scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='10',minute='00-59',second='*/3'),kwargs=kwargs)
             scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='11',minute='00-30',second='*/3'),kwargs=kwargs)
             scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='13-14',minute='00-59',second='*/3'),kwargs=kwargs)
