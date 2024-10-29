@@ -20,7 +20,7 @@ class StockLib:
         self.esLib = ESLib(using='es')
         # 获取当前模块的目录
         self.gpdm = None
-        self.zsdm = None
+        self.bkdm = None
         self.mairui_token = Config.get('STOCK.MAIRUI.TOKEN')
         print("MAIRUI_TOKEN=",self.mairui_token)
         self.mairui_api_url = "http://api.mairui.club" 
@@ -42,14 +42,14 @@ class StockLib:
         if not self.bkdm:
             res = requests.get(f"{self.mairui_api_url}/hszg/list/{self.mairui_token}")
             self.bkdm = res.json()
-        code_info = list(filter(lambda item:item['code']==bk_name,self.zsdm))
+        code_info = list(filter(lambda item:item['code']==bk_name,self.bkdm))
         if code_info:
             if len(code_info)>1:
                 print("code_info",code_info)
                 raise Exception('板块代码不唯一，请重新配置!')
             return code_info[0]
         else:
-            code_info = list(filter(lambda item:item['name'].find(bk_name)>=0,self.zsdm)) 
+            code_info = list(filter(lambda item:item['name'].find(bk_name)>=0,self.bkdm)) 
             if code_info:
                 if len(code_info)>1:
                     print("code_info",code_info)
@@ -138,7 +138,7 @@ class StockLib:
                 ball_code = f"{jys.upper()}{code}"
                 return {"code":code,"mr_code":mr_code,"ts_code":ts_code,"name":name,"jys":jys,"ball_code":ball_code}
             else:
-                zs_info = list(filter(lambda item:item["mc"]==stock_name.upper(),self.zsdm))
+                zs_info = list(filter(lambda item:item["mc"]==stock_name.upper(),self.bkdm))
                 if zs_info:
                     mr_code = zs_info[0]['dm']
                     jys = zs_info[0]['jys']

@@ -1,7 +1,7 @@
 import requests
 from . import MairuiStock
 
-class HSMY(MairuiStock):
+class HIGG(MairuiStock):
     def get_higg_jlr(self):
         """获取所有股票的资金净流入"""
         #数据更新：每天15:30（约10分钟更新完成）

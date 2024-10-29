@@ -17,7 +17,17 @@ class MairuiStock(StockLib):
             '.*'
         ] 
         self.dataframe_map:dict[str,pd.DataFrame]={}       
-
+    def is_magic(self,value):
+        value_str = str(value)
+        if '.' in value_str:
+            integer_part = value_str.split('.')[0]
+            decimal_part = value_str.split('.')[1]
+            if len(decimal_part) >= 2 :
+                if decimal_part[0] == decimal_part[1]:
+                    return True
+                if integer_part[-1] == decimal_part[1]:
+                    return True
+        return False
     def _load_data(self,name:str,method_path:str,
                            add_fields:dict={},skip_condition:str=None,keys=[],date_fields=[])->pd.DataFrame:
         # dataframe 传入的类实例变量，用于多次检索时的内存cache
@@ -93,21 +103,44 @@ class MairuiStock(StockLib):
     
     def setup_router(self):
         from .mairui_hizj import HIZJ
+        from .mairui_hszg import HSZG
+        from .mairui_himk import HIMK
+        from ..snowball import SnowballStock
         hizj = HIZJ()
-            
+        hszg = HSZG()            
+        himk = HIMK()
+        snowball = SnowballStock()
         self.router = APIRouter()
+
         @self.router.get("/refresh_hizj")
         async def refresh_hizj():
-            progress = Progress()
-            task = progress.add_task("[green]Refreshing...", total=100)
             funcs = [hizj.get_hizj_bk,hizj.get_hizj_zjh,hizj.get_hizj_lxlr,hizj.get_hizj_lxlc]
             for func in funcs:
                 func(sync_es = True)
-                progress.update(task, advance=1)
-                progress.refresh()
-            progress.complete(task)
             return {"message":"refresh_hizj completed!"}
-        @self.router.get("/get_hizj_bk",response_class=HTMLResponse)
+        @self.router.get("/bk/{code}",response_class=HTMLResponse)
+        async def get_bk_stock(code,req:Request):
+            o = req.query_params.get('o')
+            num = int(req.query_params.get('num',0))
+            bk_data = hszg.get_hszg_gg(code)
+            kwargs = {
+                "func": snowball.quotec_detail,
+                "codes": [item['dm'] for item in bk_data],
+            }
+            quotec_data = self.parallel_execute(**kwargs)
+            df = pd.DataFrame(quotec_data)
+            if o:
+                df = df.sort_values(by=o,ascending=False)
+            if num:
+                df = df.head(num)
+            df = df.filter(
+                ['t','mr_code','name','high52w','low52w','current_year_percent','last_close',
+                 'current','percent','open','high','low','chg','volume','amount','volume_ratio','turnover_rate','pankou_ratio',
+                 'float_shares','total_shares','float_market_capital','market_capital',
+                 'eps','dividend','pe_ttm','pe_forecast','pb','pledge_ratio','navps','amplitude','current_ext','volume_ext'])
+            content = df.to_html()
+            return HTMLResponse(content=content)    
+        @self.router.get("/hizj/bk",response_class=HTMLResponse)
         async def get_hizj_bk(req:Request):
             o = req.query_params.get('o')
             #asc = bool(req.query_params.get('asc','False'))
@@ -119,7 +152,7 @@ class MairuiStock(StockLib):
                 df = df.head(num)
             content = df.to_html()
             return HTMLResponse(content=content)
-        @self.router.get("/get_hizj_zjh",response_class=HTMLResponse)
+        @self.router.get("/hizj/zjh",response_class=HTMLResponse)
         async def get_hizj_zjh(req:Request):
             o = req.query_params.get('o')
             #asc = bool(req.query_params.get('asc','False'))
@@ -131,7 +164,7 @@ class MairuiStock(StockLib):
                 df = df.head(num)
             content = df.to_html()
             return HTMLResponse(content=content)
-        @self.router.get("/get_hizj_lxlr",response_class=HTMLResponse)
+        @self.router.get("/hizj/lxlr",response_class=HTMLResponse)
         async def get_hizj_lxlr(req:Request):
             o = req.query_params.get('o')
             #asc = bool(req.query_params.get('asc','False'))
@@ -144,7 +177,7 @@ class MairuiStock(StockLib):
             content = df.to_html()
             return HTMLResponse(content=content)
         
-        @self.router.get("/get_hizj_lxlc",response_class=HTMLResponse)
+        @self.router.get("/hizj/lxlc",response_class=HTMLResponse)
         async def get_hizj_lxlc(req:Request):
             o = req.query_params.get('o')
             #asc = bool(req.query_params.get('asc','False'))
@@ -157,7 +190,52 @@ class MairuiStock(StockLib):
             content = df.to_html()
             return HTMLResponse(content=content)
         
-        return self.router
+        @self.router.get("/hszg/gg/{code}",response_class=HTMLResponse)
+        async def get_hszg_gg(code:str,req:Request):
+            o = req.query_params.get('o')
+            #asc = bool(req.query_params.get('asc','False'))
+            num = int(req.query_params.get('num',0))
+            data = hszg.get_hszg_gg(code)
+            df = pd.DataFrame(data)
+            if o:
+                df = df.sort_values(by=o,ascending=False)
+            if num:
+                df = df.head(num)
+            content = df.to_html()
+            return HTMLResponse(content=content)
+
+        @self.router.get("/hszg/zg/{code}",response_class=HTMLResponse)
+        async def get_hszg_zg(code:str,req:Request):
+            o = req.query_params.get('o')
+            #asc = bool(req.query_params.get('asc','False'))
+            num = int(req.query_params.get('num',0))
+            data = hszg.get_hszg_zg(code)
+            df = pd.DataFrame(data)
+            if o:
+                df = df.sort_values(by=o,ascending=False)
+            if num:
+                df = df.head(num)
+            content = df.to_html()
+            return HTMLResponse(content=content)
         
+        @self.router.get("/himk/ltszph",response_class=HTMLResponse)
+        async def get_himk_ltszph(req:Request):
+            o = req.query_params.get('o')
+            magic = req.query_params.get('magic')
+            num = int(req.query_params.get('num',0))
+            df = himk.get_himk_ltszph()
+            if magic!=None:
+                df = df[df['c'].apply(self.is_magic)] 
+                df = df.reset_index(drop=True)   
+            if o:
+                df = df.sort_values(by=o,ascending=False)
+            if num:
+                df = df.head(num)
+            content = df.to_html()
+            return HTMLResponse(content=content)
+        
+
+        return self.router
+      
 
         
