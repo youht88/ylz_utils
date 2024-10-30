@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse
+import pandas as pd
 import pysnowball as ball
 
 from ylz_utils.config import Config
@@ -172,10 +174,10 @@ class SnowballStock(StockLib):
         if sync_es:
             id = '_'.join([str(data[id]) for id in ["mr_code","t"]])
             today = datetime.today().strftime("%Y%m%d")
-            self.esLib.client.index(index=f"snowball_ssjy_{today}",document=data,id=id)
+            self.esLib.client.index(index=f"quotec_{today}",document=data,id=id)
         return data
 
-    def pankou(self,code:str):
+    def pankou(self,code:str,sync_es:bool=False):
         '''
         查看股票的实时分笔数据，可以实时取得股票当前报价和成交信息
         '''
@@ -209,8 +211,12 @@ class SnowballStock(StockLib):
         "ps5":res['data']['sp5'],
         "vs5":res['data']['sc5']/100,
         }
-        #return [HSRL_MMWP(**item) for item in [data]]
+        if sync_es:
+            id = '_'.join([str(data[id]) for id in ["mr_code","t"]])
+            today = datetime.today().strftime("%Y%m%d")
+            self.esLib.client.index(index=f"pankou_{today}",document=data,id=id)
         return data
+    
     def capital_flow(self,code:str):
         '''
         获取当日资金流入流出数据，每分钟数据
@@ -348,7 +354,7 @@ class SnowballStock(StockLib):
         return ball.cash_flow(symbol=ball_code,is_annals=is_annals,count=count)
     def setup_router(self):
         self.router = APIRouter()
-        @self.router.get("/start_ssjy")
+        @self.router.get("/start")
         async def start():
             scheduler = BackgroundScheduler()
  
@@ -362,21 +368,37 @@ class SnowballStock(StockLib):
            "锐捷网络","吉比特","宁德时代","迈为股份","中熔电气","同花顺","光智科技","韦尔股份",
            "上证指数","深证成指","创业板指","中证500"
            ]
-            kwargs = {
+            quotec_dict = {
                 "func":self.quotec_detail,
                 "codes":codes,
                 "sync_es":True
             }
-            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='9',minute='15-59',second='*/3'),kwargs=kwargs)
-            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='10',minute='00-59',second='*/3'),kwargs=kwargs)
-            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='11',minute='00-30',second='*/3'),kwargs=kwargs)
-            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='13-14',minute='00-59',second='*/3'),kwargs=kwargs)
-            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='15',minute='00-20',second='*/3'),kwargs=kwargs)
-            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='9',minute='30-59',second='*/3'),kwargs=kwargs)
+            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='9',minute='30-59',second='*/3'),kwargs=quotec_dict)
+            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='10',minute='00-59',second='*/3'),kwargs=quotec_dict)
+            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='11',minute='00-30',second='*/3'),kwargs=quotec_dict)
+            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='13-14',minute='00-59',second='*/3'),kwargs=quotec_dict)
+            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='15',minute='00-20',second='*/3'),kwargs=quotec_dict)
+            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='9',minute='30-59',second='*/3'),kwargs=quotec_dict)
+
+            pankou_dict = {
+                "func":self.pankou,
+                "codes":codes,
+                "sync_es":True
+            }            
+            scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='9',minute='15-30',second='*/3'),kwargs=pankou_dict)
+            
             scheduler.start()   
             return {"message":"服务已启动！"}
-        @self.router.get("/sql/{sql_str}")
-        async def sql(sql_str):
-            data = self.esLib.sql(sql_str)
-            return {"sql":sql_str,"data":data}
+        @self.router.get("/sql",response_class=HTMLResponse)
+        async def sql(req:Request):
+            sql = req.query_params.get("q")
+            data = self.esLib.sql(sql)
+            df = pd.DataFrame(data['rows'],columns=[item['name'] for item in data['columns']])
+            content = df.to_html()
+            return HTMLResponse(content=content)
+        @self.router.get("/drop/{table}")
+        async def drop_table(table:str):
+            res = self.esLib.drop(table)
+            return res
+
         return self.router

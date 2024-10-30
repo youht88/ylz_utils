@@ -220,6 +220,7 @@ class MairuiStock(StockLib):
         
         @self.router.get("/himk/ltszph",response_class=HTMLResponse)
         async def get_himk_ltszph(req:Request):
+            c = [item for item in req.query_params.items() if '@' in item[0]]
             o = req.query_params.get('o')
             magic = req.query_params.get('magic')
             num = int(req.query_params.get('num',0))
@@ -227,6 +228,23 @@ class MairuiStock(StockLib):
             if magic!=None:
                 df = df[df['c'].apply(self.is_magic)] 
                 df = df.reset_index(drop=True)   
+            if c:
+                for item in c:
+                    key = item[0].replace('@','')
+                    if '[' in item[1] and ']' in item[1]:
+                        values = item[1].replace('[','').replace(']','').split(',')[:2]
+                        if values[0].isnumeric() and values[1].isnumeric():
+                            print(f"{key} between {float(values[0])} and {float(values[1])}")
+                            df = df[df[key]>=float(values[0]) & df[key]<=float(values[1])]
+                        elif values[0].isnumeric() and values[1]=='':
+                            print(f"{key} >= {float(values[0])}")
+                        elif values[0]=='' and values[1].isnumeric():
+                            print(f"{key} <= {float(values[1])}")
+                        else:
+                            print(f"{key} = {float(values[0])}")
+                    else:
+                        values = item[1].split(',')
+                        print(f"{key} in {values}")
             if o:
                 df = df.sort_values(by=o,ascending=False)
             if num:
