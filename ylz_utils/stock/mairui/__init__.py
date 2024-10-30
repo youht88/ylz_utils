@@ -235,7 +235,7 @@ class MairuiStock(StockLib):
                         values = item[1].replace('[','').replace(']','').split(',')[:2]
                         if values[0].isnumeric() and values[1].isnumeric():
                             print(f"{key} between {float(values[0])} and {float(values[1])}")
-                            df = df[df[key]>=float(values[0]) & df[key]<=float(values[1])]
+                            df = df[(df[key]>=float(values[0])) & (df[key]<=float(values[1]))]
                         elif values[0].isnumeric() and values[1]=='':
                             print(f"{key} >= {float(values[0])}")
                         elif values[0]=='' and values[1].isnumeric():
