@@ -1,8 +1,15 @@
 from datetime import datetime, timedelta
+import pandas as pd
 import requests
-from . import MairuiStock
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from .mairui_base import MairuiBase
 
-class HSZG(MairuiStock):
+class HSZG(MairuiBase):
+    def __init__(self):
+        super().__init__()
+        self.register_router()
+
     def get_hszg_list(self):
         """获取沪深两市的指数代码"""
         res = requests.get( 
@@ -30,4 +37,28 @@ class HSZG(MairuiStock):
         )
         data = res.json() 
         return data
+    
+    def register_router(self):
+        @self.router.get("/hszg/gg/{code}",response_class=HTMLResponse)
+        async def get_hszg_gg(code:str,req:Request):
+            '''根据指数、行业、概念板块代码找股票'''
+            try:
+                data = self.get_hszg_gg(code)
+                df = pd.DataFrame(data)
+                df = self._prepare_df(df,req)
+                content = df.to_html()
+                return HTMLResponse(content=content)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")
 
+        @self.router.get("/hszg/zg/{code}",response_class=HTMLResponse)
+        async def get_hszg_zg(code:str,req:Request):
+            '''根据股票找相关指数、行业、概念板块'''
+            try:
+                data = self.get_hszg_zg(code)
+                df = pd.DataFrame(data)
+                df = self._prepare_df(df,req)
+                content = df.to_html()
+                return HTMLResponse(content=content)        
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")

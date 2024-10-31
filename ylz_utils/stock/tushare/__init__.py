@@ -4,10 +4,9 @@ import requests
 import tushare
 
 from ylz_utils.config import Config
-from ylz_utils.stock import StockLib
+from ylz_utils.stock.base import StockBase
 
-
-class TushareStock(StockLib):
+class TushareStock(StockBase):
     def __init__(self):
         super().__init__()
         self.tushare_token = Config.get('STOCK.TUSHARE.TOKEN')

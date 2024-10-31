@@ -8,7 +8,6 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import SystemMessage,HumanMessage
 
 from ylz_utils.langchain.graph.stock_graph import StockGraph
-from ylz_utils.stock.mairui import MairuiStock
 from .configurable import ConfigSchema
 from .function import FunctionGraph
 from ..public_graph.summary import SummaryGraph
@@ -27,7 +26,6 @@ class TestGraph(GraphLib):
     def __init__(self,langchainLib):
         super().__init__(langchainLib)
         stockGraph = StockGraph(langchainLib)
-        self.toolLib = MairuiStock()
         #data = toolLib.get_company_info("ST易联众")
         #self.stockData = toolLib.get_hsmy_jddxt("瑞芯微")
     def load_data(self,func,csv_file_name,time_str,trans_to_datamodel:Optional[BaseModel]=None) ->pd.DataFrame|BaseModel:

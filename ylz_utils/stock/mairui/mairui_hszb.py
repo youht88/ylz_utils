@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 from typing import Literal
 import requests
-from . import MairuiStock
+from .mairui_base import MairuiBase
 
-class HSZB(MairuiStock):
+class HSZB(MairuiBase):
     def get_hszb_fsjy(self,code:str,fsjb:Literal["5m","15m","30m","60m","dn","wn","mn","yn"]="5m",sync_es:bool=False):
         """获取股票代码分时交易实时数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟

@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 import requests
-from . import MairuiStock
+from .mairui_base import MairuiBase
 
-class HSRL(MairuiStock):
+class HSRL(MairuiBase):
     def get_hsrl_ssjy(self,code:str,sync_es:bool=False):
         """获取某个股票的实时交易数据"""
         #数据更新：交易时间段每1分钟

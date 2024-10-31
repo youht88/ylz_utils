@@ -9,8 +9,8 @@ from langchain_core.messages import SystemMessage,ToolMessage
 
 from .configurable import ConfigSchema
 from .state import *
-from ylz_utils.stock.mairui import MairuiStock
-from ylz_utils.stock.snowball import SnowballStock
+from ylz_utils.stock import MairuiLib,SnowballLib
+from ylz_utils.stock.mairui.mairui_hibk import HIBK
 from ..public_graph.summary import SummaryGraph
 
 from rich import print
@@ -22,7 +22,7 @@ class StockGraph(GraphLib):
         #toolsLib = Tools(self)
         #self.tools = [toolsLib.pankou,toolsLib.quotec,toolsLib.income,
         #              toolsLib.holders,toolsLib.balance,toolsLib.top_holders]
-        self.tools:list = self.get_class_instance_tools(MairuiStock)
+        self.tools:list = self.get_class_instance_tools(HIBK)
         self.tools.append(self.python_repl_tool)
     def get_graph(self) -> CompiledStateGraph:
         workflow = StateGraph(NewState,ConfigSchema)

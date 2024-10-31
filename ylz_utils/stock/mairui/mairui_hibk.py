@@ -1,7 +1,7 @@
 import requests
-from . import MairuiStock
+from .mairui_base import MairuiBase
 
-class HIBK(MairuiStock):
+class HIBK(MairuiBase):
     def get_hibk_zjhhy(self):
         """获取所有证监会定义的行业板块个股统计数据"""
         #数据更新：每天15:30（约10分钟更新完成）

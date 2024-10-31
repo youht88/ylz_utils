@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 from typing import Literal
 import requests
-from . import MairuiStock
+from .mairui_base import MairuiBase
 
-class ZS(MairuiStock):
+class ZS(MairuiBase):
     def get_zs_all(self):
         """获取沪深两市的主要指数列表"""
         res = requests.get( 

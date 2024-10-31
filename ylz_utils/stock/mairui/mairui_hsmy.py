@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 import requests
-from . import MairuiStock
+from .mairui_base import MairuiBase
 
-class HSMY(MairuiStock):
+class HSMY(MairuiBase):
     def get_hsmy_zlzj(self,code:str):
         """获取某个股票的每分钟主力资金走势"""
         #数据更新：每天20:00开始更新（更新耗时约4小时）

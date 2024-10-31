@@ -1,7 +1,7 @@
 import requests
-from . import MairuiStock
+from .mairui_base import MairuiBase
 
-class HITC(MairuiStock):
+class HITC(MairuiBase):
     def get_hitc_jrts(self):
         """获取今日股票、基金公告事项以及交易异动概览"""
         #数据更新：每天15:30（约10分钟更新完成）

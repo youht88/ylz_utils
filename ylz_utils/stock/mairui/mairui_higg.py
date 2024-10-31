@@ -1,7 +1,7 @@
 import requests
-from . import MairuiStock
+from .mairui_base import MairuiBase
 
-class HIGG(MairuiStock):
+class HIGG(MairuiBase):
     def get_higg_jlr(self):
         """获取所有股票的资金净流入"""
         #数据更新：每天15:30（约10分钟更新完成）

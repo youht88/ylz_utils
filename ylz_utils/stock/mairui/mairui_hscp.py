@@ -1,7 +1,7 @@
 import requests
-from . import MairuiStock
+from .mairui_base import MairuiBase
 
-class HSCP(MairuiStock):
+class HSCP(MairuiBase):
     def get_hscp_gsjj(self, code:str):
         """获取公司基本信息和IPO基本信息"""
         code_info = self._get_stock_code(code)

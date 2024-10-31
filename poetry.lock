@@ -316,6 +316,25 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 reference = "tsinghua"
 
 [[package]]
+name = "asyncer"
+version = "0.0.8"
+description = "Asyncer, async and await, focused on developer experience."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "asyncer-0.0.8-py3-none-any.whl", hash = "sha256:5920d48fc99c8f8f0f1576e1882f5022885589c5fcbc46ce4224ec3e53776eeb"},
+    {file = "asyncer-0.0.8.tar.gz", hash = "sha256:a589d980f57e20efb07ed91d0dbe67f1d2fd343e7142c66d3a099f05c620739c"},
+]
+
+[package.dependencies]
+anyio = ">=3.4.0,<5.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
 name = "attrs"
 version = "24.2.0"
 description = "Classes Without Boilerplate"
@@ -1429,6 +1448,30 @@ uvicorn = {version = ">=0.12.0", extras = ["standard"]}
 
 [package.extras]
 all = ["email_validator (>=2.0.0)", "httpx (>=0.23.0)", "itsdangerous (>=1.1.0)", "jinja2 (>=2.11.2)", "orjson (>=3.2.1)", "pydantic-extra-types (>=2.0.0)", "pydantic-settings (>=2.0.0)", "python-multipart (>=0.0.7)", "pyyaml (>=5.3.1)", "ujson (>=4.0.1,!=4.0.2,!=4.1.0,!=4.2.0,!=4.3.0,!=5.0.0,!=5.1.0)", "uvicorn[standard] (>=0.12.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
+name = "fastapi-cdn-host"
+version = "0.8.2"
+description = "Auto choose the fastest cdn host for fastapi project docs."
+optional = false
+python-versions = ">=3.8,<4.0"
+files = [
+    {file = "fastapi_cdn_host-0.8.2-py3-none-any.whl", hash = "sha256:3882f10fef50c9bf91100e7efaa2da0e2799c1ae2695e9717b85a060c3ab80b8"},
+    {file = "fastapi_cdn_host-0.8.2.tar.gz", hash = "sha256:12d176381a83484cd5117fa948608093a3dd593a51ad57edb6de75fba36b9f47"},
+]
+
+[package.dependencies]
+asyncer = ">=0.0.8,<0.0.9"
+fastapi = ">=0.100"
+httpx = ">=0.23"
+
+[package.extras]
+all = ["fastapi-cli (>=0.0.5,<0.0.6)"]
 
 [package.source]
 type = "legacy"
@@ -7250,4 +7293,4 @@ reference = "tsinghua"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12,<3.13"
-content-hash = "7b47c71a26193dd7872e966d3975d4ba38b15e0b28d9872b92e6b4d586af31f3"
+content-hash = "75cc3a50ebfab388e47d7bb94c712caf2c41679fb04cf3818f80b8cf1a708ebf"

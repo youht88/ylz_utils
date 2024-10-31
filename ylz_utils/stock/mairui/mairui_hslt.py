@@ -1,6 +1,7 @@
 import requests
-from . import MairuiStock
-class HSLT(MairuiStock):
+from .mairui_base import MairuiBase
+
+class HSLT(MairuiBase):
     def get_hslt_list(self):
         """获取沪深两市的公司列表"""
         res = requests.get( 
