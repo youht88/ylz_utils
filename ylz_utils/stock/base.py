@@ -150,8 +150,8 @@ class StockBase:
         condition = [item for item in req.query_params.items() if '@' in item[0]]
         order = req.query_params.get('o')
         limit = int(req.query_params.get('n',0))
+        number_pattern = r'^-?\d*\.?\d+$'
         if condition:
-            number_pattern = r'^-?\d*\.?\d+$'
             for item in condition:
                 key = item[0].replace('@','')
                 if '[' in item[1] and ']' in item[1]:
@@ -181,19 +181,42 @@ class StockBase:
             df = df.head(limit)
         return df
     def _parse_order_express(self,df:pd.DataFrame,order:str)->pd.DataFrame:
-        express = re.findall(r'\w+',order)
+        express = re.findall(r'(add|sub|mul|div|avg)\((.*)\)',order)
+        if not express:
+            if '(' in order or ')' in order:
+                raise Exception(f"{order}表达式不正确")
+            else:
+                express=[order]
+        express = [express[0][0]] + express[0][1].split(',')
+        number_pattern = r'^-?\d*\.?\d+$'
         print("order:",order,express)
-        if express[0]=='add' and len(express)==3:
-            print("???")
-            order = df[express[1]] + df[express[2]]
-            df = df.sort_values(by=lambda x:x[express[1]] + x[express[2]],ascending=False)
-            return df
+        if express[0]=='add' and len(express)>1:
+            order = "_order"
+            args = [float(arg) if re.match(number_pattern,arg) else df[arg] for arg in express[1:]]
+            df["_order"] = args[0]
+            for item in args[1:]:
+                df["_order"] = df["_order"] + item
         elif express[0]=='sub' and len(express)==3:
-            order = df[express[1]] - df[express[2]]
-        elif express[0]=='multi' and len(express)==3:
-            order = df[express[1]] * df[express[2]]
+            order = "_order"
+            args = [float(arg) if re.match(number_pattern,arg) else df[arg] for arg in express[1:]]
+            df["_order"] = args[0] - args[1]
+        elif express[0]=='mul' and len(express)>1:
+            order = "_order"
+            args = [float(arg) if re.match(number_pattern,arg) else df[arg] for arg in express[1:]]
+            df["_order"] = args[0]
+            for item in args[1:]:
+                df["_order"] = df["_order"] * item
         elif express[0]=='div' and len(express)==3:
-            order = df[express[1]] / df[express[2]]
+            order = "_order"
+            args = [float(arg) if re.match(number_pattern,arg) else df[arg] for arg in express[1:]]
+            df["_order"] = args[0] / args[1]
+        elif express[0]=='avg' and len(express)>1:
+            order = "_order"
+            args = [float(arg) if re.match(number_pattern,arg) else df[arg] for arg in express[1:]]
+            df["_order"] = args[0]
+            for item in args[1:]:
+                df["_order"] = df["_order"] + item
+            df["_order"] = df["_order"]/len(args)
         elif len(express)==1:
             pass
         else:
