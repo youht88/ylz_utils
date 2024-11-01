@@ -4,6 +4,7 @@ from ylz_utils.stock.mairui.mairui_base import MairuiBase
 from ylz_utils.stock.mairui.mairui_hibk import HIBK
 from ylz_utils.stock.mairui.mairui_higg import HIGG
 from ylz_utils.stock.mairui.mairui_himk import HIMK
+from ylz_utils.stock.mairui.mairui_hilh import HILH
 from ylz_utils.stock.mairui.mairui_hitc import HITC
 from ylz_utils.stock.mairui.mairui_hizj import HIZJ
 from ylz_utils.stock.mairui.mairui_hscp import HSCP
@@ -20,6 +21,7 @@ class MairuiLib():
         self.higg = HIGG()
         self.himk = HIMK()
         self.hitc = HITC()
+        self.hilh = HILH()
         self.hizj = HIZJ()
         self.hscp = HSCP()
         self.hslt = HSLT()
@@ -35,6 +37,7 @@ class MairuiLib():
         app.include_router(base.router,prefix="/mairui")
         app.include_router(self.himk.router,prefix="/mairui")
         app.include_router(self.hsrl.router,prefix="/mairui")
+        app.include_router(self.hilh.router,prefix="/mairui")
         app.include_router(self.hizj.router,prefix="/mairui")
         app.include_router(self.hszg.router,prefix="/mairui")
 

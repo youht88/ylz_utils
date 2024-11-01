@@ -34,7 +34,6 @@ class HIMK(MairuiBase):
             es_result = self.esLib.save(name,df,ids=['dm','ud'])
             print(f"errors:{es_result["errors"]}")
         return df
-    
     def register_router(self):
         @self.router.get("/himk/ltszph",response_class=HTMLResponse)
         async def get_himk_ltszph(req:Request):

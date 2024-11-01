@@ -43,8 +43,13 @@ class HSZG(MairuiBase):
         async def get_hszg_gg(code:str,req:Request):
             '''根据指数、行业、概念板块代码找股票'''
             try:
-                data = self.get_hszg_gg(code)
-                df = pd.DataFrame(data)
+                codes=code.split(',')
+                print("codes:",codes)
+                data = self.parallel_execute(func=self.get_hszg_gg,codes=codes)
+                dfs = [pd.DataFrame(item) for item in data]
+                df = dfs[0]
+                for item in dfs[1:]:
+                    df = df[df['dm'].isin(item['dm'])]
                 df = self._prepare_df(df,req)
                 content = df.to_html()
                 return HTMLResponse(content=content)
@@ -55,8 +60,13 @@ class HSZG(MairuiBase):
         async def get_hszg_zg(code:str,req:Request):
             '''根据股票找相关指数、行业、概念板块'''
             try:
-                data = self.get_hszg_zg(code)
-                df = pd.DataFrame(data)
+                codes=code.split(',')
+                print("codes:",codes)
+                data = self.parallel_execute(func=self.get_hszg_zg,codes=codes)
+                dfs = [pd.DataFrame(item) for item in data]
+                df = dfs[0]
+                for item in dfs[1:]:
+                    df = df[df['code'].isin(item['code'])]
                 df = self._prepare_df(df,req)
                 content = df.to_html()
                 return HTMLResponse(content=content)        

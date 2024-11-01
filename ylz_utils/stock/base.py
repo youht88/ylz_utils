@@ -187,9 +187,9 @@ class StockBase:
                 raise Exception(f"{order}表达式不正确")
             else:
                 express=[order]
-        express = [express[0][0]] + express[0][1].split(',')
+        else:
+            express = [express[0][0]] + express[0][1].split(',')
         number_pattern = r'^-?\d*\.?\d+$'
-        print("order:",order,express)
         if express[0]=='add' and len(express)>1:
             order = "_order"
             args = [float(arg) if re.match(number_pattern,arg) else df[arg] for arg in express[1:]]
