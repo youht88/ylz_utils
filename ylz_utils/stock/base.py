@@ -156,25 +156,86 @@ class StockBase:
                 key = item[0].replace('@','')
                 if '[' in item[1] and ']' in item[1]:
                     values = item[1].replace('[','').replace(']','').split(',')[:2]
-                    if re.match(number_pattern, values[0]) and re.match(number_pattern, values[1]):
-                        print(f"{key} between {float(values[0])} and {float(values[1])}")
-                        df = df[(df[key]>=float(values[0])) & (df[key]<=float(values[1]))]
-                    elif re.match(number_pattern, values[0]) and values[1]=='':
-                        print(f"{key} >= {float(values[0])}")
-                        df = df[df[key] >= float(values[0])]
-                    elif values[0]=='' and re.match(number_pattern, values[1]):
-                        print(f"{key} <= {float(values[1])}")
-                        df = df[df[key] <= float(values[1])]
-                    elif re.match(number_pattern, values[0]):
-                        print(f"{key} = {float(values[0])}")
-                        df = df[df[key]==float(values[0])]
+                    keys = key.split('.')
+                    key = keys[0]
+                    key_func = keys[1] if len(keys)>1 else None 
+                    if pd.api.types.is_datetime64_any_dtype(df[key]):
+                        if key_func=='date':
+                            if values[0]!='' and values[1]!='':
+                                print(f"{key} date between {values[0]} and {values[1]}")
+                                start = pd.to_datetime(values[0]).date()
+                                end = pd.to_datetime(values[1]).date()
+                                df = df[(df[key].dt.date>=start) & (df[key].dt.date<=end)]
+                            elif values[0]!='' and values[1]=='':
+                                print(f"{key} date >= {values[0]}")
+                                start = pd.to_datetime(values[0]).date()
+                                df = df[(df[key].dt.date>=start)]
+                            elif values[0]=='' and values[1]!='':
+                                print(f"{key} date <= {values[1]}")
+                                end = pd.to_datetime(values[1]).date()
+                                df = df[(df[key].dt.date<=end)]
+                            else:
+                                print(f"{key} date == {values[0]}")
+                                start = pd.to_datetime(values[0]).date()
+                                df = df[(df[key].dt.date==start)]
+                        elif key_func=='time':
+                            if values[0]!='' and values[1]!='':
+                                print(f"{key} time between {values[0]} and {values[1]}")
+                                start = pd.to_datetime(values[0]).time()
+                                end = pd.to_datetime(values[1]).time()
+                                df = df[(df[key].dt.time>=start) & (df[key].dt.time<=end)]
+                            elif values[0]!='' and values[1]=='':
+                                print(f"{key} time >= {values[0]}")
+                                start = pd.to_datetime(values[0]).time()
+                                df = df[(df[key].dt.time>=start)]
+                            elif values[0]=='' and values[1]!='':
+                                print(f"{key} time <= {values[1]}")
+                                end = pd.to_datetime(values[1]).time()
+                                df = df[(df[key].dt.time<=end)]
+                            else:
+                                print(f"{key} time == {values[0]}")
+                                start = pd.to_datetime(values[0]).time()
+                                df = df[(df[key].dt.time==start)]
+                        else:
+                            if values[0]!='' and values[1]!='':
+                                print(f"{key} datetime between {values[0]} and {values[1]}")
+                                start = pd.to_datetime(values[0])
+                                end = pd.to_datetime(values[1])
+                                df = df[(df[key]>=start) & (df[key]<=end)]                      
+                            elif values[0]!='' and values[1]=='':
+                                print(f"{key} datetime >= {values[0]}")
+                                start = pd.to_datetime(values[0])
+                                df = df[(df[key]>=start)]
+                            elif values[0]=='' and values[1]!='':
+                                print(f"{key} datetime <= {values[1]}")
+                                end = pd.to_datetime(values[1])
+                                df = df[(df[key]<=end)]
+                            else:
+                                print(f"{key} datetime == {values[0]}")
+                                start = pd.to_datetime(values[0])
+                                df = df[(df[key].dt.time==start)]
                     else:
-                        print(f"{key} = {values[0]}")
-                        df = df[df[key]==values[0]]
+                        if re.match(number_pattern, values[0]) and re.match(number_pattern, values[1]):
+                            print(f"{key} between {float(values[0])} and {float(values[1])}")
+                            df = df[(df[key]>=float(values[0])) & (df[key]<=float(values[1]))]
+                        elif re.match(number_pattern, values[0]) and values[1]=='':
+                            print(f"{key} >= {float(values[0])}")
+                            df = df[df[key] >= float(values[0])]
+                        elif values[0]=='' and re.match(number_pattern, values[1]):
+                            print(f"{key} <= {float(values[1])}")
+                            df = df[df[key] <= float(values[1])]
+                        elif re.match(number_pattern, values[0]):
+                            print(f"{key} = {float(values[0])}")
+                            df = df[df[key]==float(values[0])]
+                        else:
+                            print(f"{key} = {values[0]}")
+                            df = df[df[key]==values[0]]
                 else:
+                    # 包含字符串
                     values = item[1].split(',')
                     print(f"{key} in {values}")
-                    df = df[df[key].isin(values)]
+                    for value in values:
+                        df = df[df[key].str.contains(value)]
         if order:
             df = self._parse_order_express(df,order) 
         if limit:

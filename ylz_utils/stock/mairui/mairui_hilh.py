@@ -49,7 +49,82 @@ class HILH(MairuiBase):
             es_result = self.esLib.save(name,df,ids=['ud'])
             print(f"errors:{es_result["errors"]}")
         return df
+    def get_hilh_ggsb(self,days:Literal[5,10,30,60]=5,sync_es:bool=False):   
+        """获取近五个交易日（按交易日期倒序）上榜个股被机构交易的总额，以及个股上榜原因。"""
+        #http://api.mairui.club/hilh/ggsb/近几日(如5)/您的licence
+        #数据更新：每天15:30（约10分钟完成更新）
+        #请求频率：1分钟20次 
+
+        # 字段名称	数据类型	字段说明
+        # dm	string	股票代码
+        # mc	string	股票名称
+        # count	number	上榜次数
+        # totalb	number	累积获取额(万)
+        # totals	number	累积卖出额(万)
+        # netp	number	净额(万)
+        # xb	number	买入席位数
+        # xs	number	卖出细微
+
+        today = datetime.today()
+        yestoday = datetime.today() - timedelta(days=1)
+        if today.hour>16:
+            ud = today.strftime("%Y-%m-%d")
+        else:
+            ud = yestoday.strftime("%Y-%m-%d")
+        add_fields = {"days":days,"ud":ud}
+        date_fields = ['ud']
+        skip_condition = f"(ud.dt.strftime('%Y-%m-%d')>='{ud}') and (days=={days})"
+        keys=['dm','days','ud']
+        name = f"hilh_ggsb"
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud) >= '{ud}' and days={days}"
+        
+        df = self.load_data(name,f"hilh/ggsb/{days}",
+                            add_fields=add_fields,
+                            sql=sql,
+                            skip_condition=skip_condition,
+                            keys=keys,date_fields=date_fields)
+        if sync_es:
+            es_result = self.esLib.save(name,df,ids=['dm','days','ud'])
+            print(f"errors:{es_result["errors"]}")
+        return df
     
+    def get_hilh_yybsb(self,days:Literal[5,10,30,60]=5,sync_es:bool=False):   
+        """获取近五个交易日（按交易日期倒序）上榜个股被机构交易的总额，以及个股上榜原因。"""
+        #数据更新：每天15:30（约10分钟完成更新）
+        #请求频率：1分钟20次 
+
+        # 字段名称	数据类型	字段说明
+        # yybmc	string	营业部名称
+        # count	number	上榜次数
+        # totalb	number	累积获取额(万)
+        # bcount	number	买入席位
+        # totals	number	累积卖出额(万)
+        # scount	number	卖出席位
+        # top3	string	买入前三股票
+
+        today = datetime.today()
+        yestoday = datetime.today() - timedelta(days=1)
+        if today.hour>16:
+            ud = today.strftime("%Y-%m-%d")
+        else:
+            ud = yestoday.strftime("%Y-%m-%d")
+        add_fields = {"days":days,"ud":ud}
+        date_fields = ['ud']
+        skip_condition = f"(ud.dt.strftime('%Y-%m-%d')>='{ud}') and (days=={days})"
+        keys=['yybmc','days','ud']
+        name = f"hilh_yybsb"
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud) >= '{ud}' and days={days}"
+        
+        df = self.load_data(name,f"hilh/yybsb/{days}",
+                            add_fields=add_fields,
+                            sql=sql,
+                            skip_condition=skip_condition,
+                            keys=keys,date_fields=date_fields)
+        if sync_es:
+            es_result = self.esLib.save(name,df,ids=['yybmc','days','ud'])
+            print(f"errors:{es_result["errors"]}")
+        return df
+
     def get_hilh_jgxw(self,days:Literal[5,10,30,60]=5,sync_es:bool=False):   
         """获取近五个交易日（按交易日期倒序）上榜个股被机构交易的总额，以及个股上榜原因。"""
         #数据更新：每天15:30（约10分钟完成更新）
@@ -132,6 +207,28 @@ class HILH(MairuiBase):
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
         
+        @self.router.get("/hilh/ggsb/{days}",response_class=HTMLResponse)
+        async def get_hilh_ggsb(days:int,req:Request):
+            """今日龙虎榜概览"""
+            try:
+                df = self.get_hilh_ggsb(days)
+                df = self._prepare_df(df,req)
+                content = df.to_html()
+                return HTMLResponse(content=content)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")
+        
+        @self.router.get("/hilh/yybsb/{days}",response_class=HTMLResponse)
+        async def get_hilh_yybsb(days:int,req:Request):
+            """今日龙虎榜概览"""
+            try:
+                df = self.get_hilh_yybsb(days)
+                df = self._prepare_df(df,req)
+                content = df.to_html()
+                return HTMLResponse(content=content)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")
+            
         @self.router.get("/hilh/jgxw/{days}",response_class=HTMLResponse)
         async def get_hilh_mrxq(days:int,req:Request):
             """今日龙虎榜概览"""
