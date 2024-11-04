@@ -35,6 +35,7 @@ class MairuiLib():
         base = MairuiBase()
         base.register_router()
         app.include_router(base.router,prefix="/mairui")
+        app.include_router(self.higg.router,prefix="/mairui")
         app.include_router(self.himk.router,prefix="/mairui")
         app.include_router(self.hsrl.router,prefix="/mairui")
         app.include_router(self.hilh.router,prefix="/mairui")

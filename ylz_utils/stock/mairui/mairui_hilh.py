@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Literal
+import pandas as pd
 import requests
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -41,16 +42,27 @@ class HILH(MairuiBase):
         keys=['ud']
         name = f"hilh_mrxq"
         
-        df = self.load_data(name,f"hilh/mrxq",
-                            add_fields=add_fields,
-                            skip_condition=skip_condition,
-                            keys=keys,date_fields=date_fields)
-        if sync_es:
-            es_result = self.esLib.save(name,df,ids=['ud'])
-            print(f"errors:{es_result["errors"]}")
-        return df
+        res = requests.get(f"{self.mairui_api_url}/hilh/mrxq/{self.mairui_token}")
+        data = res.json()
+        print(data.keys())
+        data = {k:v for k,v in data.items() if v!=None}
+        t = data['t']
+        dpl7 = [{'t':t,'type':'dpl7','info':'跌幅偏离值达7%的证券',**item} for item in data.get('dpl7',[])]
+        zpl7 = [{'t':t,'type':'zpl7','info':'涨幅偏离值达7%的证券',**item} for item in data.get('zpl7',[])]
+        z20 = [{'t':t,'type':'z20','info':'连续三个交易日内，涨幅偏离值累计达20%的证券',**item} for item in data.get('z20',[])]
+        h20 = [{'t':t,'type':'h20','info':'换手率达20%的证券',**item} for item in data.get('h20',[])]
+        st12 = [{'t':t,'type':'st12','info':'连续三个交易日内，涨幅偏离值累计达到12%的ST证券',**item} for item in data.get('st12',[])]
+        st15 = [{'t':t,'type':'st15','info':'连续三个交易日内，涨幅偏离值累计达到15%的ST证券',**item} for item in data.get('st15',[])]
+        std12 = [{'t':t,'type':'std12','info':'连续三个交易日内，跌幅偏离值累计达到12%的ST证券',**item} for item in data.get('std12',[])]
+        std15 = [{'t':t,'type':'std15','info':'连续三个交易日内，跌幅偏离值累计达到15%的ST证券',**item} for item in data.get('std15',[])]
+        zf15 = [{'t':t,'type':'zf15','info':'振幅偏离值累计达到15%的证券',**item} for item in data.get('zf15',[])]
+        df15 = [{'t':t,'type':'df15','info':'连续三个交易日内，跌幅偏离值累计达到20%的证券',**item} for item in data.get('df15',[])]
+        wxz = [{'t':t,'type':'zf15','info':'无价格涨跌幅限制的证券',**item} for item in data.get('wxz',[])]
+        wxztp = [{'t':t,'type':'df15','info':'当日无价格涨跌幅限制的A股，出现异常波动停牌的股票',**item} for item in data.get('wxztp',[])]
+        
+        return pd.DataFrame(dpl7+zpl7+z20+h20+st12+st15+std12+std15+zf15+df15+wxz+wxztp)
     def get_hilh_ggsb(self,days:Literal[5,10,30,60]=5,sync_es:bool=False):   
-        """获取近五个交易日（按交易日期倒序）上榜个股被机构交易的总额，以及个股上榜原因。"""
+        """近n日上榜个股，其中 近n日 中的n可以是 5、10、30、60 。"""
         #http://api.mairui.club/hilh/ggsb/近几日(如5)/您的licence
         #数据更新：每天15:30（约10分钟完成更新）
         #请求频率：1分钟20次 
@@ -89,7 +101,7 @@ class HILH(MairuiBase):
         return df
     
     def get_hilh_yybsb(self,days:Literal[5,10,30,60]=5,sync_es:bool=False):   
-        """获取近五个交易日（按交易日期倒序）上榜个股被机构交易的总额，以及个股上榜原因。"""
+        """近n日营业部上榜统计，其中 近n日 中的n可以是 5、10、30、60 。"""
         #数据更新：每天15:30（约10分钟完成更新）
         #请求频率：1分钟20次 
 
@@ -126,7 +138,7 @@ class HILH(MairuiBase):
         return df
 
     def get_hilh_jgxw(self,days:Literal[5,10,30,60]=5,sync_es:bool=False):   
-        """获取近五个交易日（按交易日期倒序）上榜个股被机构交易的总额，以及个股上榜原因。"""
+        """近n日个股机构交易追踪，其中 近n日 中的n可以是 5、10、30、60 。"""
         #数据更新：每天15:30（约10分钟完成更新）
         #请求频率：1分钟20次 
 
@@ -209,7 +221,7 @@ class HILH(MairuiBase):
         
         @self.router.get("/hilh/ggsb/{days}",response_class=HTMLResponse)
         async def get_hilh_ggsb(days:int,req:Request):
-            """今日龙虎榜概览"""
+            """近n日上榜个股，其中 近n日 中的n可以是 5、10、30、60 。"""
             try:
                 df = self.get_hilh_ggsb(days)
                 df = self._prepare_df(df,req)
@@ -220,7 +232,7 @@ class HILH(MairuiBase):
         
         @self.router.get("/hilh/yybsb/{days}",response_class=HTMLResponse)
         async def get_hilh_yybsb(days:int,req:Request):
-            """今日龙虎榜概览"""
+            """近n日营业部上榜统计，其中 近n日 中的n可以是 5、10、30、60 。"""
             try:
                 df = self.get_hilh_yybsb(days)
                 df = self._prepare_df(df,req)
@@ -231,7 +243,7 @@ class HILH(MairuiBase):
             
         @self.router.get("/hilh/jgxw/{days}",response_class=HTMLResponse)
         async def get_hilh_mrxq(days:int,req:Request):
-            """今日龙虎榜概览"""
+            """近n日个股机构交易追踪，其中 近n日 中的n可以是 5、10、30、60 。"""
             try:
                 df = self.get_hilh_jgxw(days)
                 df = self._prepare_df(df,req)

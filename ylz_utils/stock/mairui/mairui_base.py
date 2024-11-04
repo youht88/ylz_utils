@@ -29,10 +29,9 @@ class MairuiBase(StockBase):
                     return True
         return False
     def load_data(self,name:str,method_path:str,sql:str=None,
-                           add_fields:dict={},skip_condition:str=None,keys=[],date_fields=[])->pd.DataFrame:
+                           add_fields:dict={},keys=[],date_fields=[])->pd.DataFrame:
         # dataframe 传入的类实例变量，用于多次检索时的内存cache
         # add_fields 需要增加的字段，例如 add_fields = {"mr_code":"abcd"}
-        # skip_condition 过滤的字符串，如果过滤条件下没有数据则需要从network中获取
         # keys 判断是否重复数据的字段名数组,例如 keys=["mr_code"]
         # date_fields 指定日期类型的字段名
         # sql 从sqlite取数据的sql语句
@@ -56,12 +55,9 @@ class MairuiBase(StockBase):
                     for col in date_fields:
                         dataframe[col] = pd.to_datetime(dataframe[col])
                     # 判断是否rload
-                    print("skip_condition:",skip_condition)
                     if not sql:
-                        if not skip_condition:
-                            print("!!!!! ALWAYS LOAD FROM NETWORK !!!!")
-                            raise Exception("always reload")
-                        cache_df = dataframe.query(skip_condition) 
+                        print("!!!!! ALWAYS LOAD FROM NETWORK !!!!")
+                        raise Exception("always reload")
                     else:
                         cache_df = dataframe
                     if cache_df.empty:
@@ -82,7 +78,9 @@ class MairuiBase(StockBase):
                             get_df[col] = pd.to_datetime(get_df[col]) 
                         if dataframe.empty:
                             dataframe = get_df
+                            index_sql = f'CREATE UNIQUE INDEX idx_{name}_{"_".join(keys)} ON {name} ({",".join(keys)});'
                             dataframe.to_sql(name,index=False,if_exists="append",con=conn)                       
+                            conn.execute(index_sql)
                     except Exception as e:
                         print("network error:",e)
                         raise  
@@ -108,7 +106,7 @@ class MairuiBase(StockBase):
                 elif not (cache_df is None):
                     df = cache_df
         except Exception as e:
-            raise Exception(f"error on _load_data_by_code,the error is :{e}")
+            raise Exception(f"error on load_data,the error is :{e}")
         return df
 
     def _load_data(self,name:str,method_path:str,
