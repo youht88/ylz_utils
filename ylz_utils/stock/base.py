@@ -1,3 +1,4 @@
+import sqlite3
 import pandas as pd
 import requests
 from datetime import datetime
@@ -23,6 +24,8 @@ class StockBase:
         self.mairui_token = Config.get('STOCK.MAIRUI.TOKEN')
         self.mairui_api_url = "http://api.mairui.club" 
         self.router = APIRouter()
+        stock_db_name = Config().get('STOCK.DB_NAME','stock.db')
+        self.sqlite = sqlite3.connect(stock_db_name)
     # 定义一个执行函数的方法k
     def parallel_execute(self,**kwargs):
         func = kwargs.pop("func")
@@ -284,5 +287,17 @@ class StockBase:
             raise Exception(f"{order}表达式不正确")
         df = df.sort_values(by=order,ascending=False)
         return df
+    def _to_html(self,df:pd.DataFrame):
+        df_state = df.describe()
+        df_state.loc['sum']=df[df.select_dtypes(include=['int', 'float']).columns].sum()
+        state = df_state.to_html()
+        data = df.to_html()
+        content = (
+            "<html>\n"
+            f"{state}\n"
+            f"{data}\n"
+            "</html>\n"
+        )
+        return content
     def register_router(self):
         pass

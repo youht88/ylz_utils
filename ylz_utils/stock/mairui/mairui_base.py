@@ -30,81 +30,46 @@ class MairuiBase(StockBase):
         return False
     def load_data(self,name:str,method_path:str,sql:str=None,
                            add_fields:dict={},keys=[],date_fields=[])->pd.DataFrame:
-        # dataframe 传入的类实例变量，用于多次检索时的内存cache
         # add_fields 需要增加的字段，例如 add_fields = {"mr_code":"abcd"}
         # keys 判断是否重复数据的字段名数组,例如 keys=["mr_code"]
         # date_fields 指定日期类型的字段名
         # sql 从sqlite取数据的sql语句
         try:
-            file_name = f"{name}.db"
-            df_name = f"df_{name}"             
-            if not isinstance(self.dataframe_map.get(df_name),pd.DataFrame):
-                self.dataframe_map[df_name] = pd.DataFrame([])
-            dataframe = self.dataframe_map[df_name]
             df=None
-            get_df = None
-            cache_df = None
-            if dataframe.empty:
-                try:
-                    conn = sqlite3.connect(f"{file_name}")
-                    if sql:
-                        print("sql=",sql)
-                        dataframe = pd.read_sql(sql,con=conn)
-                    else:
-                        dataframe = pd.read_sql(f"select * from {name}",con=conn)
+            try:
+                if sql:
+                    print("sql=",sql)
+                    df = pd.read_sql(sql,con=self.sqlite)
                     for col in date_fields:
-                        dataframe[col] = pd.to_datetime(dataframe[col])
-                    # 判断是否rload
-                    if not sql:
-                        print("!!!!! ALWAYS LOAD FROM NETWORK !!!!")
-                        raise Exception("always reload")
+                        df[col] = pd.to_datetime(df[col])
+                else:
+                    print("!!!!! ALWAYS LOAD FROM NETWORK !!!!")
+                    raise Exception("always reload")
+                if df.empty:
+                    print("!!!!! NEED LOAD FROM NETWORK !!!!!")
+                    raise Exception("need load from network")
+            except Exception as e:
+                print(f"start retrieve data from network because of [{e}]")
+                try:
+                    #print(f"{self.mairui_api_url}/{method_path}/{self.mairui_token}")
+                    res = requests.get(f"{self.mairui_api_url}/{method_path}/{self.mairui_token}")
+                    data = res.json()
+                    if isinstance(data,list):
+                        data = [{**item,**add_fields} for item in data]
                     else:
-                        cache_df = dataframe
-                    if cache_df.empty:
-                        print("!!!!! NEED LOAD FROM NETWORK !!!!!")
-                        raise Exception("need load from network")
+                        data = [{**data,**add_fields}]
+                    df = pd.DataFrame(data)
+                    for col in date_fields:
+                        df[col] = pd.to_datetime(df[col]) 
+                    index_sql = f'CREATE UNIQUE INDEX IF NOT EXISTS idx_{name}_{"_".join(keys)} ON {name} ({",".join(keys)});'
+                    df.to_sql(name,index=False,if_exists="append",con=self.sqlite)                       
+                    self.sqlite.execute(index_sql)
                 except Exception as e:
-                    print("start retrieve data from network...",e)
-                    try:
-                        print(f"{self.mairui_api_url}/{method_path}/{self.mairui_token}")
-                        res = requests.get(f"{self.mairui_api_url}/{method_path}/{self.mairui_token}")
-                        data = res.json()
-                        if isinstance(data,list):
-                            data = [{**item,**add_fields} for item in data]
-                        else:
-                            data = [{**data,**add_fields}]
-                        get_df = pd.DataFrame(data)
-                        for col in date_fields:
-                            get_df[col] = pd.to_datetime(get_df[col]) 
-                        if dataframe.empty:
-                            dataframe = get_df
-                            index_sql = f'CREATE UNIQUE INDEX idx_{name}_{"_".join(keys)} ON {name} ({",".join(keys)});'
-                            dataframe.to_sql(name,index=False,if_exists="append",con=conn)                       
-                            conn.execute(index_sql)
-                    except Exception as e:
-                        print("network error:",e)
-                        raise  
-            if not (get_df is None):
-                print("get_df.count=",get_df.shape)                  
-            if not (cache_df is None):
-                print("cache_df.count=",cache_df.shape)
-            if not (dataframe is None):
-                print("dataframe.count=",dataframe.shape)                  
-            if not dataframe.empty:
-                if not (get_df is None):
-                    condition = pd.Series([True] * len(dataframe))
-                    # 根据字段名列表构建动态筛选条件
-                    for k in keys:
-                        if k in get_df.columns:
-                            condition = condition & (dataframe[k] == get_df[k][0])
-                    # 应用筛选条件
-                    find_row:pd.DataFrame = dataframe[condition]
-                    if find_row.empty:
-                        dataframe = pd.concat([dataframe,get_df], ignore_index=True)
-                        dataframe.to_sql(name,index=False,if_exists="append",con=conn)
-                    df = get_df
-                elif not (cache_df is None):
-                    df = cache_df
+                    print("network error:",e)
+                    raise  
+            if not (df is None):
+                print("df.count=",df.shape)                  
+            
         except Exception as e:
             raise Exception(f"error on load_data,the error is :{e}")
         return df
@@ -204,7 +169,7 @@ class MairuiBase(StockBase):
                     'float_shares','total_shares','float_market_capital','market_capital',
                     'eps','dividend','pe_ttm','pe_forecast','pb','pledge_ratio','navps','amplitude','current_ext','volume_ext'])
                 df = self._prepare_df(df,req)
-                content = df.to_html()
+                content = self._to_html(df)
                 return HTMLResponse(content=content) 
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")  

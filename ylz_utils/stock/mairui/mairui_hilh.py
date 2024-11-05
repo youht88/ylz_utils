@@ -36,11 +36,6 @@ class HILH(MairuiBase):
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
-        add_fields = {"ud":ud}
-        date_fields = ['t','ud']
-        skip_condition = f"(ud.dt.strftime('%Y-%m-%d')>='{ud}')"
-        keys=['ud']
-        name = f"hilh_mrxq"
         
         res = requests.get(f"{self.mairui_api_url}/hilh/mrxq/{self.mairui_token}")
         data = res.json()
@@ -122,7 +117,6 @@ class HILH(MairuiBase):
             ud = yestoday.strftime("%Y-%m-%d")
         add_fields = {"days":days,"ud":ud}
         date_fields = ['ud']
-        skip_condition = f"(ud.dt.strftime('%Y-%m-%d')>='{ud}') and (days=={days})"
         keys=['yybmc','days','ud']
         name = f"hilh_yybsb"
         sql = f"select * from {name} where strftime('%Y-%m-%d',ud) >= '{ud}' and days={days}"
@@ -130,7 +124,6 @@ class HILH(MairuiBase):
         df = self.load_data(name,f"hilh/yybsb/{days}",
                             add_fields=add_fields,
                             sql=sql,
-                            skip_condition=skip_condition,
                             keys=keys,date_fields=date_fields)
         if sync_es:
             es_result = self.esLib.save(name,df,ids=['yybmc','days','ud'])
@@ -236,7 +229,7 @@ class HILH(MairuiBase):
             try:
                 df = self.get_hilh_yybsb(days)
                 df = self._prepare_df(df,req)
-                content = df.to_html()
+                content = self._to_html(df)
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")

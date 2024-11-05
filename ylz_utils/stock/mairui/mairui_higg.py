@@ -134,7 +134,7 @@ class HIGG(MairuiBase):
             try:
                 df = self.get_higg_jlr()
                 df = self._prepare_df(df,req)
-                content = df.to_html()
+                content = self._to_html(df)
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
@@ -145,7 +145,7 @@ class HIGG(MairuiBase):
             try:
                 df = self.get_higg_zljlr()
                 df = self._prepare_df(df,req)
-                content = df.to_html()
+                content = self._to_html(df)
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
@@ -156,7 +156,7 @@ class HIGG(MairuiBase):
             try:
                 df = self.get_higg_shjlr()
                 df = self._prepare_df(df,req)
-                content = df.to_html()
+                content = self._to_html(df)
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
