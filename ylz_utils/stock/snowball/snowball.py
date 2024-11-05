@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import Request
+from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse
 import pandas as pd
 import pysnowball as ball
@@ -392,14 +392,26 @@ class SnowballStock(StockBase):
             
             scheduler.start()   
             return {"message":"服务已启动！"}
-        @self.router.get("/sql",response_class=HTMLResponse)
-        async def sql(req:Request):
-            sql = req.query_params.get("q")
-            data = self.esLib.sql(sql)
-            df = pd.DataFrame(data['rows'],columns=[item['name'] for item in data['columns']])
-            content = df.to_html()
-            return HTMLResponse(content=content)
-        @self.router.get("/drop/{table}")
-        async def drop_table(table:str):
-            res = self.esLib.drop(table)
-            return res
+        @self.router.get("/quotec",response_class=HTMLResponse)
+        async def quotec(req:Request):
+            """获取个股实时交易信息"""
+            try:
+                code = req.query_params.get('code')
+                if not code:
+                    raise Exception('必须指定code')
+                kwargs = {
+                    "func": self.quotec_detail,
+                    "codes": [item for item in code.split(',') if item],
+                }
+                quotec_data = self.parallel_execute(**kwargs)
+                df = pd.DataFrame(quotec_data)
+                df = df.filter(
+                    ['t','mr_code','name','high52w','low52w','current_year_percent','last_close',
+                    'current','percent','open','high','low','chg','volume','amount','volume_ratio','turnover_rate','pankou_ratio',
+                    'float_shares','total_shares','float_market_capital','market_capital',
+                    'eps','dividend','pe_ttm','pe_forecast','pb','pledge_ratio','navps','amplitude','current_ext','volume_ext'])
+                df = self._prepare_df(df,req)
+                content = self._to_html(df)
+                return HTMLResponse(content=content)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")

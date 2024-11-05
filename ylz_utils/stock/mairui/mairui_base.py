@@ -16,7 +16,6 @@ class MairuiBase(StockBase):
             'get_hscp_.*',
             '.*'
         ] 
-        self.dataframe_map:dict[str,pd.DataFrame]={} 
     def is_magic(self,value):
         value_str = str(value)
         if '.' in value_str:
@@ -146,31 +145,4 @@ class MairuiBase(StockBase):
         except Exception as e:
             raise Exception(f"error on _load_data_by_code,the error is :{e}")
         return df
-    def register_router(self):
-        from .mairui_hszg import HSZG
-        from ..snowball import SnowballStock
-        hszg = HSZG()          
-        snowball = SnowballStock()
-
-        @self.router.get("/bk/{code}",response_class=HTMLResponse)
-        async def get_bk_stock(code,req:Request):
-            '''获取板块中权重股票的实时交易情况'''
-            try:
-                bk_data = hszg.get_hszg_gg(code)
-                kwargs = {
-                    "func": snowball.quotec_detail,
-                    "codes": [item['dm'] for item in bk_data],
-                }
-                quotec_data = self.parallel_execute(**kwargs)
-                df = pd.DataFrame(quotec_data)
-                df = df.filter(
-                    ['t','mr_code','name','high52w','low52w','current_year_percent','last_close',
-                    'current','percent','open','high','low','chg','volume','amount','volume_ratio','turnover_rate','pankou_ratio',
-                    'float_shares','total_shares','float_market_capital','market_capital',
-                    'eps','dividend','pe_ttm','pe_forecast','pb','pledge_ratio','navps','amplitude','current_ext','volume_ext'])
-                df = self._prepare_df(df,req)
-                content = self._to_html(df)
-                return HTMLResponse(content=content) 
-            except Exception as e:
-                raise HTTPException(status_code=400, detail=f"{e}")  
-
+    

@@ -1,4 +1,5 @@
 import sqlite3
+from fastapi.responses import HTMLResponse
 import pandas as pd
 import requests
 from datetime import datetime
@@ -12,7 +13,7 @@ from ylz_utils.database.elasticsearch import ESLib
 
 import concurrent.futures
 
-from fastapi import FastAPI,Request,Response,APIRouter
+from fastapi import FastAPI, HTTPException,Request,Response,APIRouter
 
 class StockBase:
     stock:list = []
@@ -39,6 +40,7 @@ class StockBase:
                 else:
                     futures = [executor.submit(func,**kwargs)]
                 results = [future.result() for future in futures]
+                print("results count:",len(results))
                 return results
     def _get_bk_code(self,bk_name:str)->dict:
         if not self.bkdm:
@@ -287,17 +289,71 @@ class StockBase:
             raise Exception(f"{order}表达式不正确")
         df = df.sort_values(by=order,ascending=False)
         return df
-    def _to_html(self,df:pd.DataFrame):
+    def _to_html(self,df:pd.DataFrame,columns:list[str]=[]):
         df_state = df.describe()
         df_state.loc['sum']=df[df.select_dtypes(include=['int', 'float']).columns].sum()
         state = df_state.to_html()
         data = df.to_html()
+        col_text = ''
+        for col in columns:
+            col_text +='<p>' + ','.join(df[col].tolist()) + '</p>\n'
         content = (
             "<html>\n"
             f"{state}\n"
+            f"{col_text}\n"
             f"{data}\n"
             "</html>\n"
         )
         return content
+    
     def register_router(self):
-        pass
+        from .mairui.mairui_hszg import HSZG
+        from .snowball import SnowballStock
+        hszg = HSZG()          
+        snowball = SnowballStock()
+
+        @self.router.get("/bk/{code}",response_class=HTMLResponse)
+        async def get_bk_stock(code,req:Request):
+            '''获取板块中权重股票的实时交易情况'''
+            try:
+                bk_data = hszg.get_hszg_gg(code)
+                kwargs = {
+                    "func": snowball.quotec_detail,
+                    "codes": [item['dm'] for item in bk_data],
+                }
+                quotec_data = self.parallel_execute(**kwargs)
+                df = pd.DataFrame(quotec_data)
+                df = df.filter(
+                    ['t','mr_code','name','high52w','low52w','current_year_percent','last_close',
+                    'current','percent','open','high','low','chg','volume','amount','volume_ratio','turnover_rate','pankou_ratio',
+                    'float_shares','total_shares','float_market_capital','market_capital',
+                    'eps','dividend','pe_ttm','pe_forecast','pb','pledge_ratio','navps','amplitude','current_ext','volume_ext'])
+                df = self._prepare_df(df,req)
+                content = self._to_html(df)
+                return HTMLResponse(content=content) 
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")  
+            
+        @self.router.get("/es/sql",response_class=HTMLResponse)
+        async def es_sql(req:Request):
+            sql = req.query_params.get("q")
+            data = self.esLib.sql(sql)
+            df = pd.DataFrame(data['rows'],columns=[item['name'] for item in data['columns']])
+            content = self._to_html(df)
+            return HTMLResponse(content=content)
+        @self.router.get("/es/drop/{table}")
+        async def es_drop_table(table:str):
+            res = self.esLib.drop(table)
+            return res
+        
+        @self.router.get("/sqlite/sql",response_class=HTMLResponse)
+        async def sqlite_sql(req:Request):
+            sql = req.query_params.get("q")
+            df = pd.read_sql(sql,con=self.sqlite)
+            content = self._to_html(df)
+            return HTMLResponse(content=content)
+        
+        @self.router.get("/sqlite/drop/{table}")
+        async def sqlite_drop_table(table:str):
+            res = self.esLib.drop(table)
+            return res

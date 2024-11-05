@@ -9,7 +9,7 @@ from langchain_core.messages import SystemMessage,ToolMessage
 
 from .configurable import ConfigSchema
 from .state import *
-from ylz_utils.stock import MairuiLib,SnowballLib
+from ylz_utils.stock import StockLib
 from ylz_utils.stock.mairui.mairui_hibk import HIBK
 from ..public_graph.summary import SummaryGraph
 
