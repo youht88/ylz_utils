@@ -35,6 +35,7 @@ class StockLib():
         app.include_router(self.hsrl.router,prefix="/mairui")
         app.include_router(self.hilh.router,prefix="/mairui")
         app.include_router(self.hizj.router,prefix="/mairui")
+        app.include_router(self.hszb.router,prefix="/mairui")
         app.include_router(self.hszg.router,prefix="/mairui")
 
         app.include_router(self.snowball.router,prefix="/snowball")

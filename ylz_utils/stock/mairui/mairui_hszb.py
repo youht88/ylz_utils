@@ -1,9 +1,14 @@
 from datetime import datetime, timedelta
 from typing import Literal
+from fastapi import HTTPException, Request
+from fastapi.responses import HTMLResponse
 import requests
 from .mairui_base import MairuiBase
 
 class HSZB(MairuiBase):
+    def __init__(self):
+        super().__init__()
+        self.register_router()
     def get_hszb_fsjy(self,code:str,fsjb:Literal["5m","15m","30m","60m","dn","wn","mn","yn"]="5m",sync_es:bool=False):
         """获取股票代码分时交易实时数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
         #数据更新：交易时间段每1分钟
@@ -17,17 +22,17 @@ class HSZB(MairuiBase):
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
-        add_fields = {"mr_code":mr_code,"ud":ud}
+        add_fields = {"mr_code":mr_code,"fsjb":fsjb,"ud":ud}
         date_fields = ['ud']
-        skip_condition = f"mr_code == '{mr_code}' & (ud.dt.strftime('%Y-%m-%d')='{ud}')"
-
-        name = f"hszb_fsjy_{mr_code}_{fsjb}"
-        df = self._load_data(name,f"hszb/fsjy/{code}/{fsjb}",
+        keys = ["ud","mr_code","fsjb"]
+        name = f"hszb_fsjy"
+        #sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}' and mr_code='{mr_code}' and fsjb='{fsjb}'"
+        df = self.load_data(name,f"hszb/fsjy/{code}/{fsjb}",
                                         add_fields=add_fields,
-                                        skip_condition=skip_condition,
-                                        keys=["mr_code"],date_fields=date_fields)
+                                        #sql=sql,
+                                        keys=keys,date_fields=date_fields)
         if sync_es:
-            es_result = self.esLib.save(name,df,ids=['mr_code','ud'])
+            es_result = self.esLib.save(name,df,ids=['mr_code','fsjb','ud'])
             print(f"errors:{es_result["errors"]}")
         return df
 
@@ -53,23 +58,19 @@ class HSZB(MairuiBase):
         code_info = self._get_stock_code(code)
         code=code_info['code']
         mr_code = code_info['mr_code']
-        today = datetime.today()
-        yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>16:
-            ud = today.strftime("%Y-%m-%d")
-        else:
-            ud = yestoday.strftime("%Y-%m-%d")
-        add_fields = {"mr_code":mr_code,"fsjb":fsjb,"ud":ud}
-        date_fields = ['ud','d']
-        skip_condition = f"mr_code == '{mr_code}' & fsjb == '{fsjb}' & (ud.dt.strftime('%Y-%m-%d')='{ud}')"
-
-        name = f"hszbl_fsjy_{fsjb}_{mr_code}"
-        df = self._load_data(name,f"hszbl/fsjy/{code}/{fsjb}",
+        add_fields = {"mr_code":mr_code,"fsjb":fsjb}
+        date_fields = ['d']
+        keys=["mr_code","fsjb","d"]
+        name = f"hszbl_fsjy_{fsjb}"
+        sql = f"delete from {name} where mr_code='{mr_code}' and fsjb='{fsjb}'"
+        #指定sql为删除语句以确保每次都会请求网络
+        df = self.load_data(name,f"hszbl/fsjy/{code}/{fsjb}",
                                         add_fields=add_fields,
-                                        skip_condition=skip_condition,
-                                        keys=["mr_code","fsjb","d"],date_fields=date_fields)
+                                        sql=sql,
+                                        keys=keys,date_fields=date_fields,
+                                        )
         if sync_es:
-            es_result = self.esLib.save(name,df,ids=['mr_code','d'])
+            es_result = self.esLib.save(name,df,ids=keys)
             print(f"errors:{es_result["errors"]}")
         return df
     
@@ -118,4 +119,27 @@ class HSZB(MairuiBase):
         )
         data = res.json()        
         return data
+    
+    def register_router(self):
+        @self.router.get("/hszb/fsjy/{code}/{fsjb}",response_class=HTMLResponse)
+        async def get_hszb_fsjy(code:str,fsjb:str,req:Request):
+            """获取股票代码分时交易实时数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
+            try:
+                df = self.get_hszb_fsjy(code,fsjb)
+                df = self._prepare_df(df,req)
+                content = self._to_html(df)
+                return HTMLResponse(content=content)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")
+            
+        @self.router.get("/hszbl/fsjy/{code}/{fsjb}",response_class=HTMLResponse)
+        async def get_hszbl_fsjy(code:str,fsjb:str,req:Request):
+            """获取股票代码分时交易历史数据。分时级别支持5分钟、15分钟、30分钟、60分钟、日周月年级别，对应的值分别是 5m、15m、30m、60m、dn、wn、mn、yn """
+            try:
+                df = self.get_hszbl_fsjy(code,fsjb)
+                df = self._prepare_df(df,req)
+                content = self._to_html(df)
+                return HTMLResponse(content=content)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")
 
