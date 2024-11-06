@@ -80,15 +80,13 @@ class HILH(MairuiBase):
             ud = yestoday.strftime("%Y-%m-%d")
         add_fields = {"days":days,"ud":ud}
         date_fields = ['ud']
-        skip_condition = f"(ud.dt.strftime('%Y-%m-%d')>='{ud}') and (days=={days})"
         keys=['dm','days','ud']
         name = f"hilh_ggsb"
-        sql = f"select * from {name} where strftime('%Y-%m-%d',ud) >= '{ud}' and days={days}"
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud) = '{ud}' and days={days}"
         
         df = self.load_data(name,f"hilh/ggsb/{days}",
                             add_fields=add_fields,
                             sql=sql,
-                            skip_condition=skip_condition,
                             keys=keys,date_fields=date_fields)
         if sync_es:
             es_result = self.esLib.save(name,df,ids=['dm','days','ud'])
@@ -119,7 +117,7 @@ class HILH(MairuiBase):
         date_fields = ['ud']
         keys=['yybmc','days','ud']
         name = f"hilh_yybsb"
-        sql = f"select * from {name} where strftime('%Y-%m-%d',ud) >= '{ud}' and days={days}"
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud) = '{ud}' and days={days}"
         
         df = self.load_data(name,f"hilh/yybsb/{days}",
                             add_fields=add_fields,
@@ -152,15 +150,13 @@ class HILH(MairuiBase):
             ud = yestoday.strftime("%Y-%m-%d")
         add_fields = {"days":days,"ud":ud}
         date_fields = ['ud']
-        skip_condition = f"(ud.dt.strftime('%Y-%m-%d')>='{ud}') and (days=={days})"
         keys=['dm','days','ud']
         name = f"hilh_jgxw"
-        sql = f"select * from {name} where strftime('%Y-%m-%d',ud) >= '{ud}' and days={days}"
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud) = '{ud}' and days={days}"
         
         df = self.load_data(name,f"hilh/jgxw/{days}",
                             add_fields=add_fields,
                             sql=sql,
-                            skip_condition=skip_condition,
                             keys=keys,date_fields=date_fields)
         if sync_es:
             es_result = self.esLib.save(name,df,ids=['dm','days','ud'])
@@ -188,13 +184,11 @@ class HILH(MairuiBase):
             ud = yestoday.strftime("%Y-%m-%d")
         add_fields = {"ud":ud}
         date_fields = ['t','ud']
-        skip_condition = f"(ud.dt.strftime('%Y-%m-%d')>='{ud}')"
         keys=['dm','ud']
         name = f"hilh_xwmx"
         
         df = self.load_data(name,f"hilh/xwmx",
                             add_fields=add_fields,
-                            skip_condition=skip_condition,
                             keys=keys,date_fields=date_fields)
         if sync_es:
             es_result = self.esLib.save(name,df,ids=['dm','ud'])

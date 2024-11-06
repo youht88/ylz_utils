@@ -31,9 +31,12 @@ class StockBase:
     def parallel_execute(self,**kwargs):
         func = kwargs.pop("func")
         codes = kwargs.get("codes")
+        sync_sqlite = kwargs.get("sync_sqlite")
         if func:
             logging.info(f"run {func.__name__} as {datetime.now()}")
             with concurrent.futures.ThreadPoolExecutor() as executor:
+                if sync_sqlite:
+                    kwargs.pop("sync_sqlite")
                 if codes:
                     kwargs.pop("codes")
                     futures = [executor.submit(func,code,**kwargs) for code in codes]
@@ -41,6 +44,12 @@ class StockBase:
                     futures = [executor.submit(func,**kwargs)]
                 results = [future.result() for future in futures]
                 print("results count:",len(results))
+                if sync_sqlite:
+                    db_name = sync_sqlite.get('db_name')
+                    table_name = sync_sqlite.get('table_name')
+                    if db_name and table_name:
+                        df = pd.DataFrame(results)
+                        df.to_sql(table_name,index=False,if_exists="append",con=sqlite3.connect(db_name))
                 return results
     def _get_bk_code(self,bk_name:str)->dict:
         if not self.bkdm:
@@ -236,11 +245,25 @@ class StockBase:
                             print(f"{key} = {values[0]}")
                             df = df[df[key]==values[0]]
                 else:
-                    # 包含字符串
-                    values = item[1].split(',')
-                    print(f"{key} in {values}")
-                    for value in values:
-                        df = df[df[key].str.contains(value)]
+                    keys = key.split('.')
+                    key = keys[0]
+                    key_func = keys[1] if len(keys)>1 else None 
+                    if key_func == 'regex':
+                        values = item[1].split(',')
+                        print(f"{key} match {values[0]}")
+                        df = df[df[key].str.contains(values[0],regex=True)]
+                    else:
+                        # 包含字符串或不包含字符串
+                        values = item[1].split(',')
+                        filter = pd.Series([False] * len(df))
+                        for value in values:
+                            if value.startswith("!"):
+                                print(f"{key} not contains {value[1:]}")
+                                filter = filter | ~df[key].str.contains(value[1:])
+                            else:
+                                print(f"{key} contains {value}")
+                                filter = filter | df[key].str.contains(value)
+                        df = df[filter]
         if order:
             df = self._parse_order_express(df,order) 
         if limit:
@@ -300,8 +323,8 @@ class StockBase:
         content = (
             "<html>\n"
             f"{state}\n"
-            f"{col_text}\n"
             f"{data}\n"
+            f"{col_text}\n"
             "</html>\n"
         )
         return content

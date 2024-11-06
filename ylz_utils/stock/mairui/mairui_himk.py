@@ -46,7 +46,7 @@ class HIMK(MairuiBase):
         date_fields = ['t','ud']        
         keys=['dm','ud']
         name = f"himk_jdzgzd"
-        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)>={ud}"
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}'"
         df = self.load_data(name,f"himk/jdzgzd",
                             add_fields=add_fields,
                             sql=sql,
@@ -87,7 +87,7 @@ class HIMK(MairuiBase):
         date_fields = ['t','ud']        
         keys=['dm','ud']
         name = f"himk_pzxg"
-        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)>={ud}"
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}'"
         df = self.load_data(name,f"himk/pzxg",
                             add_fields=add_fields,
                             sql=sql,
@@ -128,7 +128,7 @@ class HIMK(MairuiBase):
         date_fields = ['t','ud']        
         keys=['dm','ud']
         name = f"himk_pzxd"
-        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)>={ud}"
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}'"
         df = self.load_data(name,f"himk/pzxd",
                             add_fields=add_fields,
                             sql=sql,
@@ -165,7 +165,7 @@ class HIMK(MairuiBase):
         date_fields = ['t','ud']        
         keys=['dm','ud']
         name = f"himk_cjzz"
-        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)>={ud}"
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}'"
         df = self.load_data(name,f"himk/cjzz",
                             add_fields=add_fields,
                             sql=sql,
@@ -202,7 +202,7 @@ class HIMK(MairuiBase):
         date_fields = ['t','ud']        
         keys=['dm','ud']
         name = f"himk_cjzj"
-        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)>={ud}"
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}'"
         df = self.load_data(name,f"himk/cjzj",
                             add_fields=add_fields,
                             sql=sql,
@@ -241,7 +241,7 @@ class HIMK(MairuiBase):
         date_fields = ['t','ud']        
         keys=['dm','ud']
         name = f"himk_lxfl"
-        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)>={ud}"
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}'"
         df = self.load_data(name,f"himk/lxfl",
                             add_fields=add_fields,
                             sql=sql,
@@ -280,7 +280,7 @@ class HIMK(MairuiBase):
         date_fields = ['t','ud']        
         keys=['dm','ud']
         name = f"himk_lxsl"
-        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)>={ud}"
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}'"
         df = self.load_data(name,f"himk/lxsl",
                             add_fields=add_fields,
                             sql=sql,
@@ -318,7 +318,7 @@ class HIMK(MairuiBase):
         date_fields = ['t','ud']        
         keys=['dm','ud']
         name = f"himk_lxsz"
-        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)>={ud}"
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}'"
         df = self.load_data(name,f"himk/lxsz",
                             add_fields=add_fields,
                             sql=sql,
@@ -356,7 +356,7 @@ class HIMK(MairuiBase):
         date_fields = ['t','ud']        
         keys=['dm','ud']
         name = f"himk_lxxd"
-        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)>={ud}"
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}'"
         df = self.load_data(name,f"himk/lxxd",
                             add_fields=add_fields,
                             sql=sql,
@@ -392,7 +392,7 @@ class HIMK(MairuiBase):
         date_fields = ['t','ud']        
         keys=['dm','ud']
         name = f"himk_ltszph"
-        sql = f"select * from himk_ltszph where strftime('%Y-%m-%d',ud)>={ud}"
+        sql = f"select * from himk_ltszph where strftime('%Y-%m-%d',ud)='{ud}'"
         df = self.load_data(name,f"himk/ltszph",
                             add_fields=add_fields,
                             sql=sql,

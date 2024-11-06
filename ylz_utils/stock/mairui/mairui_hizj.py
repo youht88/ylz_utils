@@ -24,13 +24,12 @@ class HIZJ(MairuiBase):
             ud = yestoday.strftime("%Y-%m-%d")
         add_fields = {"ud":ud}
         date_fields = ['t','ud']
-        skip_condition = f"(ud.dt.strftime('%Y-%m-%d')>='{ud}')"
         keys=['dm','ud']
         name = f"hizj_zjh"
-        
-        df = self._load_data(name,f"hizj/zjh",
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}'"        
+        df = self.load_data(name,f"hizj/zjh",
                             add_fields=add_fields,
-                            skip_condition=skip_condition,
+                            sql=sql,
                             keys=keys,date_fields=date_fields)
         if sync_es:
             es_result = self.esLib.save(name,df,ids=['dm','ud'])
@@ -48,13 +47,12 @@ class HIZJ(MairuiBase):
             ud = yestoday.strftime("%Y-%m-%d")
         add_fields = {"ud":ud}
         date_fields = ['t','ud']
-        skip_condition = f"(ud.dt.strftime('%Y-%m-%d')>='{ud}')"
         keys=['dm','ud']
         name = f"hizj_bk"
-        
-        df = self._load_data(name,f"hizj/bk",
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}'"
+        df = self.load_data(name,f"hizj/bk",
                             add_fields=add_fields,
-                            skip_condition=skip_condition,
+                            sql=sql,
                             keys=keys,date_fields=date_fields)
         if sync_es:
             es_result = self.esLib.save(name,df,ids=['dm','ud'])
@@ -73,13 +71,12 @@ class HIZJ(MairuiBase):
             ud = yestoday.strftime("%Y-%m-%d")
         add_fields = {"ud":ud}
         date_fields = ['t','ud']
-        skip_condition = f"(ud.dt.strftime('%Y-%m-%d')>='{ud}')"
         keys=['dm','ud']
         name = f"hizj_ggzl"
-        
-        df = self._load_data(name,f"hizj/ggzl",
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}'"
+        df = self.load_data(name,f"hizj/ggzl",
                             add_fields=add_fields,
-                            skip_condition=skip_condition,
+                            sql=sql,
                             keys=keys,date_fields=date_fields)
         if sync_es:
             es_result = self.esLib.save(name,df,ids=['dm','ud'])
@@ -98,13 +95,12 @@ class HIZJ(MairuiBase):
             ud = yestoday.strftime("%Y-%m-%d")
         add_fields = {"ud":ud}
         date_fields = ['t','ud']
-        skip_condition = f"(ud.dt.strftime('%Y-%m-%d')>='{ud}')"
         keys=['dm','ud']
         name = f"hizj_lxlr"
-        
-        df = self._load_data(name,f"hizj/lxlr",
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}'"       
+        df = self.load_data(name,f"hizj/lxlr",
                             add_fields=add_fields,
-                            skip_condition=skip_condition,
+                            sql=sql,
                             keys=keys,date_fields=date_fields)
         if sync_es:
             es_result = self.esLib.save(name,df,ids=['dm','ud'])
@@ -123,13 +119,12 @@ class HIZJ(MairuiBase):
             ud = yestoday.strftime("%Y-%m-%d")
         add_fields = {"ud":ud}
         date_fields = ['t','ud']
-        skip_condition = f"(ud.dt.strftime('%Y-%m-%d')>='{ud}')"
         keys=['dm','ud']
         name = f"hizj_lxlc"
-        
-        df = self._load_data(name,f"hizj/lxlc",
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}'"
+        df = self.load_data(name,f"hizj/lxlc",
                             add_fields=add_fields,
-                            skip_condition=skip_condition,
+                            sql=sql,
                             keys=keys,date_fields=date_fields)
         if sync_es:
             es_result = self.esLib.save(name,df,ids=['dm','ud'])
@@ -143,7 +138,7 @@ class HIZJ(MairuiBase):
             try:
                 funcs = [self.get_hizj_bk,self.get_hizj_zjh,self.get_hizj_ggzl,self.get_hizj_lxlr,self.get_hizj_lxlc]
                 for func in funcs:
-                    func(sync_es = True)
+                    func(sync_es = False)
                 return {"message":"refresh_hizj completed!"}
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
@@ -154,7 +149,7 @@ class HIZJ(MairuiBase):
             try:
                 df = self.get_hizj_ggzl()
                 df = self._prepare_df(df,req)
-                content = df.to_html()
+                content = self._to_html(df)
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
@@ -165,7 +160,7 @@ class HIZJ(MairuiBase):
             try:
                 df = self.get_hizj_bk()
                 df = self._prepare_df(df,req)
-                content = df.to_html()
+                content = self._to_html(df)
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
@@ -176,7 +171,7 @@ class HIZJ(MairuiBase):
             try:
                 df = self.get_hizj_zjh()
                 df = self._prepare_df(df,req)
-                content = df.to_html()
+                content = self._to_html(df)
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}") 
@@ -187,7 +182,7 @@ class HIZJ(MairuiBase):
             try:
                 df = self.get_hizj_lxlr()
                 df = self._prepare_df(df,req)
-                content = df.to_html()
+                content = self._to_html(df)
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")        
@@ -198,7 +193,7 @@ class HIZJ(MairuiBase):
             try:
                 df = self.get_hizj_lxlc()
                 df = self._prepare_df(df,req)
-                content = df.to_html()
+                content = self._to_html(df)
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")

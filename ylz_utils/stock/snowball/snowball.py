@@ -1,4 +1,5 @@
 from datetime import datetime
+import sqlite3
 
 from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -18,7 +19,8 @@ class SnowballStock(StockBase):
         ball.set_token(f"xq_a_token={snowball_token};") 
         print(f"snowball token:{snowball_token}")
         self.register_router()
-
+        self.quotec_conn = sqlite3.connect("quotec.db")
+        self.pankou_conn = sqlite3.connect("pankou.db")
     def watch_list(self):
         '''获取用户自选列表'''
         data = ball.watch_list()
@@ -92,7 +94,7 @@ class SnowballStock(StockBase):
                   'pankou_ratio': res['data']['others'].get('pankou_ratio'),
                   'cyb_switch': res['data']['others'].get('cyb_switch')
                 }
-        # data = {
+# data = {
         #     "mr_code": mr_code,
         #     "t":datetime.fromtimestamp(res['data']['quote']['timestamp']/1000),
         #     "name": name,
@@ -213,6 +215,7 @@ class SnowballStock(StockBase):
         "ps5":res['data']['sp5'],
         "vs5":res['data']['sc5'],
         }
+
         if sync_es:
             id = '_'.join([str(data[id]) for id in ["mr_code","t"]])
             today = datetime.today().strftime("%Y%m%d")
@@ -371,10 +374,12 @@ class SnowballStock(StockBase):
            "锐捷网络","吉比特","宁德时代","迈为股份","中熔电气","同花顺","光智科技","韦尔股份",
            "上证指数","深证成指","创业板指","中证500"
            ]
+            today = datetime.today().strftime("%Y%m%d")
             quotec_dict = {
                 "func":self.quotec_detail,
                 "codes":codes,
-                "sync_es":True
+                "sync_es":False,
+                "sync_sqlite":{"db_name":f"quotec_{today}.db","table_name":"quotec"}
             }
             scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='9',minute='30-59',second='*/3'),kwargs=quotec_dict)
             scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='10',minute='00-59',second='*/3'),kwargs=quotec_dict)
@@ -386,7 +391,8 @@ class SnowballStock(StockBase):
             pankou_dict = {
                 "func":self.pankou,
                 "codes":codes,
-                "sync_es":True
+                "sync_es":False,
+                "sync_sqlite":{"db_name":f"pankou_{today}.db","table_name":"pankou"}
             }            
             scheduler.add_job(self.parallel_execute, misfire_grace_time=6,trigger=CronTrigger(hour='9',minute='15-30',second='*/3'),kwargs=pankou_dict)
             

@@ -11,12 +11,14 @@ class HSMY(MairuiBase):
         code=code_info['code']
         mr_code = code_info['mr_code']
         add_fields = {"mr_code":mr_code}
-        skip_condition = f"mr_code == '{mr_code}'"
         date_fields = ['t']
-        df = self._load_data("hsmy_zlzj",f"hsmy/zlzj/{code}",
+        name = 'hsmy_zlzj'
+        sql = f"select * from {name} where mr_code='{mr_code}'"
+        keys=['mr_code','t']
+        df = self.load_data(name,f"hsmy/zlzj/{code}",
                                         add_fields=add_fields,
-                                        skip_condition=skip_condition,
-                                        keys=["mr_code"],date_fields=date_fields)
+                                        sql=sql,
+                                        keys=keys,date_fields=date_fields)
         return df
     def get_hsmy_zjlr(self,code:str):
         """获取某个股票的近十年每天资金流入趋势"""
@@ -26,12 +28,14 @@ class HSMY(MairuiBase):
         code=code_info['code']
         mr_code = code_info['mr_code']
         add_fields = {"mr_code":mr_code}
-        skip_condition = f"mr_code == '{mr_code}'"
+        name = "hsmy_zjlr"
+        sql = f"select * from {name} where mr_code='{mr_code}'"
+        keys=['mr_code','t']
         date_fields = ['t']
-        df = self._load_data("hsmy_zjlr",f"hsmy/zjlr/{code}",
+        df = self.load_data(name,f"hsmy/zjlr/{code}",
                                         add_fields=add_fields,
-                                        skip_condition=skip_condition,
-                                        keys=["mr_code"],date_fields=date_fields)
+                                        sql=sql,
+                                        keys=keys,date_fields=date_fields)
         return df
 
     def get_hsmy_zhlrt(self,code:str,sync_es:bool=False):
@@ -49,12 +53,11 @@ class HSMY(MairuiBase):
             ud = yestoday.strftime("%Y-%m-%d")
         add_fields = {"mr_code":mr_code,"ud":ud}
         date_fields = ['t','ud']
-        skip_condition = f"mr_code == '{mr_code}' & (ud.dt.strftime('%Y-%m-%d')>='{ud}')"
-
         name = f"hsmy_zhlrt_{mr_code}"
-        df = self._load_data(name,f"hsmy/zhlrt/{code}",
+        sql = f"select * from {name} where strftime('%Y-%m-%d',ud)='{ud}' and mr_code='{mr_code}'"
+        df = self.load_data(name,f"hsmy/zhlrt/{code}",
                                         add_fields=add_fields,
-                                        skip_condition=skip_condition,
+                                        sql=sql,
                                         keys=["mr_code"],date_fields=date_fields)
         if sync_es:
             es_result = self.esLib.save(name,df,ids=['mr_code','t','ud'])

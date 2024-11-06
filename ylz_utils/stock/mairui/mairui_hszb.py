@@ -19,7 +19,7 @@ class HSZB(MairuiBase):
             ud = yestoday.strftime("%Y-%m-%d")
         add_fields = {"mr_code":mr_code,"ud":ud}
         date_fields = ['ud']
-        skip_condition = f"mr_code == '{mr_code}' & (ud.dt.strftime('%Y-%m-%d')>='{ud}')"
+        skip_condition = f"mr_code == '{mr_code}' & (ud.dt.strftime('%Y-%m-%d')='{ud}')"
 
         name = f"hszb_fsjy_{mr_code}_{fsjb}"
         df = self._load_data(name,f"hszb/fsjy/{code}/{fsjb}",
@@ -61,7 +61,7 @@ class HSZB(MairuiBase):
             ud = yestoday.strftime("%Y-%m-%d")
         add_fields = {"mr_code":mr_code,"fsjb":fsjb,"ud":ud}
         date_fields = ['ud','d']
-        skip_condition = f"mr_code == '{mr_code}' & fsjb == '{fsjb}' & (ud.dt.strftime('%Y-%m-%d')>='{ud}')"
+        skip_condition = f"mr_code == '{mr_code}' & fsjb == '{fsjb}' & (ud.dt.strftime('%Y-%m-%d')='{ud}')"
 
         name = f"hszbl_fsjy_{fsjb}_{mr_code}"
         df = self._load_data(name,f"hszbl/fsjy/{code}/{fsjb}",
