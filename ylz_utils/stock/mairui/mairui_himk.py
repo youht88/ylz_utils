@@ -38,7 +38,7 @@ class HIMK(MairuiBase):
 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>21:
+        if today.hour>20:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -79,7 +79,7 @@ class HIMK(MairuiBase):
 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>21:
+        if today.hour>20:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -120,7 +120,7 @@ class HIMK(MairuiBase):
 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>21:
+        if today.hour>20:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -157,7 +157,7 @@ class HIMK(MairuiBase):
 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>21:
+        if today.hour>20:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -194,7 +194,7 @@ class HIMK(MairuiBase):
 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>21:
+        if today.hour>20:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -233,7 +233,7 @@ class HIMK(MairuiBase):
 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>21:
+        if today.hour>20:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -272,7 +272,7 @@ class HIMK(MairuiBase):
 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>21:
+        if today.hour>20:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -310,7 +310,7 @@ class HIMK(MairuiBase):
         
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>21:
+        if today.hour>20:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -348,7 +348,7 @@ class HIMK(MairuiBase):
 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>21:
+        if today.hour>20:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -384,7 +384,7 @@ class HIMK(MairuiBase):
 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>21:
+        if today.hour>20:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")

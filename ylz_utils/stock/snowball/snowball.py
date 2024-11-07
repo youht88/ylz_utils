@@ -360,20 +360,28 @@ class SnowballStock(StockBase):
 
     def register_router(self):
         @self.router.get("/start",description="启动股票交易收集定时器2")
-        async def start():
+        async def start(req:Request):
             '''启动股票交易收集定时器1'''
             scheduler = BackgroundScheduler()
- 
-            codes=['全志科技','瑞芯微','欧菲光',"永辉超市","乐鑫科技","联创电子","万达信息","银邦股份","蒙草生态","拉卡拉",
-           "新华传媒","宗申动力","隆基绿能","常山北明","旗天科技","国泰君安",
-           "国新健康","普洛药业","隆基绿能","中船应急","福日电子","立讯精密","华力创通","中粮资本",
-           "东方财富","中国中免","国金证券",
-           "中际旭创","小商品城","源杰科技","海德股份",
-           "新元科技","金三江","海达股份","科创新源","华盛锂电","矩阵股份","民德电子","帝尔激光","宇邦新材","乾照光电",
-           "保变电气","新诺威","珠江啤酒","国电电力","协创数据","神宇股份","北新建材","未名医药","蜂助手","如通股份",
-           "锐捷网络","吉比特","宁德时代","迈为股份","中熔电气","同花顺","光智科技","韦尔股份",
-           "上证指数","深证成指","创业板指","中证500"
-           ]
+            code = req.query_params.get('code')
+            zx = req.query_params.get('zx')
+            if not code and not zx:
+                raise Exception('必须指定code或zx参数')
+            if code:
+                codes = [item for item in code.split(',') if item]
+            elif zx:
+                codes_info = self._get_zx_codes(zx)
+                codes = [item['code'] for item in codes_info]
+        #     codes=['全志科技','瑞芯微','欧菲光',"永辉超市","乐鑫科技","联创电子","万达信息","银邦股份","蒙草生态","拉卡拉",
+        #    "新华传媒","宗申动力","隆基绿能","常山北明","旗天科技","国泰君安",
+        #    "国新健康","普洛药业","隆基绿能","中船应急","福日电子","立讯精密","华力创通","中粮资本",
+        #    "东方财富","中国中免","国金证券",
+        #    "中际旭创","小商品城","源杰科技","海德股份",
+        #    "新元科技","金三江","海达股份","科创新源","华盛锂电","矩阵股份","民德电子","帝尔激光","宇邦新材","乾照光电",
+        #    "保变电气","新诺威","珠江啤酒","国电电力","协创数据","神宇股份","北新建材","未名医药","蜂助手","如通股份",
+        #    "锐捷网络","吉比特","宁德时代","迈为股份","中熔电气","同花顺","光智科技","韦尔股份",
+        #    "上证指数","深证成指","创业板指","中证500"
+        #    ]
             today = datetime.today().strftime("%Y%m%d")
             quotec_dict = {
                 "func":self.quotec_detail,
@@ -403,11 +411,23 @@ class SnowballStock(StockBase):
             """获取个股实时交易信息"""
             try:
                 code = req.query_params.get('code')
-                if not code:
-                    raise Exception('必须指定code')
+                zx = req.query_params.get('zx')
+                bk = req.query_params.get('bk')
+                if not code and not zx and not bk:
+                    raise Exception('必须指定code或zx或bk参数')
+                if code:
+                    codes = [item for item in code.split(',') if item]
+                elif zx:
+                    codes_info = self._get_zx_codes(zx)
+                    codes = [item['code'] for item in codes_info]
+                elif bk:
+                    codes_info = self._get_bk_codes(bk)
+                    codes = [item['dm'] for item in codes_info]
+                    print("bk dm code----->",codes)
+
                 kwargs = {
                     "func": self.quotec_detail,
-                    "codes": [item for item in code.split(',') if item],
+                    "codes": codes,
                 }
                 quotec_data = self.parallel_execute(**kwargs)
                 df = pd.DataFrame(quotec_data)

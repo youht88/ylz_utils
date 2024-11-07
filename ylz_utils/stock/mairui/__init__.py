@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from ylz_utils.stock.mairui.mairui_base import MairuiBase
 from ylz_utils.stock.mairui.mairui_hibk import HIBK
+from ylz_utils.stock.mairui.mairui_hijg import HIJG
 from ylz_utils.stock.mairui.mairui_higg import HIGG
 from ylz_utils.stock.mairui.mairui_himk import HIMK
 from ylz_utils.stock.mairui.mairui_hilh import HILH

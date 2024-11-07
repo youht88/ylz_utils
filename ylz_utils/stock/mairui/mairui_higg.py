@@ -30,7 +30,7 @@ class HIGG(MairuiBase):
         
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>16:
+        if today.hour>15:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -69,7 +69,7 @@ class HIGG(MairuiBase):
 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>16:
+        if today.hour>15:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -108,7 +108,7 @@ class HIGG(MairuiBase):
 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>16:
+        if today.hour>15:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -134,7 +134,7 @@ class HIGG(MairuiBase):
             try:
                 df = self.get_higg_jlr()
                 df = self._prepare_df(df,req)
-                content = self._to_html(df)
+                content = self._to_html(df,columns=['dm','mc'])
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
@@ -145,7 +145,7 @@ class HIGG(MairuiBase):
             try:
                 df = self.get_higg_zljlr()
                 df = self._prepare_df(df,req)
-                content = self._to_html(df)
+                content = self._to_html(df,columns=['dm','mc'])
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
@@ -156,7 +156,7 @@ class HIGG(MairuiBase):
             try:
                 df = self.get_higg_shjlr()
                 df = self._prepare_df(df,req)
-                content = self._to_html(df)
+                content = self._to_html(df,columns=['dm','mc'])
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")

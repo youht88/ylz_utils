@@ -51,6 +51,36 @@ class StockBase:
                         df = pd.DataFrame(results)
                         df.to_sql(table_name,index=False,if_exists="append",con=sqlite3.connect(db_name))
                 return results
+    def _get_zx_codes(self,key:str)->list[dict]:
+        try:
+            df = pd.read_sql(f"select * from zx where key='{key}'",self.sqlite)
+            if df.empty:
+                raise Exception(f"自选{key}不存在")
+            return df.to_dict(orient="records")
+        except Exception as e:
+            raise Exception(f"没有找到自选{key},{e}")
+    def _get_bk_codes(self,bk:str,intersect=True,jys=['sz','sh'])->list[dict]:    
+        codes = [item for item in bk.split(',') if item]
+        try:
+            codes = [self._get_bk_code(code)['code'] for code in codes]
+        except Exception as e:
+            raise Exception(f"转换板块code时出错,{e}")        
+        df_bk=[]
+        for code in codes:
+            res = requests.get( 
+                f"{self.mairui_api_url}/hszg/gg/{code}/{self.mairui_token}",
+            )
+            data = [ item for item in res.json() if item['jys'] in jys]
+            df_bk.append(pd.DataFrame(data))
+        if intersect:
+            df = df_bk[0]
+            if len(df_bk)>1:
+                for item in df_bk[1:]:
+                    df = df.merge(item)
+        else:
+            df = pd.concat(df_bk).drop_duplicates()
+        return df.to_dict(orient='records')
+
     def _get_bk_code(self,bk_name:str)->dict:
         if not self.bkdm:
             res = requests.get(f"{self.mairui_api_url}/hszg/list/{self.mairui_token}")
@@ -58,19 +88,19 @@ class StockBase:
         code_info = list(filter(lambda item:item['code']==bk_name,self.bkdm))
         if code_info:
             if len(code_info)>1:
-                print("code_info",code_info)
-                raise Exception('板块代码不唯一，请重新配置!')
+                code_str = '|'.join([f"name:{info['name']},code:{info['code']}" for info in code_info])
+                raise Exception(f'板块代码[{bk_name}]不唯一,[{code_str}],请重新配置!')
             return code_info[0]
         else:
             code_info = list(filter(lambda item:item['name'].find(bk_name)>=0,self.bkdm)) 
             if code_info:
                 if len(code_info)>1:
-                    print("code_info",code_info)
-                    raise Exception('板块代码不唯一，请重新配置!')
+                    code_str = '|'.join([f"name:{info['name']},code:{info['code']}" for info in code_info])
+                    raise Exception(f'板块代码[{bk_name}]不唯一,[{code_str}],请重新配置!')
                 else:
                     return code_info[0]
             else:
-                raise Exception('没有找到相关板块!')
+                raise Exception(f'没有找到[{bk_name}]相关板块!')
 
     def _get_stock_code(self,stock_name:str)->dict:
         """根据股票或指数名称获取股票/指数代码"""
@@ -87,9 +117,10 @@ class StockBase:
                 self.gpdm = [
                     {"ts_code":f"{item['dm']}.{item['jys'].upper()}","symbol":f"{item['dm']}","name":item['mc']} for item in all_dm
                 ]
+                #raise Exception(f"{self.gpdm}")
             except Exception as e:
                 raise Exception(f"获取{stock_name}代码错误,{e}")
-        if stock_name.startswith('sh') or stock_name.startswith('sz'):
+        if stock_name.startswith('sh') or stock_name.startswith('sz') or stock_name.startswith('bj'):
             # mairui code
             jys = stock_name[:2]
             code = stock_name[2:]
@@ -101,8 +132,8 @@ class StockBase:
                 name = stock_info[0]['name']
                 return {"code":code,"mr_code":mr_code,"ts_code":ts_code,"name":name,"jys":jys,"ball_code":ball_code}
             else:
-                return {}
-        elif stock_name.endswith('.SH') or stock_name.endswith('.SZ'):
+                raise Exception(f"没有找到{stock_name}代码信息")
+        elif stock_name.endswith('.SH') or stock_name.endswith('.SZ') or stock_name.endswith('.BJ'):
             #tu-share code
             jys = stock_name[-2:].lower()
             code = stock_name[:-3]
@@ -114,8 +145,8 @@ class StockBase:
                 name = stock_info[0]['name']
                 return {"code":code,"mr_code":mr_code,"ts_code":ts_code,"name":name,"jys":jys,"ball_code":ball_code}
             else:
-                return {}
-        elif stock_name.startswith('SH') or stock_name.startswith('SZ'):
+                raise Exception(f"没有找到{stock_name}代码信息")
+        elif stock_name.startswith('SH') or stock_name.startswith('SZ') or stock_name.startswith('BJ'):
             #雪球code
             jys = stock_name[:2].lower()
             code = stock_name[2:]
@@ -127,7 +158,7 @@ class StockBase:
                 name = stock_info[0]['name']
                 return {"code":code,"mr_code":mr_code,"ts_code":ts_code,"name":name,"jys":jys,"ball_code":ball_code}
             else:
-                return {}
+                raise Exception(f"没有找到{stock_name}代码信息")
         elif stock_name.isnumeric():
             code = stock_name
             stock_info = list(filter(lambda item:item["symbol"]==code,self.gpdm))
@@ -139,27 +170,23 @@ class StockBase:
                 ball_code = f"{jys.upper()}{code}"
                 return {"code":code,"mr_code":mr_code,"ts_code":ts_code,"name":name,"jys":jys,"ball_code":ball_code}
             else:
-                return {}
+                raise Exception(f"没有找到{stock_name}代码信息")
         else:
-            stock_info = list(filter(lambda item:item["name"]==stock_name.upper(),self.gpdm))
-            if stock_info:
-                ts_code = stock_info[0]['ts_code']
-                jys = ts_code[-2:].lower()
-                code = stock_info[0]['symbol']
-                name = stock_info[0]['name']
-                mr_code = f"{jys}{code}"
-                ball_code = f"{jys.upper()}{code}"
-                return {"code":code,"mr_code":mr_code,"ts_code":ts_code,"name":name,"jys":jys,"ball_code":ball_code}
-            else:
-                zs_info = list(filter(lambda item:item["mc"]==stock_name.upper(),self.bkdm))
-                if zs_info:
-                    mr_code = zs_info[0]['dm']
-                    jys = zs_info[0]['jys']
-                    name = zs_info[0]['mc']
-                    code = mr_code[2:]
-                    ts_code = f"{code}.{jys.upper()}"
+            try:
+                stock_info = list(filter(lambda item:item["name"]==stock_name.upper(),self.gpdm))
+                if stock_info:
+                    ts_code = stock_info[0]['ts_code']
+                    jys = ts_code[-2:].lower()
+                    code = stock_info[0]['symbol']
+                    name = stock_info[0]['name']
+                    mr_code = f"{jys}{code}"
                     ball_code = f"{jys.upper()}{code}"
                     return {"code":code,"mr_code":mr_code,"ts_code":ts_code,"name":name,"jys":jys,"ball_code":ball_code}
+                else:
+                    raise Exception(f"没有找到{stock_name}代码信息")
+            except Exception as e:
+                raise Exception(f"查找{stock_name}代码信息出错,{e}")
+
     def _prepare_df(self,df:pd.DataFrame,req:Request):
         condition = [item for item in req.query_params.items() if '@' in item[0]]
         order = req.query_params.get('o')
@@ -334,7 +361,55 @@ class StockBase:
         from .snowball import SnowballStock
         hszg = HSZG()          
         snowball = SnowballStock()
-
+        @self.router.get("/zx/add/{key}")
+        async def add_zx(key:str,req:Request):
+            '''增加自选股票列表'''
+            try:
+                codes = [item for item in req.query_params.get('code','').split(',') if not item=='']
+                if len(codes)>0:
+                    try:
+                        df = pd.read_sql(f"select * from zx where key='{key}'",self.sqlite)
+                        self.sqlite.execute(f"delete from zx where key='{key}'")
+                    except:
+                        df = pd.DataFrame([])
+                    code_info = [{**self._get_stock_code(code),'key':key} for code in codes]
+                    code_info_df = pd.DataFrame(code_info)
+                    if df.empty:
+                        df = code_info_df
+                    else:
+                        df = pd.concat([df,code_info_df]).drop_duplicates()
+                    df.to_sql("zx",con=self.sqlite,index=False,if_exists="append")
+                    return {"message":f"已增加{key}"}
+                else:
+                    raise Exception("必须指定code参数")
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")  
+        @self.router.get("/zx/remove/{key}")
+        async def remove_zx(key:str,req:Request):
+            '''删除自选股票列表'''
+            try:
+                self.sqlite.execute(f"delete from zx where key='{key}'")
+                self.sqlite.commit()
+                return {"message":f"已删除{key}"}
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")  
+        @self.router.get("/zx/get/{key}")
+        async def get_zx(key:str,req:Request):
+            '''获取自选股票列表'''
+            try:
+                return self._get_zx_codes(key)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")  
+        @self.router.get("/zx/get_all")
+        async def get_all_zx(req:Request):
+            '''获取自选股票列表'''
+            try:
+                df = pd.read_sql("select * from zx order by key",self.sqlite)
+                df = self._prepare_df(df,req)
+                content = self._to_html(df,columns=['mr_code','name'])
+                return HTMLResponse(content)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")  
         @self.router.get("/bk/{code}",response_class=HTMLResponse)
         async def get_bk_stock(code,req:Request):
             '''获取板块中权重股票的实时交易情况'''

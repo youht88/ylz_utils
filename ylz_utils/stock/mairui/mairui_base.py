@@ -41,7 +41,7 @@ class MairuiBase(StockBase):
                     if sql.startswith('delete') or sql.startswith('DELETE'):
                         self.sqlite.execute(sql)
                         print("!!!!! DELETE DATA THEN LOAD FROM NETWORK !!!!")
-                        raise Exception("delte data then refresh")
+                        raise Exception("delete data then refresh")
                     else:
                         df = pd.read_sql(sql,con=self.sqlite)
                         for col in date_fields:

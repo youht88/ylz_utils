@@ -18,7 +18,7 @@ class HIZJ(MairuiBase):
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
         print("run get_hizj_zjh",today)
-        if today.hour>16:
+        if today.hour>15:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -41,7 +41,7 @@ class HIZJ(MairuiBase):
         #请求频率：1分钟20次 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>16:
+        if today.hour>15:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -65,7 +65,7 @@ class HIZJ(MairuiBase):
         #请求频率：1分钟20次 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>16:
+        if today.hour>15:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -89,7 +89,7 @@ class HIZJ(MairuiBase):
         #请求频率：1分钟20次 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>16:
+        if today.hour>15:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -113,7 +113,7 @@ class HIZJ(MairuiBase):
         #请求频率：1分钟20次 
         today = datetime.today()
         yestoday = datetime.today() - timedelta(days=1)
-        if today.hour>16:
+        if today.hour>15:
             ud = today.strftime("%Y-%m-%d")
         else:
             ud = yestoday.strftime("%Y-%m-%d")
@@ -149,7 +149,7 @@ class HIZJ(MairuiBase):
             try:
                 df = self.get_hizj_ggzl()
                 df = self._prepare_df(df,req)
-                content = self._to_html(df)
+                content = self._to_html(df,columns=['dm','mc'])
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
@@ -160,7 +160,7 @@ class HIZJ(MairuiBase):
             try:
                 df = self.get_hizj_bk()
                 df = self._prepare_df(df,req)
-                content = self._to_html(df)
+                content = self._to_html(df,columns=['dm','mc'])
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
@@ -171,7 +171,7 @@ class HIZJ(MairuiBase):
             try:
                 df = self.get_hizj_zjh()
                 df = self._prepare_df(df,req)
-                content = self._to_html(df)
+                content = self._to_html(df,columns=['dm','mc'])
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}") 
@@ -182,7 +182,7 @@ class HIZJ(MairuiBase):
             try:
                 df = self.get_hizj_lxlr()
                 df = self._prepare_df(df,req)
-                content = self._to_html(df)
+                content = self._to_html(df,columns=['dm','mc'])
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")        
@@ -193,7 +193,7 @@ class HIZJ(MairuiBase):
             try:
                 df = self.get_hizj_lxlc()
                 df = self._prepare_df(df,req)
-                content = self._to_html(df)
+                content = self._to_html(df,columns=['dm','mc'])
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")

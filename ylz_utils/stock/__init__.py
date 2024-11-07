@@ -13,6 +13,7 @@ class StockLib():
         self.base = StockBase()
         self.snowball = SnowballStock()
         self.hibk = HIBK()
+        self.hijg = HIJG()
         self.higg = HIGG()
         self.himk = HIMK()
         self.hitc = HITC()
@@ -30,6 +31,8 @@ class StockLib():
         self.base.register_router()
         app.include_router(self.base.router,prefix="/base")
 
+        app.include_router(self.hibk.router,prefix="/mairui")
+        app.include_router(self.hijg.router,prefix="/mairui")
         app.include_router(self.higg.router,prefix="/mairui")
         app.include_router(self.himk.router,prefix="/mairui")
         app.include_router(self.hsrl.router,prefix="/mairui")
