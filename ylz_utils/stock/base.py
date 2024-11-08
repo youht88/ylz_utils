@@ -299,10 +299,7 @@ class StockBase:
     def _parse_order_express(self,df:pd.DataFrame,order:str)->pd.DataFrame:
         express = re.findall(r'(add|sub|mul|div|avg)\((.*)\)',order)
         if not express:
-            if '(' in order or ')' in order:
-                raise Exception(f"{order}表达式不正确")
-            else:
-                express=[order]
+            express=[order]
         else:
             express = [express[0][0]] + express[0][1].split(',')
         number_pattern = r'^-?\d*\.?\d+$'
@@ -334,7 +331,8 @@ class StockBase:
                 df["_order"] = df["_order"] + item
             df["_order"] = df["_order"]/len(args)
         elif len(express)==1:
-            pass
+            order="_order"
+            df['_order'] = df.eval(express[0])            
         else:
             raise Exception(f"{order}表达式不正确")
         df = df.sort_values(by=order,ascending=False)
@@ -386,11 +384,25 @@ class StockBase:
                 raise HTTPException(status_code=400, detail=f"{e}")  
         @self.router.get("/zx/remove/{key}")
         async def remove_zx(key:str,req:Request):
-            '''删除自选股票列表'''
+            '''删除自选股票列表的项目,可以指定code或name。如果不指定则删除所以key的项目'''
             try:
-                self.sqlite.execute(f"delete from zx where key='{key}'")
+                messages=[]
+                code = req.query_params.get("code")
+                name = req.query_params.get("name")
+                if code or name:
+                    if code:
+                        codes_str = ','.join([f"'{item}'" for item in code.split(',') if item])
+                        self.sqlite.execute(f"delete from zx where key='{key}' and code in ({codes_str})")
+                        messages.append(f"已删除[{key}]中的code:[{codes_str}]")
+                    if name:
+                        names_str = ','.join([f"'{item}'" for item in name.split(',') if item])
+                        self.sqlite.execute(f"delete from zx where key='{key}' and name in ({names_str})")
+                        messages.append(f"已删除[{key}]中的name:[{names_str}]")
+                else:
+                    self.sqlite.execute(f"delete from zx where key='{key}'")
+                    messages.append(f"已删除[{key}]")
                 self.sqlite.commit()
-                return {"message":f"已删除{key}"}
+                return {"message":",".join(messages)}
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")  
         @self.router.get("/zx/get/{key}")
@@ -409,48 +421,62 @@ class StockBase:
                 content = self._to_html(df,columns=['mr_code','name'])
                 return HTMLResponse(content)
             except Exception as e:
-                raise HTTPException(status_code=400, detail=f"{e}")  
-        @self.router.get("/bk/{code}",response_class=HTMLResponse)
-        async def get_bk_stock(code,req:Request):
-            '''获取板块中权重股票的实时交易情况'''
-            try:
-                bk_data = hszg.get_hszg_gg(code)
-                kwargs = {
-                    "func": snowball.quotec_detail,
-                    "codes": [item['dm'] for item in bk_data],
-                }
-                quotec_data = self.parallel_execute(**kwargs)
-                df = pd.DataFrame(quotec_data)
-                df = df.filter(
-                    ['t','mr_code','name','high52w','low52w','current_year_percent','last_close',
-                    'current','percent','open','high','low','chg','volume','amount','volume_ratio','turnover_rate','pankou_ratio',
-                    'float_shares','total_shares','float_market_capital','market_capital',
-                    'eps','dividend','pe_ttm','pe_forecast','pb','pledge_ratio','navps','amplitude','current_ext','volume_ext'])
-                df = self._prepare_df(df,req)
-                content = self._to_html(df)
-                return HTMLResponse(content=content) 
-            except Exception as e:
-                raise HTTPException(status_code=400, detail=f"{e}")  
+                raise HTTPException(status_code=400, detail=f"{e}") 
+             
+        # @self.router.get("/bk/{code}",response_class=HTMLResponse)
+        # async def get_bk_stock(code,req:Request):
+        #     '''获取板块中权重股票的实时交易情况'''
+        #     try:
+        #         bk_data = hszg.get_hszg_gg(code)
+        #         kwargs = {
+        #             "func": snowball.quotec_detail,
+        #             "codes": [item['dm'] for item in bk_data],
+        #         }
+        #         quotec_data = self.parallel_execute(**kwargs)
+        #         df = pd.DataFrame(quotec_data)
+        #         df = df.filter(
+        #             ['t','mr_code','name','high52w','low52w','current_year_percent','last_close',
+        #             'current','percent','open','high','low','chg','volume','amount','volume_ratio','turnover_rate','pankou_ratio',
+        #             'float_shares','total_shares','float_market_capital','market_capital',
+        #             'eps','dividend','pe_ttm','pe_forecast','pb','pledge_ratio','navps','amplitude','current_ext','volume_ext'])
+        #         df = self._prepare_df(df,req)
+        #         content = self._to_html(df)
+        #         return HTMLResponse(content=content) 
+        #     except Exception as e:
+        #         raise HTTPException(status_code=400, detail=f"{e}")  
             
         @self.router.get("/es/sql",response_class=HTMLResponse)
         async def es_sql(req:Request):
-            sql = req.query_params.get("q")
-            data = self.esLib.sql(sql)
-            df = pd.DataFrame(data['rows'],columns=[item['name'] for item in data['columns']])
-            content = self._to_html(df)
-            return HTMLResponse(content=content)
+            try:
+                sql = req.query_params.get("q")
+                if not sql:
+                    raise HTTPException(status_code=400, detail="must give argument [q]!")
+                data = self.esLib.sql(sql)
+                df = pd.DataFrame(data['rows'],columns=[item['name'] for item in data['columns']])
+                if "json" in req.query_params.keys():
+                        return df.to_dict(orient='records')
+                content = self._to_html(df)
+                return HTMLResponse(content=content)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")  
         @self.router.get("/es/drop/{table}")
         async def es_drop_table(table:str):
             res = self.esLib.drop(table)
             return res
         
-        @self.router.get("/sqlite/sql",response_class=HTMLResponse)
+        @self.router.get("/sqlite/sql")
         async def sqlite_sql(req:Request):
-            sql = req.query_params.get("q")
-            df = pd.read_sql(sql,con=self.sqlite)
-            content = self._to_html(df)
-            return HTMLResponse(content=content)
-        
+            try:
+                sql = req.query_params.get("q")
+                if not sql:
+                    raise HTTPException(status_code=400, detail="must give argument [q]!")
+                df = pd.read_sql(sql,con=self.sqlite)
+                if "json" in req.query_params.keys():
+                    return df.to_dict(orient='records')
+                content = self._to_html(df)
+                return HTMLResponse(content=content)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")        
         @self.router.get("/sqlite/drop/{table}")
         async def sqlite_drop_table(table:str):
             res = self.esLib.drop(table)
