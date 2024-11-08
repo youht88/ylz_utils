@@ -28,7 +28,7 @@ class MairuiBase(StockBase):
                     return True
         return False
     def load_data(self,name:str,method_path:str,sql:str=None,
-                           add_fields:dict={},keys=[],date_fields=[])->pd.DataFrame:
+                           add_fields:dict={},keys=[],wind='',date_fields=[])->pd.DataFrame:
         # add_fields 需要增加的字段，例如 add_fields = {"mr_code":"abcd"}
         # keys 判断是否重复数据的字段名数组,例如 keys=["mr_code"]
         # date_fields 指定日期类型的字段名
@@ -62,12 +62,19 @@ class MairuiBase(StockBase):
                         data = [{**item,**add_fields} for item in data]
                     else:
                         data = [{**data,**add_fields}]
-                    df = pd.DataFrame(data)
+                    if wind:
+                        print("wind=",wind)
+                        d1=[[{**x,wind:'',**item,} for item in x[wind]] for x in data]
+                        d2=[item for items in d1 for item in items]
+                        df = pd.DataFrame(d2)
+                    else:
+                        df = pd.DataFrame(data)
                     for col in date_fields:
                         df[col] = pd.to_datetime(df[col]) 
-                    index_sql = f'CREATE UNIQUE INDEX IF NOT EXISTS idx_{name}_{"_".join(keys)} ON {name} ({",".join(keys)});'
-                    df.to_sql(name,index=False,if_exists="append",con=self.sqlite)                       
-                    self.sqlite.execute(index_sql)
+                    df.to_sql(name,index=False,if_exists="append",con=self.sqlite)
+                    if keys:                       
+                        index_sql = f'CREATE UNIQUE INDEX IF NOT EXISTS idx_{name}_{"_".join(keys)} ON {name} ({",".join(keys)});'
+                        self.sqlite.execute(index_sql)
                 except Exception as e:
                     print("network error:",e)
                     raise  
