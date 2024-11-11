@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from typing import Literal
 from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse
+import pandas as pd
 import requests
 from .mairui_base import MairuiBase
 
@@ -16,21 +17,27 @@ class HSZB(MairuiBase):
         code_info = self._get_stock_code(code)
         code=code_info['code']
         mr_code = code_info['mr_code']
-        today = datetime.today()
-        ud = today.strftime("%Y-%m-%d")
-        add_fields = {"mr_code":mr_code,"fsjb":fsjb,"ud":ud}
-        date_fields = ['ud']
-        keys = ["ud","mr_code","fsjb"]
-        name = f"hszb_fsjy"
-        sql = f"delete from {name} where mr_code='{mr_code}' and fsjb='{fsjb}' and strftime('%Y-%m-%d',ud) = '{ud}'"
-        df = self.load_data(name,f"hszb/fsjy/{code}/{fsjb}",
-                                        add_fields=add_fields,
-                                        sql=sql,
-                                        keys=keys,date_fields=date_fields)
-        if sync_es:
-            es_result = self.esLib.save(name,df,ids=['mr_code','fsjb','ud'])
-            print(f"errors:{es_result["errors"]}")
-        return df
+        mc = code_info['name']
+        add_fields = {"mr_code":mr_code,"fsjb":fsjb,"mc":mc}
+        date_fields = ['d']
+        keys=["mr_code","fsjb","d"]
+        res = requests.get(f"{self.mairui_api_url}/hszb/fsjy/{code}/{fsjb}/{self.mairui_token}")
+        data = res.json()
+        df = pd.DataFrame([data])
+        for key in add_fields:
+            df[key] = add_fields[key]
+        for item in date_fields:
+            df[item] = pd.to_datetime(df[item])
+        df_sql = pd.read_sql(f"select * from hszb_fsjy_{fsjb} where mr_code='{mr_code}'",self.sqlite)
+        df_sql['d'] = pd.to_datetime(df_sql['d'])
+        all_df = pd.concat([df_sql,df],ignore_index=True).drop_duplicates(subset=['mr_code', 'd'])
+        def lxxd(window):
+            #print(window)
+            tag = ((100+window).prod())/100/100/100/100/100
+            return tag
+        #all_df['tag'] = all_df[['zd','c']].rolling(window=5).apply(lxxd,raw=False)
+        all_df['tag'] = all_df['zd'].rolling(window=5).apply(lxxd, raw=False)
+        return all_df
 
 
     def get_hszb_ma(self,code:str,fs:Literal["5m","15m","30m","60m","dn","wn","mn","yn"]="5m"):
@@ -54,10 +61,11 @@ class HSZB(MairuiBase):
         code_info = self._get_stock_code(code)
         code=code_info['code']
         mr_code = code_info['mr_code']
-        add_fields = {"mr_code":mr_code,"fsjb":fsjb}
+        mc = code_info['name']
+        add_fields = {"mr_code":mr_code,"fsjb":fsjb,"mc":mc}
         date_fields = ['d']
         keys=["mr_code","fsjb","d"]
-        name = f"hszbl_fsjy_{fsjb}"
+        name = f"hszb_fsjy_{fsjb}"
         sql = f"delete from {name} where mr_code='{mr_code}' and fsjb='{fsjb}'"
         #指定sql为删除语句以确保每次都会请求网络
         df = self.load_data(name,f"hszbl/fsjy/{code}/{fsjb}",

@@ -81,6 +81,13 @@ LLM:
             - ${FREE_API_KEY}
         BASE_URL: https://api.chatanywhere.tech
         MODEL: ${FREE_LLM_MODEL}
+    X:
+        API_KEYS:
+            - ${X_API_KEYS}
+            - ${X_API_KEY}
+        BASE_URL: https://api.x.ai/v1
+        MODEL: ${X_LLM_MODEL}
+
 EMBEDDING:
     DEFAULT: EMBEDDING.FREE
     TOGETHER: 
