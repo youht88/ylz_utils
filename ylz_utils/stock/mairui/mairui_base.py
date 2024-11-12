@@ -35,15 +35,16 @@ class MairuiBase(StockBase):
         # sql 从sqlite取数据的sql语句
         try:
             df=None
+            conn = sqlite3.connect(self.stock_db_name)
             try:
                 if sql:
                     print("sql=",sql)
                     if sql.startswith('delete') or sql.startswith('DELETE'):
-                        self.sqlite.execute(sql)
+                        conn.execute(sql)
                         print("!!!!! DELETE DATA THEN LOAD FROM NETWORK !!!!")
                         raise Exception("delete data then refresh")
                     else:
-                        df = pd.read_sql(sql,con=self.sqlite)
+                        df = pd.read_sql(sql,con=conn)
                         for col in date_fields:
                             df[col] = pd.to_datetime(df[col])
                 else:
@@ -63,6 +64,7 @@ class MairuiBase(StockBase):
                     else:
                         data = [{**data,**add_fields}]
                     if wind:
+                        #需要展开的字段
                         print("wind=",wind)
                         d1=[[{**x,wind:'',**item,} for item in x[wind]] for x in data]
                         d2=[item for items in d1 for item in items]
@@ -71,10 +73,11 @@ class MairuiBase(StockBase):
                         df = pd.DataFrame(data)
                     for col in date_fields:
                         df[col] = pd.to_datetime(df[col]) 
-                    df.to_sql(name,index=False,if_exists="append",con=self.sqlite)
+                    #df.to_sql(name,index=False,if_exists="append",con=self.sqlite)
+                    df.to_sql(name,index=False,if_exists="append",con=conn)
                     if keys:                       
                         index_sql = f'CREATE UNIQUE INDEX IF NOT EXISTS idx_{name}_{"_".join(keys)} ON {name} ({",".join(keys)});'
-                        self.sqlite.execute(index_sql)
+                        conn.execute(index_sql)
                 except Exception as e:
                     print("network error:",e)
                     raise  

@@ -25,8 +25,8 @@ class StockBase:
         self.mairui_token = Config.get('STOCK.MAIRUI.TOKEN')
         self.mairui_api_url = "http://api.mairui.club" 
         self.router = APIRouter()
-        stock_db_name = Config().get('STOCK.DB_NAME','stock.db')
-        self.sqlite = sqlite3.connect(stock_db_name)
+        self.stock_db_name = Config().get('STOCK.DB_NAME','stock.db')
+        self.sqlite = sqlite3.connect(self.stock_db_name)
     # 定义一个执行函数的方法k
     def parallel_execute(self,**kwargs):
         func = kwargs.pop("func")
@@ -423,27 +423,28 @@ class StockBase:
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}") 
              
-        # @self.router.get("/bk/{code}",response_class=HTMLResponse)
-        # async def get_bk_stock(code,req:Request):
-        #     '''获取板块中权重股票的实时交易情况'''
-        #     try:
-        #         bk_data = hszg.get_hszg_gg(code)
-        #         kwargs = {
-        #             "func": snowball.quotec_detail,
-        #             "codes": [item['dm'] for item in bk_data],
-        #         }
-        #         quotec_data = self.parallel_execute(**kwargs)
-        #         df = pd.DataFrame(quotec_data)
-        #         df = df.filter(
-        #             ['t','mr_code','name','high52w','low52w','current_year_percent','last_close',
-        #             'current','percent','open','high','low','chg','volume','amount','volume_ratio','turnover_rate','pankou_ratio',
-        #             'float_shares','total_shares','float_market_capital','market_capital',
-        #             'eps','dividend','pe_ttm','pe_forecast','pb','pledge_ratio','navps','amplitude','current_ext','volume_ext'])
-        #         df = self._prepare_df(df,req)
-        #         content = self._to_html(df)
-        #         return HTMLResponse(content=content) 
-        #     except Exception as e:
-        #         raise HTTPException(status_code=400, detail=f"{e}")  
+        @self.router.get("/code_info")
+        async def get_code_info(req:Request):
+            '''获取code信息列表'''
+            try:
+                code = req.query_params.get('code')
+                zx = req.query_params.get('zx')
+                bk = req.query_params.get('bk')
+                if not code and not zx and not bk:
+                    raise Exception('必须指定code或zx或bk参数')
+                if code:
+                    codes = [item for item in code.split(',') if item]
+                    codes_info=[ self._get_stock_code(code) for code in codes]
+                elif zx:
+                    codes_info = self._get_zx_codes(zx)
+                elif bk:
+                    codes_info = self._get_bk_codes(bk)
+                df = pd.DataFrame(codes_info)
+                df = self._prepare_df(df,req)
+                content = self._to_html(df)
+                return HTMLResponse(content=content) 
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")  
             
         @self.router.get("/es/sql",response_class=HTMLResponse)
         async def es_sql(req:Request):
