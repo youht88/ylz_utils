@@ -360,7 +360,7 @@ class StockBase:
         )
         return content
     
-    def _get_rx(self,code:str,*,sdate:str,edate:str,fsjb:str="dn",add_fields={}):
+    def _getch_rx(self,code:str,*,sdate:str,edate:str,fsjb:str="dn",add_fields={}):
         code_info = self._get_stock_code(code)
         code=code_info['code']
         mr_code = code_info['mr_code']

@@ -523,7 +523,7 @@ class SnowballStock(StockBase):
                 with tqdm(total=total,desc="进度") as pbar:
                     for i in range(0,total,batch):    
                         kwargs = {
-                            "func": self._get_rx,
+                            "func": self._fetch_rx,
                             "codes": codes[i:i+batch],
                             "sdate":sdate,
                             "edate":edate,
