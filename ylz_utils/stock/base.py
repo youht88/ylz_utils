@@ -360,18 +360,19 @@ class StockBase:
         )
         return content
     
-    def _getch_rx(self,code:str,*,sdate:str,edate:str,fsjb:str="dn",add_fields={}):
+    def _fetch_rx(self,code:str,*,sdate:str,edate:str,fsjb:str="dn",add_fields={}):
         code_info = self._get_stock_code(code)
         code=code_info['code']
         mr_code = code_info['mr_code']
         mc = code_info['name']
         add_fields = {"mr_code":mr_code,"fsjb":fsjb,"mc":mc}
         res = requests.get(f"{self.mairui_api_url}/hszbc/fsjy/{code}/{fsjb}/{sdate}/{edate}/{self.mairui_token}")
-        print("fetch status code:",res.status_code)
-        data = res.json()
-        data = [{**item,**add_fields} for item in data]
-        return data
-
+        if res.status_code==200:
+            data = res.json()
+            data = [{**item,**add_fields} for item in data]
+            return data
+        else:
+            raise Exception(f"network error on fetch {mc} data")
     def register_router(self):
         from .mairui.mairui_hszg import HSZG
         from .snowball import SnowballStock
