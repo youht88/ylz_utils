@@ -5,6 +5,7 @@ from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse
 import pandas as pd
 import pysnowball as ball
+from tqdm import tqdm
 
 from ylz_utils.config import Config
 from ylz_utils.stock.base import StockBase
@@ -436,6 +437,53 @@ class SnowballStock(StockBase):
                     'current','percent','open','high','low','chg','volume','amount','volume_ratio','turnover_rate','pankou_ratio',
                     'float_shares','total_shares','float_market_capital','market_capital',
                     'eps','dividend','pe_ttm','pe_forecast','pb','pledge_ratio','navps','amplitude','current_ext','volume_ext'])
+                df = self._prepare_df(df,req)
+                content = self._to_html(df)
+                return HTMLResponse(content=content)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")
+        
+        @self.router.get("/jy")
+        async def jy(req:Request):
+            """获取个股实时交易信息"""
+            try:
+                code = req.query_params.get('code')
+                zx = req.query_params.get('zx')
+                bk = req.query_params.get('bk')
+                batch = req.query_params.get('batch')
+                if not code and not zx and not bk:
+                    raise Exception('必须指定code或zx或bk参数')
+                if code:
+                    codes = [item for item in code.split(',') if item]
+                elif zx:
+                    codes_info = self._get_zx_codes(zx)
+                    codes = [item['code'] for item in codes_info]
+                elif bk:
+                    codes_info = self._get_bk_codes(bk)
+                    codes = [item['dm'] for item in codes_info]
+                    print("bk dm code----->",codes)
+                if batch:
+                    batch = int(batch)
+                else:
+                    batch = len(codes)//10
+                now = datetime.today().strftime("%Y-%m-%dT%H:%M:%S")
+                columns = ['t','mr_code','name','high52w','low52w','current_year_percent','last_close',
+                    'current','percent','open','high','low','chg','volume','amount','volume_ratio','turnover_rate','pankou_ratio',
+                    'float_shares','total_shares','float_market_capital','market_capital',
+                    'eps','dividend','pe_ttm','pe_forecast','pb','pledge_ratio','navps','amplitude','current_ext','volume_ext']
+                total = len(codes)
+                total_data=[]
+                with tqdm(total=total,desc="进度") as pbar:
+                    for i in range(0,total,batch):    
+                        kwargs = {
+                            "func": self.quotec_detail,
+                            "codes": codes[i:i+batch],
+                            "sync_sqlite":{"db_name":f"jy_{now}.db","table_name":"jy","columns":columns}
+                        }
+                        data = self.parallel_execute(**kwargs)
+                        total_data.extend(data)
+                        pbar.update(batch)
+                df = pd.DataFrame(total_data)
                 df = self._prepare_df(df,req)
                 content = self._to_html(df)
                 return HTMLResponse(content=content)

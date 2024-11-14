@@ -47,8 +47,11 @@ class StockBase:
                 if sync_sqlite:
                     db_name = sync_sqlite.get('db_name')
                     table_name = sync_sqlite.get('table_name')
+                    columns = sync_sqlite.get('columns')
                     if db_name and table_name:
                         df = pd.DataFrame(results)
+                        if columns:
+                            df = df.filter(columns)
                         df.to_sql(table_name,index=False,if_exists="append",con=sqlite3.connect(db_name))
                 return results
     def _get_zx_codes(self,key:str)->list[dict]:
