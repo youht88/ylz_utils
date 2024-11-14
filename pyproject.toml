@@ -42,7 +42,6 @@ langchain-elasticsearch = "*"
 
 duckduckgo-search = "^6.2.1"
 sqlite4 = "^0.1.1"
-faiss-cpu = "^1.8.0.post1"
 playwright = "^1.45.1"
 gradio-client = "^1.1.1"
 typing-extensions = "^4.12.2"

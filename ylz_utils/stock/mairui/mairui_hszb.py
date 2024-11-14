@@ -274,7 +274,7 @@ class HSZB(MairuiBase):
                         #pbar.set_description(f'Processing data: {batch_codes}')
                         self.parallel_execute(**kwargs)
                         pbar.update(len(batch_codes))
-                return {"message":"获取fsjy完毕!"}
+                return {"message":f"获取{total_data}支股票{sdt}~{edt}的{fsjb}级别交易数据完毕!"}
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
 

@@ -5,6 +5,7 @@ from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse
 import pandas as pd
 import pysnowball as ball
+import requests
 from tqdm import tqdm
 
 from ylz_utils.config import Config
@@ -358,7 +359,6 @@ class SnowballStock(StockBase):
         ball_code=code_info['ball_code']
         mr_code = code_info['mr_code']
         return ball.cash_flow(symbol=ball_code,is_annals=is_annals,count=count)
-
     def register_router(self):
         @self.router.get("/start",description="启动股票交易收集定时器2")
         async def start(req:Request):
@@ -466,7 +466,7 @@ class SnowballStock(StockBase):
                     batch = int(batch)
                 else:
                     batch = len(codes)//10
-                now = datetime.today().strftime("%Y-%m-%dT%H:%M:%S")
+                db_name = f"jy_{datetime.today().strftime("%Y-%m-%dT%H:%M:%S")}.db"
                 columns = ['t','mr_code','name','high52w','low52w','current_year_percent','last_close',
                     'current','percent','open','high','low','chg','volume','amount','volume_ratio','turnover_rate','pankou_ratio',
                     'float_shares','total_shares','float_market_capital','market_capital',
@@ -478,14 +478,132 @@ class SnowballStock(StockBase):
                         kwargs = {
                             "func": self.quotec_detail,
                             "codes": codes[i:i+batch],
-                            "sync_sqlite":{"db_name":f"jy_{now}.db","table_name":"jy","columns":columns}
+                            "sync_sqlite":{"db_name":db_name,"table_name":"jy","columns":columns}
                         }
-                        data = self.parallel_execute(**kwargs)
-                        total_data.extend(data)
+                        self.parallel_execute(**kwargs)
                         pbar.update(batch)
-                df = pd.DataFrame(total_data)
-                df = self._prepare_df(df,req)
-                content = self._to_html(df)
+                return {"message":f"已将{total}支股票的交易数据保存在{db_name}","codes":codes}
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")
+        
+        @self.router.get("/rx")
+        async def rx(req:Request):
+            """获取个股日线信息"""
+            try:
+                code = req.query_params.get('code')
+                zx = req.query_params.get('zx')
+                bk = req.query_params.get('bk')
+                batch = req.query_params.get('batch')
+                sdate = req.query_params.get('sdate')
+                edate = req.query_params.get('edate')
+                if not sdate or not edate:
+                    raise Exception('必须指定sdate和edate参数，格式为YYYY-MM-DD')
+                if not code and not zx and not bk:
+                    raise Exception('必须指定code或zx或bk参数')
+                if code:
+                    codes = [item for item in code.split(',') if item]
+                elif zx:
+                    codes_info = self._get_zx_codes(zx)
+                    codes = [item['code'] for item in codes_info]
+                elif bk:
+                    codes_info = self._get_bk_codes(bk)
+                    codes = [item['dm'] for item in codes_info]
+                    print("bk dm code----->",codes)
+                if batch:
+                    batch = int(batch)
+                else:
+                    batch = len(codes)//10 if len(codes)>=10 else 1
+                year = datetime.today().strftime("%Y")
+                db_name = f"rx_{year}.db"
+                try:
+                    sqlite3.connect(db_name).execute("drop table rx")
+                except Exception as e:
+                    print(f"error:{e}")
+                total = len(codes)
+                with tqdm(total=total,desc="进度") as pbar:
+                    for i in range(0,total,batch):    
+                        kwargs = {
+                            "func": self._get_rx,
+                            "codes": codes[i:i+batch],
+                            "sdate":sdate,
+                            "edate":edate,
+                            "fsjb":"dn",
+                            "sync_sqlite":{"db_name":db_name,"table_name":"rx"}
+                        }
+                        self.parallel_execute(**kwargs)
+                        pbar.update(batch)
+                return {"message":f"已将{total}支股票的交易数据保存在{db_name}","codes":codes}
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")
+
+        @self.router.get("/fx")
+        async def fx(req:Request):
+            """分析个股实时交易信息"""
+            try:
+                hs = req.query_params.get('hs')
+                hs_low = 5
+                hs_high=10
+                if hs:
+                    try:
+                        hss = hs.replace("[","").replace("]","").split(",")
+                        hs_low=float(hss[0])
+                        hs_high = float(hss[1])                       
+                    except:
+                        raise Exception(f"hs={hs}设置错误")
+                
+                lb = req.query_params.get('lb')
+                lb_low = 1
+                lb_high=999
+                if lb:
+                    try:
+                        lbs = lb.replace("[","").replace("]","").split(",")
+                        lb_low=float(lbs[0])
+                        lb_high = float(lbs[1])                       
+                    except:
+                        raise Exception(f"lb={lb}设置错误")
+                
+                ltsz = req.query_params.get('ltsz')
+                ltsz_low  =  5000000000
+                ltsz_high = 20000000000
+                if ltsz:
+                    try:
+                        ltszs = ltsz.replace("[","").replace("]","").split(",")
+                        ltsz_low=float(ltszs[0])
+                        ltsz_high = float(ltszs[1])                       
+                    except:
+                        raise Exception(f"ltsz={ltsz}设置错误")
+                
+                zf = req.query_params.get('zf')
+                zf_low  =  3
+                zf_high = 5
+                if zf:
+                    try:
+                        zfs = zf.replace("[","").replace("]","").split(",")
+                        zf_low=float(zfs[0])
+                        zf_high = float(zfs[1])                       
+                    except:
+                        raise Exception(f"zf={zf}设置错误")
+                print(f"hs=[{hs_low},{hs_high}],lb=[{lb_low},{lb_high}],ltsz=[{ltsz_low},{ltsz_high}],zf=[{zf_low},{zf_high}]")
+                db = req.query_params.get('db')
+                if not db:
+                    raise Exception('必须指定db')
+                columns = ['t','mr_code','name','high52w','low52w','current_year_percent','last_close',
+                    'current','percent','open','high','low','chg','volume','amount','volume_ratio','turnover_rate','pankou_ratio',
+                    'float_shares','total_shares','float_market_capital','market_capital',
+                    'eps','dividend','pe_ttm','pe_forecast','pb','pledge_ratio','navps','amplitude','current_ext','volume_ext']
+                df = pd.read_sql(f"select * from jy ",sqlite3.connect(db)) 
+                df = df.filter(columns)
+                c_hs_low = df["turnover_rate"].ge(hs_low) 
+                c_hs_high = df["turnover_rate"].le(hs_high)
+                c_lb_low = df["volume_ratio"].ge(lb_low)
+                c_lb_high = df["volume_ratio"].le(lb_high)
+                c_ltsz_low= df["float_market_capital"].ge(ltsz_low)
+                c_ltsz_high = df["float_market_capital"].le(ltsz_high)            
+                c_zf_low = df["percent"].ge(zf_low)
+                c_zf_high = df["percent"].le(zf_high)
+                df = df[ c_hs_low &  c_hs_high &  c_lb_low & c_lb_high & c_ltsz_low & c_ltsz_high & c_zf_low & c_zf_high]
+                df = self._prepare_df(df.copy(),req)
+                content = self._to_html(df,columns=['mr_code','name'])
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")

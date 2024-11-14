@@ -43,6 +43,9 @@ class StockBase:
                 else:
                     futures = [executor.submit(func,**kwargs)]
                 results = [future.result() for future in futures]
+                if isinstance(results[0],list):
+                    #如果results是的每一项是数组，则需要展开
+                    results = [item for items in results for item in items]
                 print("results count:",len(results))
                 if sync_sqlite:
                     db_name = sync_sqlite.get('db_name')
@@ -357,6 +360,17 @@ class StockBase:
         )
         return content
     
+    def _get_rx(self,code:str,*,sdate:str,edate:str,fsjb:str="dn",add_fields={}):
+        code_info = self._get_stock_code(code)
+        code=code_info['code']
+        mr_code = code_info['mr_code']
+        mc = code_info['name']
+        add_fields = {"mr_code":mr_code,"fsjb":fsjb,"mc":mc}
+        res = requests.get(f"{self.mairui_api_url}/hszbc/fsjy/{code}/{fsjb}/{sdate}/{edate}/{self.mairui_token}")
+        data = res.json()
+        data = [{**item,**add_fields} for item in data]
+        return data
+
     def register_router(self):
         from .mairui.mairui_hszg import HSZG
         from .snowball import SnowballStock
