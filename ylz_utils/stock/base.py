@@ -367,6 +367,7 @@ class StockBase:
         mc = code_info['name']
         add_fields = {"mr_code":mr_code,"fsjb":fsjb,"mc":mc}
         res = requests.get(f"{self.mairui_api_url}/hszbc/fsjy/{code}/{fsjb}/{sdate}/{edate}/{self.mairui_token}")
+        print("fetch status code:",res.status_code)
         data = res.json()
         data = [{**item,**add_fields} for item in data]
         return data
