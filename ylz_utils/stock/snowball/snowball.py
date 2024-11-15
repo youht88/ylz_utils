@@ -515,10 +515,6 @@ class SnowballStock(StockBase):
                     batch = len(codes)//10 if len(codes)>=10 else 1
                 year = datetime.today().strftime("%Y")
                 db_name = f"rx_{year}.db"
-                try:
-                    sqlite3.connect(db_name).execute("drop table rx")
-                except Exception as e:
-                    print(f"error:{e}")
                 total = len(codes)
                 with tqdm(total=total,desc="进度") as pbar:
                     for i in range(0,total,batch):    
@@ -536,8 +532,8 @@ class SnowballStock(StockBase):
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
 
-        @self.router.get("/fx")
-        async def fx(req:Request):
+        @self.router.get("/fx1")
+        async def fx1(req:Request):
             """分析个股实时交易信息"""
             try:
                 hs = req.query_params.get('hs')
@@ -604,6 +600,53 @@ class SnowballStock(StockBase):
                 df = df[ c_hs_low &  c_hs_high &  c_lb_low & c_lb_high & c_ltsz_low & c_ltsz_high & c_zf_low & c_zf_high]
                 df = self._prepare_df(df.copy(),req)
                 content = self._to_html(df,columns=['mr_code','name'])
+                return HTMLResponse(content=content)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")
+        
+        @self.router.get("/lxslxd")
+        async def lxslxd(req:Request):
+            """分析连续缩量下跌信息"""
+            try:
+                db = "rx_2024.db"
+                if not db:
+                    raise Exception('必须指定db')
+                origin_df = pd.read_sql(f"select * from rx where mc='瑞芯微' or mc='全志科技' or mc='北方稀土'",sqlite3.connect(db)) 
+                codes = origin_df['mr_code'].drop_duplicates().to_list()
+                codes=['sh600111','sh603893']
+                codes=['sz300458']
+                print("len codes:",len(codes),codes)
+                #with tqdm(total=len(codes),desc="进度") as pbar:
+                all_df = origin_df.copy()
+                day=3
+                dfs=[]
+                for code in codes:
+                    df = all_df[all_df['mr_code']==code].copy() 
+                    for idx in range(day):
+                        t=idx+1
+                        df[f'c{t}']=df['c'].shift(t)
+                        df[f'v{t}']=df['v'].shift(t)
+                        df[f'e{t}']=df['e'].shift(t) 
+                    cond=pd.Series([True] * len(df))
+                    print("1",code,len(df),len(cond))   
+                    for field in ['c']:
+                        for idx in range(1):
+                            if idx==0:
+                                cond1 = df[f'{field}'] > df[f'{field}{idx+1}']
+                                print("!!!!",len(cond),len(cond1))
+                                cond1.reindex()
+                                cond2 = (cond) & (cond1)
+                                print("???",field,idx,len(cond),len(cond1),len(cond2))
+                            else:
+                                cond = cond & (df[f'{field}{idx}'].lt(df[f'{field}{idx+1}']))
+                    print("2",code,len(df),len(cond))   
+                    df_new = df.loc[cond].copy()
+
+                    dfs.append(df_new)
+                    #pbar.update(1)
+                df_concat = pd.concat(dfs,ignore_index=True)
+                df = self._prepare_df(df_concat,req)
+                content = self._to_html(df,columns=['mr_code','mc'])
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")

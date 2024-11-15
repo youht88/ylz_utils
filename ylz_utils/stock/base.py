@@ -1,8 +1,9 @@
 import sqlite3
+import time
 from fastapi.responses import HTMLResponse
 import pandas as pd
 import requests
-from datetime import datetime
+from datetime import datetime,timedelta
 import logging
 import re
 import requests
@@ -366,18 +367,31 @@ class StockBase:
         mr_code = code_info['mr_code']
         mc = code_info['name']
         add_fields = {"mr_code":mr_code,"fsjb":fsjb,"mc":mc}
+        try:
+            max_date = sqlite3.connect("rx_2024.db").execute(f"select max(d) from rx where mr_code='{mr_code}'").fetchall()[0][0]
+            if max_date>=sdate:
+                sdate=datetime.strptime(max_date,'%Y-%m-%d')+timedelta(days=1)
+        except Exception as e:
+            pass
         res = requests.get(f"{self.mairui_api_url}/hszbc/fsjy/{code}/{fsjb}/{sdate}/{edate}/{self.mairui_token}")
         if res.status_code==200:
             data = res.json()
             data = [{**item,**add_fields} for item in data]
             return data
+        elif res.status_code==429:
+            print(f"wait 30s for fetch {code}")
+            time.sleep(30)
+            return self._fetch_rx(code,sdate=sdate,edate=edate,fsjb=fsjb,add_fields=add_fields)
         else:
-            raise Exception(f"network error on fetch {mc} data")
+            raise Exception(f"network error on fetch {mc} data with status code {res.status_code}")
     def register_router(self):
         from .mairui.mairui_hszg import HSZG
         from .snowball import SnowballStock
         hszg = HSZG()          
         snowball = SnowballStock()
+        @self.router.get("/test")
+        async def test(req:Request):
+            return self._get_rx("600111",sdate="2024-01-01",edate="2024-12-31")
         @self.router.get("/zx/add/{key}")
         async def add_zx(key:str,req:Request):
             '''增加自选股票列表'''
