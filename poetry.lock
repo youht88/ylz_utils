@@ -177,6 +177,59 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 reference = "tsinghua"
 
 [[package]]
+name = "akracer"
+version = "0.0.13"
+description = "akracer is next version of py_mini_racer"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "akracer-0.0.13-py3-none-any.whl", hash = "sha256:55bd04c69e35130994d26795f00183e0c33d4e237f7ebfa35074a760c30209d1"},
+    {file = "akracer-0.0.13.tar.gz", hash = "sha256:8ab67dabda34f38604d037f2cac67078d253d8c4c316ffe0d80d27ed03cdbb5e"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
+name = "akshare"
+version = "1.15.22"
+description = "AKShare is an elegant and simple financial data interface library for Python, built for human beings!"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "akshare-1.15.22-py3-none-any.whl", hash = "sha256:058dc78bd8a617398c385305ae1b7dc1c619913a3ec9fab97b04b9e773b95ef1"},
+    {file = "akshare-1.15.22.tar.gz", hash = "sha256:86108a0734c646c0b3dea4be51500b39eeac9dfeb2dde1cf26232a1ca37d63b6"},
+]
+
+[package.dependencies]
+akracer = {version = ">=0.0.13", extras = ["py-mini-racer"], markers = "platform_system == \"Linux\""}
+beautifulsoup4 = ">=4.9.1"
+decorator = ">=4.4.2"
+html5lib = ">=1.0.1"
+jsonpath = ">=0.82"
+lxml = ">=4.2.1"
+mini-racer = {version = ">=0.12.4", markers = "platform_system != \"Linux\""}
+openpyxl = ">=3.0.3"
+pandas = ">=0.25"
+py-mini-racer = {version = ">=0.6.0", markers = "platform_system == \"Linux\""}
+requests = ">=2.22.0"
+tabulate = ">=0.8.6"
+tqdm = ">=4.43.0"
+urllib3 = ">=1.25.8"
+xlrd = ">=1.2.0"
+
+[package.extras]
+full = ["akqmt"]
+qmt = ["akqmt"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
 name = "annotated-types"
 version = "0.7.0"
 description = "Reusable constraint types to use with typing.Annotated"
@@ -876,6 +929,22 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 reference = "tsinghua"
 
 [[package]]
+name = "decorator"
+version = "5.1.1"
+description = "Decorators for Humans"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "decorator-5.1.1-py3-none-any.whl", hash = "sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186"},
+    {file = "decorator-5.1.1.tar.gz", hash = "sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
 name = "deprecated"
 version = "1.2.14"
 description = "Python @deprecated decorator to deprecate old python classes, functions or methods."
@@ -1128,6 +1197,22 @@ files = [
 [package.dependencies]
 dnspython = ">=2.0.0"
 idna = ">=2.0.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
+name = "et-xmlfile"
+version = "2.0.0"
+description = "An implementation of lxml.xmlfile for the standard library"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "et_xmlfile-2.0.0-py3-none-any.whl", hash = "sha256:7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa"},
+    {file = "et_xmlfile-2.0.0.tar.gz", hash = "sha256:dab3f4764309081ce75662649be815c4c9081e88f0837825f90fd28317d4da54"},
+]
 
 [package.source]
 type = "legacy"
@@ -1672,6 +1757,32 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 reference = "tsinghua"
 
 [[package]]
+name = "html5lib"
+version = "1.1"
+description = "HTML parser based on the WHATWG HTML specification"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+files = [
+    {file = "html5lib-1.1-py2.py3-none-any.whl", hash = "sha256:0d78f8fde1c230e99fe37986a60526d7049ed4bf8a9fadbad5f00e22e58e041d"},
+    {file = "html5lib-1.1.tar.gz", hash = "sha256:b2e5b40261e20f354d198eae92afc10d750afb487ed5e50f9c4eaf07c184146f"},
+]
+
+[package.dependencies]
+six = ">=1.9"
+webencodings = "*"
+
+[package.extras]
+all = ["chardet (>=2.2)", "genshi", "lxml"]
+chardet = ["chardet (>=2.2)"]
+genshi = ["genshi"]
+lxml = ["lxml"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
 name = "httpcore"
 version = "1.0.6"
 description = "A minimal low-level HTTP client."
@@ -2111,6 +2222,21 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 reference = "tsinghua"
 
 [[package]]
+name = "jsonpath"
+version = "0.82.2"
+description = "An XPath for JSON"
+optional = false
+python-versions = "*"
+files = [
+    {file = "jsonpath-0.82.2.tar.gz", hash = "sha256:d87ef2bcbcded68ee96bc34c1809b69457ecec9b0c4dd471658a12bd391002d1"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
 name = "jsonpointer"
 version = "3.0.0"
 description = "Identify specific nodes in a JSON document (RFC 6901) "
@@ -2328,8 +2454,8 @@ jsonpatch = ">=1.33,<2.0"
 langsmith = ">=0.1.125,<0.2.0"
 packaging = ">=23.2,<25"
 pydantic = [
-    {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
     {version = ">=2.5.2,<3.0.0", markers = "python_full_version < \"3.12.4\""},
+    {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
 ]
 PyYAML = ">=5.3"
 tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<10.0.0"
@@ -2562,8 +2688,8 @@ files = [
 httpx = ">=0.23.0,<1"
 orjson = ">=3.9.14,<4.0.0"
 pydantic = [
-    {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
     {version = ">=1,<3", markers = "python_full_version < \"3.12.4\""},
+    {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
 ]
 requests = ">=2,<3"
 requests-toolbelt = ">=1.0.0,<2.0.0"
@@ -2965,6 +3091,28 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 reference = "tsinghua"
 
 [[package]]
+name = "mini-racer"
+version = "0.12.4"
+description = "Minimal, modern embedded V8 for Python."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "mini_racer-0.12.4-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:bce8a3cee946575a352f5e65335903bc148da42c036d0c738ac67e931600e455"},
+    {file = "mini_racer-0.12.4-py3-none-macosx_11_0_arm64.whl", hash = "sha256:56c832e6ac2db6a304d1e8e80030615297aafbc6940f64f3479af4ba16abccd5"},
+    {file = "mini_racer-0.12.4-py3-none-manylinux_2_31_aarch64.whl", hash = "sha256:b82c4bd2976e280ed0a72c9c2de01b13f18ccfbe6f4892cbc22aae04410fac3c"},
+    {file = "mini_racer-0.12.4-py3-none-manylinux_2_31_x86_64.whl", hash = "sha256:69a1c44d02a9069b881684cef15a2d747fe0743df29eadc881fda7002aae5fd2"},
+    {file = "mini_racer-0.12.4-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:499dbc267dfe60e954bc1b6c3787f7b10fc41fe1975853c9a6ddb55eb83dc4d9"},
+    {file = "mini_racer-0.12.4-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:231f949f5787d18351939f1fe59e5a6fe134bccb5ecf8f836b9beab69d91c8d9"},
+    {file = "mini_racer-0.12.4-py3-none-win_amd64.whl", hash = "sha256:9446e3bd6a4eb9fbedf1861326f7476080995a31c9b69308acef17e5b7ecaa1b"},
+    {file = "mini_racer-0.12.4.tar.gz", hash = "sha256:84c67553ce9f3736d4c617d8a3f882949d37a46cfb47fe11dab33dd6704e62a4"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
 name = "more-itertools"
 version = "10.5.0"
 description = "More routines for operating on iterables, beyond itertools"
@@ -3314,6 +3462,25 @@ typing-extensions = ">=4.11,<5"
 
 [package.extras]
 datalib = ["numpy (>=1)", "pandas (>=1.2.3)", "pandas-stubs (>=1.1.0.11)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
+name = "openpyxl"
+version = "3.1.5"
+description = "A Python library to read/write Excel 2010 xlsx/xlsm files"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "openpyxl-3.1.5-py2.py3-none-any.whl", hash = "sha256:5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2"},
+    {file = "openpyxl-3.1.5.tar.gz", hash = "sha256:cf0e3cf56142039133628b5acffe8ef0c12bc902d2aadd3e0fe5878dc08d1050"},
+]
+
+[package.dependencies]
+et-xmlfile = "*"
 
 [package.source]
 type = "legacy"
@@ -3966,6 +4133,24 @@ files = [
     {file = "propcache-0.2.0-cp39-cp39-win_amd64.whl", hash = "sha256:9517d5e9e0731957468c29dbfd0f976736a0e55afaea843726e887f36fe017df"},
     {file = "propcache-0.2.0-py3-none-any.whl", hash = "sha256:2ccc28197af5313706511fab3a8b66dcd6da067a1331372c82ea1cb74285e036"},
     {file = "propcache-0.2.0.tar.gz", hash = "sha256:df81779732feb9d01e5d513fad0122efb3d53bbc75f61b2a4f29a020bc985e70"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
+name = "py-mini-racer"
+version = "0.6.0"
+description = "Minimal, modern embedded V8 for Python."
+optional = false
+python-versions = "*"
+files = [
+    {file = "py_mini_racer-0.6.0-py2.py3-none-macosx_10_10_x86_64.whl", hash = "sha256:346e73bb89a2024888244d487834be24a121089ceb0641dd0200cb96c4e24b57"},
+    {file = "py_mini_racer-0.6.0-py2.py3-none-manylinux1_x86_64.whl", hash = "sha256:42896c24968481dd953eeeb11de331f6870917811961c9b26ba09071e07180e2"},
+    {file = "py_mini_racer-0.6.0-py2.py3-none-win_amd64.whl", hash = "sha256:97cab31bbf63ce462ba4cd6e978c572c916d8b15586156c7c5e0b2e42c10baab"},
+    {file = "py_mini_racer-0.6.0.tar.gz", hash = "sha256:f71e36b643d947ba698c57cd9bd2232c83ca997b0802fc2f7f79582377040c11"},
 ]
 
 [package.source]
@@ -5715,6 +5900,22 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 reference = "tsinghua"
 
 [[package]]
+name = "webencodings"
+version = "0.5.1"
+description = "Character encoding aliases for legacy web content"
+optional = false
+python-versions = "*"
+files = [
+    {file = "webencodings-0.5.1-py2.py3-none-any.whl", hash = "sha256:a0af1213f3c2226497a97e2b3aa01a7e4bee4f403f95be16fc9acd2947514a78"},
+    {file = "webencodings-0.5.1.tar.gz", hash = "sha256:b36a1c245f2d304965eb4e0a82848379241dc04b865afcc4aab16748587e1923"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
 name = "websocket-client"
 version = "1.8.0"
 description = "WebSocket client for Python with low level API options"
@@ -5931,6 +6132,27 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 reference = "tsinghua"
 
 [[package]]
+name = "xlrd"
+version = "2.0.1"
+description = "Library for developers to extract data from Microsoft Excel (tm) .xls spreadsheet files"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
+files = [
+    {file = "xlrd-2.0.1-py2.py3-none-any.whl", hash = "sha256:6a33ee89877bd9abc1158129f6e94be74e2679636b8a205b43b85206c3f0bbdd"},
+    {file = "xlrd-2.0.1.tar.gz", hash = "sha256:f72f148f54442c6b056bf931dbc34f986fd0c3b0b6b5a58d013c9aef274d0c88"},
+]
+
+[package.extras]
+build = ["twine", "wheel"]
+docs = ["sphinx"]
+test = ["pytest", "pytest-cov"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tsinghua"
+
+[[package]]
 name = "xlsxwriter"
 version = "3.2.0"
 description = "A Python module for creating Excel XLSX files."
@@ -6106,4 +6328,4 @@ reference = "tsinghua"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12,<=3.13"
-content-hash = "70bd966b5b3e6c862abc6c00d9c684c325b6667b213e28d2e618541edfbea57b"
+content-hash = "610cc7d53befe82e3d95ae285f28032f4cceee00e779e9520accd21db0c2fefd"

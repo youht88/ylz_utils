@@ -424,7 +424,7 @@ class SnowballStock(StockBase):
                 elif bk:
                     codes_info = self._get_bk_codes(bk)
                     codes = [item['dm'] for item in codes_info]
-                    print("bk dm code----->",codes)
+                print("dm code----->",codes)
 
                 kwargs = {
                     "func": self.quotec_detail,
@@ -643,14 +643,14 @@ class SnowballStock(StockBase):
                                     cond1 = df[f'{field}'] < df[f'{field}{idx+1}']
                                     if field=='c':
                                         cond2=df[f'{field}'] < df[f'o{idx+1}']
-                                        cond = cond & (cond1 )
+                                        cond = cond & (cond1 & cond2)
                                     else:    
                                         cond = cond & cond1
                                 else:
                                     cond1= df[f'{field}{idx}'].lt(df[f'{field}{idx+1}'])
                                     if field=='c':
                                         cond2=df[f'{field}{idx}'].lt(df[f'o{idx+1}'])
-                                        cond = cond & (cond1 )
+                                        cond = cond & (cond1 & cond2)
                                     else:    
                                         cond = cond & cond1
                         df_new = df[cond]

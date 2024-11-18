@@ -75,6 +75,7 @@ matplotlib = "^3.9.0"
 pysnowball = "^0.1.3"
 #需要TUSHARE_TOKEN
 tushare = "^1.4.13"
+akshare = "^1.15.22"
 
 ipfs-toolkit = "^0.5.24"
 neo4j = "^5.23.1"
@@ -91,6 +92,7 @@ tabulate = "^0.9.0"
 trustcall = "^0.0.22"
 apscheduler = "^3.10.4"
 fastapi-cdn-host = "^0.8.2"
+
 
 
 [build-system]

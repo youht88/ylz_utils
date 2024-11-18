@@ -24,6 +24,7 @@ class StockBase:
         # 获取当前模块的目录
         self.gpdm = None
         self.bkdm = None
+        self.bk_codes = {}
         self.mairui_token = Config.get('STOCK.MAIRUI.TOKEN')
         self.mairui_api_url = "http://api.mairui.club" 
         self.router = APIRouter()
@@ -74,12 +75,32 @@ class StockBase:
         except Exception as e:
             raise Exception(f"转换板块code时出错,{e}")        
         df_bk=[]
+        con=sqlite3.connect(self.stock_db_name)
         for code in codes:
-            res = requests.get( 
-                f"{self.mairui_api_url}/hszg/gg/{code}/{self.mairui_token}",
-            )
-            data = [ item for item in res.json() if item['jys'] in jys]
-            df_bk.append(pd.DataFrame(data))
+            if not self.bk_codes.get(code):
+                try:
+                    df = pd.read_sql(f"select * from bk_codes where bk='{code}'",con=con)
+                    self.bk_codes[code] = df.to_dict(orient="records")
+                    data = [ item for item in self.bk_codes[code] if item['jys'] in jys]
+                    df_bk.append(pd.DataFrame(data))    
+                except Exception as e:
+                    res = requests.get( 
+                        f"{self.mairui_api_url}/hszg/gg/{code}/{self.mairui_token}",
+                    )
+                    data = res.json()
+                    df = pd.DataFrame(data)
+                    df['bk'] = code
+                    try:
+                        df.to_sql("bk_codes",index=False,if_exists="append",con=con)
+                        con.execute("create unique index bk_codes_index on bk_codes(bk,dm)")
+                    except:
+                        pass
+                    self.bk_codes[code]=data
+                    data = [ item for item in data if item['jys'] in jys]
+                    df_bk.append(pd.DataFrame(data))
+
+            else:
+                df_bk.append(pd.DataFrame(self.bk_codes[code]))
         if intersect:
             df = df_bk[0]
             if len(df_bk)>1:
@@ -89,10 +110,22 @@ class StockBase:
             df = pd.concat(df_bk).drop_duplicates()
         return df.to_dict(orient='records')
 
-    def _get_bk_code(self,bk_name:str)->dict:
+    def _get_bk_code(self,bk_name:str,force=False)->dict:
         if not self.bkdm:
-            res = requests.get(f"{self.mairui_api_url}/hszg/list/{self.mairui_token}")
-            self.bkdm = res.json()
+            try:
+                con=sqlite3.connect(self.stock_db_name)
+                try:
+                    if force:
+                        raise Exception("force to retrieve from network!")
+                    df = pd.read_sql("select * from bkdm",con=con)
+                    self.bkdm = df.to_dict(orient="records")
+                except Exception as e:
+                    res = requests.get(f"{self.mairui_api_url}/hszg/list/{self.mairui_token}")
+                    self.bkdm = res.json()
+                    df = pd.DataFrame(self.bkdm)
+                    df.to_sql("bkdm",index=False,if_exists="replace",con=con)
+            except Exception as e:
+                raise Exception(f"获取{bk_name}代码错误,{e}") 
         code_info = list(filter(lambda item:item['code']==bk_name,self.bkdm))
         if code_info:
             if len(code_info)>1:
@@ -110,22 +143,30 @@ class StockBase:
             else:
                 raise Exception(f'没有找到[{bk_name}]相关板块!')
 
-    def _get_stock_code(self,stock_name:str)->dict:
+    def _get_stock_code(self,stock_name:str,force=False)->dict:
         """根据股票或指数名称获取股票/指数代码"""
         if not self.gpdm:
             try:
-                res = requests.get(f"{self.mairui_api_url}/hslt/list/{self.mairui_token}")
-                stock_dm = res.json()
-                #合并沪深两市指数代码
-                res = requests.get(f"{self.mairui_api_url}/zs/sh/{self.mairui_token}")
-                sh_dm = [{**item , "dm":item['dm'].replace('sh','')} for item in res.json()]
-                res = requests.get(f"{self.mairui_api_url}/zs/sz/{self.mairui_token}")
-                sz_dm = [{**item , "dm":item['dm'].replace('sz','')} for item in res.json()]
-                all_dm = stock_dm + sh_dm + sz_dm
-                self.gpdm = [
-                    {"ts_code":f"{item['dm']}.{item['jys'].upper()}","symbol":f"{item['dm']}","name":item['mc']} for item in all_dm
-                ]
-                #raise Exception(f"{self.gpdm}")
+                con=sqlite3.connect(self.stock_db_name)
+                try:
+                    if force:
+                        raise Exception("force to retrieve from network!")
+                    df = pd.read_sql("select * from gpdm",con=con)
+                    self.gpdm = df.to_dict(orient="records")
+                except Exception as e:
+                    res = requests.get(f"{self.mairui_api_url}/hslt/list/{self.mairui_token}")
+                    stock_dm = res.json()
+                    #合并沪深两市指数代码
+                    res = requests.get(f"{self.mairui_api_url}/zs/sh/{self.mairui_token}")
+                    sh_dm = [{**item , "dm":item['dm'].replace('sh','')} for item in res.json()]
+                    res = requests.get(f"{self.mairui_api_url}/zs/sz/{self.mairui_token}")
+                    sz_dm = [{**item , "dm":item['dm'].replace('sz','')} for item in res.json()]
+                    all_dm = stock_dm + sh_dm + sz_dm
+                    self.gpdm = [
+                        {"ts_code":f"{item['dm']}.{item['jys'].upper()}","symbol":f"{item['dm']}","name":item['mc']} for item in all_dm
+                    ]
+                    df = pd.DataFrame(self.gpdm)
+                    df.to_sql("gpdm",index=False,if_exists="replace",con=con)
             except Exception as e:
                 raise Exception(f"获取{stock_name}代码错误,{e}")
         if stock_name.startswith('sh') or stock_name.startswith('sz') or stock_name.startswith('bj'):
