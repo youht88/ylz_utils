@@ -15,6 +15,7 @@ from ylz_utils.database.elasticsearch import ESLib
 import concurrent.futures
 
 from fastapi import FastAPI, HTTPException,Request,Response,APIRouter
+import akshare as ak
 
 class StockBase:
     stock:list = []
@@ -373,17 +374,22 @@ class StockBase:
                 sdate=datetime.strptime(max_date,'%Y-%m-%d')+timedelta(days=1)
         except Exception as e:
             pass
-        res = requests.get(f"{self.mairui_api_url}/hszbc/fsjy/{code}/{fsjb}/{sdate}/{edate}/{self.mairui_token}")
-        if res.status_code==200:
-            data = res.json()
+        print(f"start fetch {mc} kline data begin at {sdate}...")
+        #res = requests.get(f"{self.mairui_api_url}/hszbc/fsjy/{code}/{fsjb}/{sdate}/{edate}/{self.mairui_token}")
+        df = ak.stock_zh_a_hist(mr_code,start_date=sdate,end_date=edate)
+        data = df.to_dict(orient="records")
+        if data:
+            #data = res.json()
             data = [{**item,**add_fields} for item in data]
+            print(f"fetch {len(data)} for {mc}")
             return data
-        elif res.status_code==429:
-            print(f"wait 30s for fetch {code}")
-            time.sleep(30)
-            return self._fetch_rx(code,sdate=sdate,edate=edate,fsjb=fsjb,add_fields=add_fields)
+        #elif res.status_code==429:
+        #    print(f"wait 30s for fetch {code}")
+        #    time.sleep(30)
+        #    return self._fetch_rx(code,sdate=sdate,edate=edate,fsjb=fsjb,add_fields=add_fields)
         else:
             raise Exception(f"network error on fetch {mc} data with status code {res.status_code}")
+    
     def register_router(self):
         from .mairui.mairui_hszg import HSZG
         from .snowball import SnowballStock

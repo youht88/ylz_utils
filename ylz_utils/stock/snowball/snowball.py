@@ -608,45 +608,58 @@ class SnowballStock(StockBase):
         async def lxslxd(req:Request):
             """分析连续缩量下跌信息"""
             try:
-                db = "rx_2024.db"
+                db = "daily.db" #"rx_2024.db" #"stock.db"
+                table= "daily" #"rx" #"hszb_fsjy_dn"
                 if not db:
                     raise Exception('必须指定db')
-                origin_df = pd.read_sql(f"select * from rx where mc='瑞芯微' or mc='全志科技' or mc='北方稀土'",sqlite3.connect(db)) 
-                codes = origin_df['mr_code'].drop_duplicates().to_list()
-                codes=['sh600111','sh603893']
-                codes=['sz300458']
-                print("len codes:",len(codes),codes)
-                #with tqdm(total=len(codes),desc="进度") as pbar:
-                all_df = origin_df.copy()
-                day=3
-                dfs=[]
-                for code in codes:
-                    df = all_df[all_df['mr_code']==code].copy() 
-                    for idx in range(day):
-                        t=idx+1
-                        df[f'c{t}']=df['c'].shift(t)
-                        df[f'v{t}']=df['v'].shift(t)
-                        df[f'e{t}']=df['e'].shift(t) 
-                    cond=pd.Series([True] * len(df))
-                    print("1",code,len(df),len(cond))   
-                    for field in ['c']:
-                        for idx in range(1):
-                            if idx==0:
-                                cond1 = df[f'{field}'] > df[f'{field}{idx+1}']
-                                print("!!!!",len(cond),len(cond1))
-                                cond1.reindex()
-                                cond2 = (cond) & (cond1)
-                                print("???",field,idx,len(cond),len(cond1),len(cond2))
-                            else:
-                                cond = cond & (df[f'{field}{idx}'].lt(df[f'{field}{idx+1}']))
-                    print("2",code,len(df),len(cond))   
-                    df_new = df.loc[cond].copy()
-
-                    dfs.append(df_new)
-                    #pbar.update(1)
+                origin_df = pd.read_sql(f"select * from {table}",sqlite3.connect(db))
+                origin_df=origin_df.rename(columns={"日期":"d","股票代码":"mr_code","开盘":"o","最高":"h","最低":"l","收盘":"c","成交量":"v","成交额":"e","振幅":"zf","涨跌幅":"zd","涨跌额":"zde","换手率":"hs"})
+                
+                group_df = origin_df.groupby('mr_code')
+                codes = list(group_df.groups.keys())
+                days = req.query_params.get('days')
+                if days:
+                    days=int(days)
+                else:
+                    days=5
+                with tqdm(total=len(codes),desc="进度") as pbar:
+                    all_df = origin_df.copy()
+                    dfs=[]
+                    for code in codes:
+                        df = group_df.get_group(code).reset_index() 
+                        for idx in range(days):
+                            t=idx+1
+                            df[f'o{t}']=df['o'].shift(t)
+                            df[f'c{t}']=df['c'].shift(t)
+                            df[f'v{t}']=df['v'].shift(t)
+                            df[f'e{t}']=df['e'].shift(t)
+                            df[f'po{t}']=df['o'].shift(-t)
+                            df[f'pc{t}']=df['c'].shift(-t)
+                            df[f'pzd_{t}']=df['zd'].shift(-t)
+                        cond=pd.Series([True] * len(df))
+                        for field in ['c','v','e']:
+                            for idx in range(days):
+                                if idx==0:
+                                    cond1 = df[f'{field}'] < df[f'{field}{idx+1}']
+                                    if field=='c':
+                                        cond2=df[f'{field}'] < df[f'o{idx+1}']
+                                        cond = cond & (cond1 )
+                                    else:    
+                                        cond = cond & cond1
+                                else:
+                                    cond1= df[f'{field}{idx}'].lt(df[f'{field}{idx+1}'])
+                                    if field=='c':
+                                        cond2=df[f'{field}{idx}'].lt(df[f'o{idx+1}'])
+                                        cond = cond & (cond1 )
+                                    else:    
+                                        cond = cond & cond1
+                        df_new = df[cond]
+                        dfs.append(df_new)
+                        pbar.update(1)
                 df_concat = pd.concat(dfs,ignore_index=True)
+                print("df_concat:",len(df_concat))
                 df = self._prepare_df(df_concat,req)
-                content = self._to_html(df,columns=['mr_code','mc'])
+                content = self._to_html(df,columns=['mr_code'])
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
