@@ -72,32 +72,48 @@ class AkshareStock(StockBase):
         daily_pro_db=sqlite3.connect("daily_pro.db")
         table = "daily"
         codes_info = self._get_bk_codes("hs_a")
-        #codes_info = codes_info[:300]
+        #codes_info = codes_info[:3000]
+        #codes_info=[{'dm':'300159','mc':'新研股份'}]
         print("total codes:",len(codes_info))
         with tqdm(total=len(codes_info),desc="进度") as pbar:
             days=15
             error_code_info=[]
             error_msg=""
             sdate = '2022-01-01'
+            try:
+                total_max_date = daily_db.execute(f"select max(d) from {table}").fetchall()[0][0][:10]
+                print(f"total_max_date on daily.db is {total_max_date}")
+            except:
+                raise Exception('没有找到daily.db，请先访问/ak/daily/refresh重新生成!')
             for code_info in codes_info:
                 code = code_info['dm']
                 mc = code_info['mc']
                 new_sdate = sdate
                 max_date=None
                 try:
-                    max_date=daily_pro_db.execute(f"select max(d) from daily where code='{code}'").fetchall()[0][0]
+                    max_date=daily_pro_db.execute(f"select max_d from info where code='{code}'").fetchall()
                     if max_date:
-                        d_max_date = datetime.strptime(max_date,"%Y-%m-%d %H:%M:%S") 
+                        max_date = max_date[0][0][:10]
+                        if max_date>=total_max_date:
+                            pbar.update(1)
+                            continue   
+                        d_max_date = datetime.strptime(max_date,"%Y-%m-%d") 
                         d_start_date = datetime.strptime(sdate,"%Y-%m-%d")
                         if d_max_date >= d_start_date:
-                            new_sdate = datetime.strftime(d_max_date + timedelta(days=-100),"%Y-%m-%d")
+                            new_sdate = datetime.strftime(d_max_date + timedelta(days=-120),"%Y-%m-%d")
                 except Exception as e:
-                    print(code,mc,e)
+                    print(code,mc,e,"max_date=",max_date,"sdate=",sdate)
                     error_msg="no_such_table"
                 try:
                     origin_df = pd.read_sql(f"select * from {table} where code='{code}' and d >= '{new_sdate}'",daily_db)
+                    if origin_df.empty:
+                        print(f"{code}-{mc} > new_sdate={new_sdate},没有找到该数据!")
+                        pbar.update(1)
+                        continue 
                     if max_date and max_date >= origin_df['d'].iloc[-1][:10]:
-                        raise Exception("no deed because of data exists!")  
+                        print(f"{code}-{mc},no deed because of data exists!")
+                        pbar.update(1)
+                        continue 
                     df = origin_df.reset_index() 
                     df_add_cols={}
                     for col in ['zd']:
@@ -113,25 +129,35 @@ class AkshareStock(StockBase):
                         for idx in [5,10,20,60]:
                             df_add_cols[f'sum{idx}{col}']=df[col].rolling(window=idx).apply(lambda x:x.sum())        
 
-                    for col in ['zd']:
-                        for idx in [5,10,20,60]:
-                            df_add_cols[f'prod{idx}{col}']=df[col].rolling(window=idx).apply(lambda x:((1+x/100).prod()-1)*100)        
-                            
+                    #for col in ['zd']:
+                    #    for idx in [4,9,19,59]:
+                    #    df_add_cols[f'prod{idx+1}{col}']=df[col].rolling(window=idx).apply(lambda x:((1+x/100).prod()-1)*100)        
+                    for col in ['c']:    
+                        for idx in [4,9,19,59]:
+                            #df_add_cols[f'prod{idx+1}{col}'] = (df[col] - df.shift(idx)[col]) / df.shift(idx)[col] * 100   
+                            df_add_cols[f'prod{idx+1}{col}'] = df[col].pct_change(idx) * 100 
+                              
                     for col in ['o','c','h','l','zd','v','e','hs','zf']:
                         for idx in range(days):
                             t=idx+1
                             df_add_cols[f'{col}{t}']=df[col].shift(t)
-                    
                     df_cols = pd.concat(list(df_add_cols.values()), axis=1, keys=list(df_add_cols.keys()))
                     df = pd.concat([origin_df,df_cols],axis=1)
                     if max_date:
                         new_sdate = datetime.strftime(d_max_date + timedelta(days=1),"%Y-%m-%d")
                         df = df[df['d']>=new_sdate]
+                    
+                    info_max_date = df.iloc[-1]['d'][:10]
                     if error_msg=="no_such_table":
                         error_msg=""
+                        daily_pro_db.execute("create table info(code text,max_d text)")
+                        daily_pro_db.execute("create unique index info_index on info(code)")
+                        daily_pro_db.execute(f"insert into info values({code},{info_max_date})")
                         df.to_sql("daily",if_exists="replace",index=False,con=daily_pro_db)
                         daily_pro_db.execute("create unique index daily_index on daily(code,d)")
                     else:
+                        daily_pro_db.execute(f"update info set max_d = '{info_max_date}' where code = '{code}'")
+                        daily_pro_db.commit()
                         df.to_sql("daily",if_exists="append",index=False,con=daily_pro_db)
                 except Exception as e:
                     error_code_info.append(f"{code}-{mc},{e}")
@@ -141,7 +167,7 @@ class AkshareStock(StockBase):
     def fx1(self,codes=[],sdate=None):
         daily_pro_db = sqlite3.connect("daily_pro.db")
         table = "daily"
-        #codes = codes[:300]
+        codes = codes[:3]
         #codes_str = ",".join([f"'{code}'" for code in codes])
         #df = pd.read_sql(f"select * from daily where code in ( {codes_str} )",daily_pro_db)
         with tqdm(total=len(codes),desc="进度") as pbar:
