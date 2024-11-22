@@ -393,7 +393,7 @@ class StockBase:
         data = df.to_html()
         col_text = ''
         for col in columns:
-            col_text +='<p>' + ','.join(df[col].tolist()) + '</p>\n'
+            col_text +='<p>' + ','.join(list(set(df[col].tolist()))) + '</p>\n'
         content = (
             "<html>\n"
             f"{state}\n"

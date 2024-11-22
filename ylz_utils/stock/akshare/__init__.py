@@ -10,6 +10,7 @@ from ylz_utils.config import Config
 from ylz_utils.stock.base import StockBase
 from datetime import datetime,timedelta
 from tqdm import tqdm
+import numpy as np
 
 class AkshareStock(StockBase):
     def __init__(self):
@@ -72,7 +73,7 @@ class AkshareStock(StockBase):
         daily_pro_db=sqlite3.connect("daily_pro.db")
         table = "daily"
         codes_info = self._get_bk_codes("hs_a")
-        #codes_info = codes_info[:3000]
+        codes_info = codes_info[:100]
         #codes_info=[{'dm':'300159','mc':'新研股份'}]
         print("total codes:",len(codes_info))
         with tqdm(total=len(codes_info),desc="进度") as pbar:
@@ -100,10 +101,13 @@ class AkshareStock(StockBase):
                         d_max_date = datetime.strptime(max_date,"%Y-%m-%d") 
                         d_start_date = datetime.strptime(sdate,"%Y-%m-%d")
                         if d_max_date >= d_start_date:
-                            new_sdate = datetime.strftime(d_max_date + timedelta(days=-120),"%Y-%m-%d")
+                            new_sdate = datetime.strftime(d_max_date + timedelta(days=-150),"%Y-%m-%d")
+                    else:
+                        print("no_info_record-->",code,mc,"max_date=",max_date,"sdate=",sdate)
+                        error_msg = "no_info_table"
                 except Exception as e:
-                    print(code,mc,e,"max_date=",max_date,"sdate=",sdate)
-                    error_msg="no_such_table"
+                    print("no_daily_table-->",code,mc,"max_date=",max_date,"sdate=",sdate,"error=",e)
+                    error_msg="no_daily_table"
                 try:
                     origin_df = pd.read_sql(f"select * from {table} where code='{code}' and d >= '{new_sdate}'",daily_db)
                     if origin_df.empty:
@@ -116,46 +120,109 @@ class AkshareStock(StockBase):
                         continue 
                     df = origin_df.reset_index() 
                     df_add_cols={}
+                    # 后15天涨跌幅
                     for col in ['zd']:
                         for idx in range(days):
                             t=idx+1
                             df_add_cols[f'p{col}_{t}']=df[col].shift(-t)
-                    
+                    # 当日股价高低位置
+                    status_df= pd.Series(['N']*len(df))
+                    high=df['c'].rolling(window=120).apply(lambda x:x.quantile(0.9))
+                    low=df['c'].rolling(window=120).apply(lambda x:x.quantile(0.1))
+                    status_df.loc[df['c'] > high] = 'H'
+                    status_df.loc[df['c'] < low] = 'L'
+                    df_add_cols['c_status'] = status_df
+                    # 当日交易量缩放情况
+                    status_df= pd.Series(['N']*len(df))
+                    high=df['v'].rolling(window=120).apply(lambda x:x.mean() + x.std()*2)
+                    low=df['v'].rolling(window=120).apply(lambda x:x.mean() - x.std()*2)
+                    status_df.loc[df['v'] > high] = 'U'
+                    status_df.loc[df['v'] < low] = 'D'
+                    df_add_cols['v_status'] = status_df
+                                        
+                    # 近5,10,20,60,120交易日平均关键指标                    
                     for col in ['c','v','e','hs','zf']:
-                        for idx in [5,10,20,60]:
+                        for idx in [5,10,20,60,120]:
                             df_add_cols[f'ma{idx}{col}']=df[col].rolling(window=idx).apply(lambda x:x.mean())        
                     
+                    # 近5,10,20,60,120交易日累计交易量、交易额
                     for col in ['v','e']:
-                        for idx in [5,10,20,60]:
+                        for idx in [5,10,20,60,120]:
                             df_add_cols[f'sum{idx}{col}']=df[col].rolling(window=idx).apply(lambda x:x.sum())        
 
+                    # 近5,10,20,60,120交易日期间涨幅
                     #for col in ['zd']:
                     #    for idx in [4,9,19,59]:
                     #    df_add_cols[f'prod{idx+1}{col}']=df[col].rolling(window=idx).apply(lambda x:((1+x/100).prod()-1)*100)        
                     for col in ['c']:    
-                        for idx in [4,9,19,59]:
+                        for idx in [4,9,19,59,119]:
                             #df_add_cols[f'prod{idx+1}{col}'] = (df[col] - df.shift(idx)[col]) / df.shift(idx)[col] * 100   
                             df_add_cols[f'prod{idx+1}{col}'] = df[col].pct_change(idx) * 100 
-                              
+                    
+                    # 前15天关键指标          
                     for col in ['o','c','h','l','zd','v','e','hs','zf']:
                         for idx in range(days):
                             t=idx+1
                             df_add_cols[f'{col}{t}']=df[col].shift(t)
+                    #
                     df_cols = pd.concat(list(df_add_cols.values()), axis=1, keys=list(df_add_cols.keys()))
                     df = pd.concat([origin_df,df_cols],axis=1)
+                    # 连续上涨、下跌天数,正负数表示
+                    # 连续缩放量天数,正负数表示
+                    # 连续涨跌停天数,正负数表示
+                    fields={'lxzd':'c','lxsf':'v','lxzdt':'zd'}
+                    for key in fields:
+                        df[key] = 0
+                        for i in range(len(df)):
+                            count = 0
+                            for j in range(days-1):
+                                j_str = '' if j==0 else str(j)
+                                if key=='lxzdt':
+                                    if df.loc[i, f"{fields[key]}{j_str}"] > 9.9:
+                                        count += 1
+                                    else:
+                                        break
+                                else:
+                                    if df.loc[i, f"{fields[key]}{j_str}"] > df.loc[i, f"{fields[key]}{j+1}"]:
+                                        count += 1
+                                    else:
+                                        break
+                            if count==0:
+                                for j in range(days-1):
+                                    j_str = '' if j==0 else str(j)
+                                    if key=='lxzdt':
+                                        if df.loc[i, f"{fields[key]}{j_str}"] < -9.9:
+                                            count += 1
+                                        else:
+                                            break
+                                    if df.loc[i, f"{fields[key]}{j_str}"] <= df.loc[i, f"{fields[key]}{j+1}"]:
+                                        count += 1
+                                    else:
+                                        break
+                                count = count*-1 
+                            df.at[i, key] = count
+                
                     if max_date:
                         new_sdate = datetime.strftime(d_max_date + timedelta(days=1),"%Y-%m-%d")
                         df = df[df['d']>=new_sdate]
                     
                     info_max_date = df.iloc[-1]['d'][:10]
-                    if error_msg=="no_such_table":
+                    if error_msg=="no_daily_table":
                         error_msg=""
-                        daily_pro_db.execute("create table info(code text,max_d text)")
+                        print("create daily & info table ->",code,info_max_date)
+                        daily_pro_db.execute("create table info(code TEXT,max_d TEXT)")
                         daily_pro_db.execute("create unique index info_index on info(code)")
-                        daily_pro_db.execute(f"insert into info values({code},{info_max_date})")
+                        daily_pro_db.execute(f"insert into info values('{code}','{info_max_date}')")
                         df.to_sql("daily",if_exists="replace",index=False,con=daily_pro_db)
                         daily_pro_db.execute("create unique index daily_index on daily(code,d)")
+                    elif error_msg=="no_info_table":
+                        error_msg=""
+                        print("insert info ->",code,info_max_date)
+                        daily_pro_db.execute(f"insert into info values('{code}','{info_max_date}')")
+                        daily_pro_db.commit()
+                        df.to_sql("daily",if_exists="append",index=False,con=daily_pro_db)                        
                     else:
+                        print("update info ->",code,info_max_date)
                         daily_pro_db.execute(f"update info set max_d = '{info_max_date}' where code = '{code}'")
                         daily_pro_db.commit()
                         df.to_sql("daily",if_exists="append",index=False,con=daily_pro_db)
@@ -222,11 +289,24 @@ class AkshareStock(StockBase):
         df_concat = pd.concat(dfs,ignore_index=True)
         print("df_concat:",len(df_concat))
         return df_concat
-    def fx2(self,codes=[]):
+    def fx2(self,codes=[],sdate=None,days=3):
         daily_db = sqlite3.connect("daily_pro.db")
         codes_str = ",".join([f"'{code}'" for code in codes])
-        df = pd.read_sql(f"select * from daily where code in ({codes_str})",daily_db)
-        
+        if sdate:
+            if days>0:
+                df = pd.read_sql(f"select * from daily where code in ({codes_str}) and d > '{sdate}' and lxzd >= {days}",daily_db)
+            else:
+                df = pd.read_sql(f"select * from daily where code in ({codes_str}) and d > '{sdate}' and lxzd <= {days}",daily_db)
+        else:
+            if days>0:
+                df = pd.read_sql(f"select * from daily where code in ({codes_str}) and lxzd >= {days}",daily_db)
+            else:
+                df = pd.read_sql(f"select * from daily where code in ({codes_str}) and lxzd <= {days}",daily_db)
+        df = df.filter(['d','code','mc','o','c','h','l','v','e','zf','zd','hs',
+                        'pzd_1','pzd_2','pzd_3','pzd_4','pzd_5',
+                        'c_status','v_status','lxzd','lxsf','lxzdt',
+                        'prod5c','prod10c','prod20c','sum5v','sum10v','sum20v',
+                        ])
         return df
     def register_router(self):
         @self.router.get("/daily/refresh")
@@ -287,9 +367,17 @@ class AkshareStock(StockBase):
                 elif bk:
                     codes_info = self._get_bk_codes(bk)
                     codes = [item['dm'] for item in codes_info]
-                df = self.fx2(codes)
+                sdate = req.query_params.get('sdate')
+                if not sdate:
+                    sdate = '2024-01-01'
+                days = req.query_params.get('days')
+                if days:
+                    days=int(days)
+                else:
+                    days=3
+                df = self.fx2(codes,sdate,days)
                 df = self._prepare_df(df,req)
-                content = self._to_html(df)
+                content = self._to_html(df,columns=['code','mc'])
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
