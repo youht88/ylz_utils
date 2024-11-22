@@ -73,7 +73,7 @@ class AkshareStock(StockBase):
         daily_pro_db=sqlite3.connect("daily_pro.db")
         table = "daily"
         codes_info = self._get_bk_codes("hs_a")
-        codes_info = codes_info[:100]
+        #codes_info = codes_info[:100]
         #codes_info=[{'dm':'300159','mc':'新研股份'}]
         print("total codes:",len(codes_info))
         with tqdm(total=len(codes_info),desc="进度") as pbar:
