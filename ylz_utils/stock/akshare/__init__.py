@@ -289,19 +289,26 @@ class AkshareStock(StockBase):
         df_concat = pd.concat(dfs,ignore_index=True)
         print("df_concat:",len(df_concat))
         return df_concat
-    def fx2(self,codes=[],sdate=None,days=3):
+    def fx2(self,codes=[],sdate=None,lx={}):
         daily_db = sqlite3.connect("daily_pro.db")
         codes_str = ",".join([f"'{code}'" for code in codes])
+        lxzd = lx.get('lxzd')
+        lxsf = lx.get('lxsf')
+        lxzdt = lx.get('lxzdt')
+        cond = []
         if sdate:
-            if days>0:
-                df = pd.read_sql(f"select * from daily where code in ({codes_str}) and d > '{sdate}' and lxzd >= {days}",daily_db)
-            else:
-                df = pd.read_sql(f"select * from daily where code in ({codes_str}) and d > '{sdate}' and lxzd <= {days}",daily_db)
-        else:
-            if days>0:
-                df = pd.read_sql(f"select * from daily where code in ({codes_str}) and lxzd >= {days}",daily_db)
-            else:
-                df = pd.read_sql(f"select * from daily where code in ({codes_str}) and lxzd <= {days}",daily_db)
+            cond.append(f"d > '{sdate}'")
+        if lxzd:
+            cond.append(f"lxzd = {lxzd}") 
+        if lxzdt:
+            cond.append(f"lxzdt = {lxzdt}") 
+        if lxsf:
+            cond.append(f"lxsf = {lxsf}")
+        cond_str = ' and '.join(cond)
+        if cond_str:
+            cond_str = ' and ' + cond_str
+        print(cond_str)     
+        df = pd.read_sql(f"select * from daily where code in ({codes_str}) {cond_str}",daily_db)
         df = df.filter(['d','code','mc','o','c','h','l','v','e','zf','zd','hs',
                         'pzd_1','pzd_2','pzd_3','pzd_4','pzd_5',
                         'c_status','v_status','lxzd','lxsf','lxzdt',
@@ -370,12 +377,24 @@ class AkshareStock(StockBase):
                 sdate = req.query_params.get('sdate')
                 if not sdate:
                     sdate = '2024-01-01'
-                days = req.query_params.get('days')
-                if days:
-                    days=int(days)
+                lxzd = req.query_params.get('lxzd')
+                if lxzd:
+                    lxzd=int(lxzd)
                 else:
-                    days=3
-                df = self.fx2(codes,sdate,days)
+                    lxzd=None
+                lxsf = req.query_params.get('lxsf')
+                if lxsf:
+                    lxsf=int(lxsf)
+                else:
+                    lxsf=None
+                lxzdt = req.query_params.get('lxzdt')
+                if lxzdt:
+                    lxzdt=int(lxzdt)
+                else:
+                    lxzdt=None
+                if not lxzd and not lxzdt and not lxsf:
+                    raise Exception("至少须指定lxzd,lxsf,lxzdt中的一个参数")
+                df = self.fx2(codes,sdate,{'lxzd':lxzd,'lxsf':lxsf,'lxzdt':lxzdt})
                 df = self._prepare_df(df,req)
                 content = self._to_html(df,columns=['code','mc'])
                 return HTMLResponse(content=content)
