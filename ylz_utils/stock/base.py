@@ -402,7 +402,80 @@ class StockBase:
             "</html>\n"
         )
         return content
+    def _kdj(self,prices, low_prices, high_prices, n=9, k=3, d=3):
+        """
+        计算KDJ指标。
+        
+        参数:
+        prices -- 收盘价序列（Pandas Series）
+        low_prices -- 最低价序列（Pandas Series）
+        high_prices -- 最高价序列（Pandas Series）
+        n -- RSV的计算周期，默认为9
+        k -- K线的平滑移动平均周期，默认为3
+        d -- D线的平滑移动平均周期，默认为3
+        
+        返回:
+        kdj -- KDJ值（Pandas DataFrame）
+        """
+        # 计算最高价的最高值和最低价的最低值
+        high_9 = high_prices.rolling(window=n).max()
+        low_9 = low_prices.rolling(window=n).min()
+        
+        # 计算未成熟随机值RSV
+        rsv = (prices - low_9) / (high_9 - low_9) * 100
+        
+        # 计算K线
+        k_line = rsv.ewm(alpha=1/k, adjust=False).mean()
+        
+        # 计算D线
+        d_line = k_line.ewm(alpha=1/d, adjust=False).mean()
+        
+        # 计算J线
+        j_line = 3 * k_line - 2 * d_line
+        
+        # 将结果存入DataFrame
+        kdj = pd.DataFrame({
+            'kl': k_line,
+            'dl': d_line,
+            'jl': j_line
+        })
     
+        return kdj
+    def _macd(self,prices, short_period=12, long_period=26, signal_period=9):
+        """
+        计算MACD值。
+        
+        参数:
+        prices -- 股价序列（Pandas Series）
+        short_period -- 快速EMA周期，默认为12
+        long_period -- 慢速EMA周期，默认为26
+        signal_period -- 信号线周期，默认为9
+        
+        返回:
+        macd -- MACD值（Pandas DataFrame）
+        """
+        # 计算指数移动平均线
+        ema_short = prices.ewm(span=short_period, adjust=True).mean()
+        ema_long = prices.ewm(span=long_period, adjust=True).mean()
+        
+        # 计算MACD线
+        macd_line = ema_short - ema_long
+        
+        # 计算信号线
+        signal_line = macd_line.ewm(span=signal_period, adjust=True).mean()
+        
+        # 计算MACD柱状图
+        histogram = (macd_line - signal_line)*2
+        
+        # 将结果存入DataFrame
+        macd = pd.DataFrame({
+            'dif': macd_line,
+            'dea': signal_line,
+            'macd': histogram
+        })
+        
+        return macd
+
     def _fetch_rx(self,code:str,*,sdate:str,edate:str,fsjb:str="dn",add_fields={}):
         code_info = self._get_stock_code(code)
         code=code_info['code']

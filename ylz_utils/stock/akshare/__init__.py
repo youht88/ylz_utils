@@ -68,6 +68,40 @@ class AkshareStock(StockBase):
                 pbar.close()
                 raise Exception("任务中断!!")
         return error_code_info
+    def minute_pro(self):
+        minute_pro_db=sqlite3.connect("minute_pro.db")
+        table = "minute"
+        codes_info = self._get_bk_codes("hs_a")
+        #codes_info = codes_info[:100]
+        #codes_info=[{'dm':'300159','mc':'新研股份'}]
+        print("total codes:",len(codes_info))
+        with tqdm(total=len(codes_info),desc="进度") as pbar:
+            error_code_info=[]
+            error_msg=""
+            stime = '2022-01-01 00:00:00'
+            for code_info in codes_info:
+                code = code_info['dm']
+                mc = code_info['mc']
+                new_stime = stime
+                max_time=None
+                try:
+                    max_time=minute_pro_db.execute(f"select max_d from info where code='{code}'").fetchall()
+                    if max_time:
+                        max_time = max_time[0][0]
+                        d_max_time = datetime.strptime(max_time,"%Y-%m-%d %H:%M:%S") 
+                        d_start_time = datetime.strptime(s_time,"%Y-%m-%d %H:%M:%S")
+                        if d_max_time >= d_start_time:
+                            new_stime = datetime.strftime(d_max_time + timedelta(minutes=-150),"%Y-%m-%d %H:%M:%S")
+                    else:
+                        print("no_info_record-->",code,mc,"max_time=",max_time,"stime=",stime)
+                        error_msg = "no_info_table"
+                except Exception as e:
+                    print("no_minute_table-->",code,mc,"max_time=",max_time,"stime=",stime,"error=",e)
+                    error_msg="no_minute_table"
+                try:
+                    origin_df = pd.read_sql(f"select * from {table} where code='{code}' and d >= '{new_sdate}'",daily_db)
+                except:
+                    pass    
     def daily_pro(self):
         daily_db=sqlite3.connect("daily.db")
         daily_pro_db=sqlite3.connect("daily_pro.db")
@@ -125,6 +159,16 @@ class AkshareStock(StockBase):
                         for idx in range(days):
                             t=idx+1
                             df_add_cols[f'p{col}_{t}']=df[col].shift(-t)
+                    # kdj指标
+                    _kdj_df = self._kdj(df.c,df.l,df.h,9,3,3)
+                    df_add_cols['kl'] = _kdj_df.kl
+                    df_add_cols['dl'] = _kdj_df.dl
+                    df_add_cols['jl'] = _kdj_df.jl
+                    # macd指标
+                    _macd_df = self._macd(df.c,12,26,9)
+                    df_add_cols['dif'] = _macd_df.dif
+                    df_add_cols['dea'] = _macd_df.dea
+                    df_add_cols['macd'] = _macd_df.macd
                     # 当日股价高低位置
                     status_df= pd.Series(['N']*len(df))
                     high=df['c'].rolling(window=120).apply(lambda x:x.quantile(0.9))
@@ -142,12 +186,12 @@ class AkshareStock(StockBase):
                                         
                     # 近5,10,20,60,120交易日平均关键指标                    
                     for col in ['c','v','e','hs','zf']:
-                        for idx in [5,10,20,60,120]:
+                        for idx in [5,10,20,40,60,120]:
                             df_add_cols[f'ma{idx}{col}']=df[col].rolling(window=idx).apply(lambda x:x.mean())        
                     
                     # 近5,10,20,60,120交易日累计交易量、交易额
                     for col in ['v','e']:
-                        for idx in [5,10,20,60,120]:
+                        for idx in [5,10,20,40,60,120]:
                             df_add_cols[f'sum{idx}{col}']=df[col].rolling(window=idx).apply(lambda x:x.sum())        
 
                     # 近5,10,20,60,120交易日期间涨幅
@@ -155,9 +199,9 @@ class AkshareStock(StockBase):
                     #    for idx in [4,9,19,59]:
                     #    df_add_cols[f'prod{idx+1}{col}']=df[col].rolling(window=idx).apply(lambda x:((1+x/100).prod()-1)*100)        
                     for col in ['c']:    
-                        for idx in [4,9,19,59,119]:
+                        for idx in [4,9,19,39,59,119]:
                             #df_add_cols[f'prod{idx+1}{col}'] = (df[col] - df.shift(idx)[col]) / df.shift(idx)[col] * 100   
-                            df_add_cols[f'prod{idx+1}{col}'] = df[col].pct_change(idx) * 100 
+                            df_add_cols[f'pct{idx+1}{col}'] = df[col].pct_change(idx) * 100 
                     
                     # 前15天关键指标          
                     for col in ['o','c','h','l','zd','v','e','hs','zf']:
@@ -167,6 +211,11 @@ class AkshareStock(StockBase):
                     #
                     df_cols = pd.concat(list(df_add_cols.values()), axis=1, keys=list(df_add_cols.keys()))
                     df = pd.concat([origin_df,df_cols],axis=1)
+                    # 之前的kdj、macd
+                    fields={'kl','dl','jl','dif','dea','macd'}
+                    for key in fields:
+                        df[f"{key}1"]=df[f"{key}"].shift(1)
+                        df[f"{key}2"]=df[f"{key}"].shift(2)
                     # 连续上涨、下跌天数,正负数表示
                     # 连续缩放量天数,正负数表示
                     # 连续涨跌停天数,正负数表示
@@ -311,7 +360,8 @@ class AkshareStock(StockBase):
         df = pd.read_sql(f"select * from daily where code in ({codes_str}) {cond_str}",daily_db)
         df = df.filter(['d','code','mc','o','c','h','l','v','e','zf','zd','hs',
                         'pzd_1','pzd_2','pzd_3','pzd_4','pzd_5',
-                        'c_status','v_status','lxzd','lxsf','lxzdt',
+                        'c_status','v_status','lxzd','lxsf',
+                        'lxzdt','kl','dl','jl','dif','dea','macd','ma20c','ma40c',
                         'prod5c','prod10c','prod20c','sum5v','sum10v','sum20v',
                         ])
         return df
@@ -367,7 +417,8 @@ class AkshareStock(StockBase):
                 if not code and not zx and not bk:
                     raise Exception('必须指定code或zx或bk参数')
                 if code:
-                    codes = [item for item in code.split(',') if item]
+                    codes_info = [self._get_stock_code(item) for item in code.split(',') if item]
+                    codes = [item['code'] for item in codes_info]
                 elif zx:
                     codes_info = self._get_zx_codes(zx)
                     codes = [item['code'] for item in codes_info]
