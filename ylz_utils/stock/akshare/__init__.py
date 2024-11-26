@@ -72,7 +72,7 @@ class AkshareStock(StockBase):
         price_db=sqlite3.connect("price.db")
         table = "price"
         codes_info = self._get_bk_codes("hs_a")
-        codes_info = codes_info[:10]
+        #codes_info = codes_info[:10]
         #codes_info=[{'dm':'300159','mc':'新研股份','jys':'sz'}]
         print("total codes:",len(codes_info))
         error_msg=""
@@ -84,15 +84,18 @@ class AkshareStock(StockBase):
             error_code_info=[]
             date = datetime.today().strftime("%Y-%m-%d")
             for code_info in codes_info:
-                code = code_info['jys']+code_info['dm']
+                code = code_info['dm']
                 mc = code_info['mc']
                 try:
-                    #df=ak.stock_intraday_sina
-                    df=ak.stock_zh_a_tick_tx_js(code)
+                    df=ak.stock_intraday_em(code)
+                    #df=ak.stock_zh_a_tick_tx_js(code)
                     if not df.empty:
-                        df=df.rename(columns={'成交时间':'t','成交价格':'p','价格变动':'chg','成交量':'v','成交金额':'e','性质':'xz'})
-                        df['type'] = df['v'].apply(lambda x:'cdd' if x>800 else 'dd' if x>400 else 'zd' if x>200 else 'xd')
-                        df1 = df.groupby(['xz', 'p', 'type'])[['v','e']].sum().reset_index()
+                        df=df.rename(columns={'时间':'t','成交价':'p','手数':'v','买卖盘性质':'xz'})
+                        df['e']=df.p*df.v*100
+                        df['tt']=df['t'].apply(lambda x:'0' if x<'09:25:00' else '1' if x<'10:30:00' else '2' if x<'11:30:00' else '3' if x<'14:00:00' else '4')
+                        df['vt'] = df['e'].apply(lambda x:'cdd' if x>=1000000 else 'dd' if x>=200000 else 'zd' if x>=40000 else 'xd')
+                        df['cnt']=1
+                        df1 = df.groupby(['xz','tt','p','vt'])[['v','e','cnt']].agg({'v':'sum','e':'sum','cnt':'count'}).reset_index()
                         df1['code']=code
                         df1['date']=date
                         df1['mc']=mc
@@ -100,7 +103,7 @@ class AkshareStock(StockBase):
                             error_msg=""
                             print("no such table [price]")
                             df1.to_sql("price",if_exists="replace",index=False,con=price_db)
-                            price_db.execute("create unique index index_price on price(code,date,xz,p,type)")
+                            price_db.execute("create unique index index_price on price(code,date,xz,tt,p,vt)")
                         else:
                             df1.to_sql("price",if_exists="append",index=False,con=price_db)
                     else:
