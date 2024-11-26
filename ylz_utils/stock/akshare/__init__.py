@@ -68,6 +68,47 @@ class AkshareStock(StockBase):
                 pbar.close()
                 raise Exception("任务中断!!")
         return error_code_info
+    def price(self):
+        price_db=sqlite3.connect("price.db")
+        table = "price"
+        codes_info = self._get_bk_codes("hs_a")
+        codes_info = codes_info[:10]
+        #codes_info=[{'dm':'300159','mc':'新研股份','jys':'sz'}]
+        print("total codes:",len(codes_info))
+        error_msg=""
+        try:
+            price_db.execute(f"select * from {table} limit 1")
+        except Exception as e:
+            error_msg="no_such_table"
+        with tqdm(total=len(codes_info),desc="进度") as pbar:
+            error_code_info=[]
+            date = datetime.today().strftime("%Y-%m-%d")
+            for code_info in codes_info:
+                code = code_info['jys']+code_info['dm']
+                mc = code_info['mc']
+                try:
+                    #df=ak.stock_intraday_sina
+                    df=ak.stock_zh_a_tick_tx_js(code)
+                    if not df.empty:
+                        df=df.rename(columns={'成交时间':'t','成交价格':'p','价格变动':'chg','成交量':'v','成交金额':'e','性质':'xz'})
+                        df['type'] = df['v'].apply(lambda x:'cdd' if x>800 else 'dd' if x>400 else 'zd' if x>200 else 'xd')
+                        df1 = df.groupby(['xz', 'p', 'type'])[['v','e']].sum().reset_index()
+                        df1['code']=code
+                        df1['date']=date
+                        df1['mc']=mc
+                        if error_msg=="no_such_table":
+                            error_msg=""
+                            print("no such table [price]")
+                            df1.to_sql("price",if_exists="replace",index=False,con=price_db)
+                            price_db.execute("create unique index index_price on price(code,date,xz,p,type)")
+                        else:
+                            df1.to_sql("price",if_exists="append",index=False,con=price_db)
+                    else:
+                        print(f"no data on {code}-{mc}")
+                except Exception as e:
+                    error_code_info.append(f"{code}-{mc},{e}")
+                pbar.update(1)
+        return error_code_info
     def minute_pro(self):
         minute_pro_db=sqlite3.connect("minute_pro.db")
         table = "minute"
@@ -338,12 +379,12 @@ class AkshareStock(StockBase):
         df_concat = pd.concat(dfs,ignore_index=True)
         print("df_concat:",len(df_concat))
         return df_concat
-    def fx2(self,codes=[],sdate=None,lx={}):
-        daily_db = sqlite3.connect("daily_pro.db")
+    def fx2(self,codes=[],sdate=None,kwarg={}):
+        daily_pro_db = sqlite3.connect("daily_pro.db")
         codes_str = ",".join([f"'{code}'" for code in codes])
-        lxzd = lx.get('lxzd')
-        lxsf = lx.get('lxsf')
-        lxzdt = lx.get('lxzdt')
+        lxzd = kwarg.get('lxzd')
+        lxsf = kwarg.get('lxsf')
+        lxzdt = kwarg.get('lxzdt')
         cond = []
         if sdate:
             cond.append(f"d > '{sdate}'")
@@ -357,7 +398,7 @@ class AkshareStock(StockBase):
         if cond_str:
             cond_str = ' and ' + cond_str
         print(cond_str)     
-        df = pd.read_sql(f"select * from daily where code in ({codes_str}) {cond_str}",daily_db)
+        df = pd.read_sql(f"select * from daily where code in ({codes_str}) {cond_str}",daily_pro_db)
         df = df.filter(['d','code','mc','o','c','h','l','v','e','zf','zd','hs',
                         'pzd_1','pzd_2','pzd_3','pzd_4','pzd_5',
                         'c_status','v_status','lxzd','lxsf',
@@ -365,6 +406,29 @@ class AkshareStock(StockBase):
                         'prod5c','prod10c','prod20c','sum5v','sum10v','sum20v',
                         ])
         return df
+    def fx3(self,codes=[],sdate=None,kwarg={}):
+        daily_pro_db = sqlite3.connect("daily_pro.db")
+        codes_str = ",".join([f"'{code}'" for code in codes])
+        cond = []
+        if sdate:
+            cond.append(f"d > '{sdate}'")
+        #cond.append(f"abs(kl - dl) < 1 and kl > kl1 and kl1 > kl2 and dif>0 and dea>0 and macd > macd1 and macd1 < macd2 and macd<0 and macd1<0 and macd2<0") 
+        cond.append(f"(abs(macd1)-abs(macd))/abs(macd)>0.5 and abs(macd1) > abs(macd2) and macd<0 and macd1<0 and macd2<0 and c>h1 and v>v1") 
+        cond.append(f"hs>3 and hs1>3 and hs2>3 and hs<5 and hs1<5 and hs2<5")
+        cond_str = ' and '.join(cond)
+        if cond_str:
+            cond_str = ' and ' + cond_str
+        print(cond_str)     
+        df = pd.read_sql(f"select * from daily where code in ({codes_str}) {cond_str}",daily_pro_db)
+        df = df.filter(['d','code','mc','o','c','h','l','v','e','zf','zd','hs',
+                        'pzd_1','pzd_2','pzd_3','pzd_4','pzd_5',
+                        'c_status','v_status','lxzd','lxsf',
+                        'lxzdt','kl','kl1','kl2','dl','dl1','dl2','dif','dea','macd','macd1','macd2',
+                        'ma20c','ma40c',
+                        'prod5c','prod10c','prod20c','sum5v','sum10v','sum20v',
+                        ])
+        return df
+
     def register_router(self):
         @self.router.get("/daily/refresh")
         async def daily_refresh(req:Request):
@@ -382,6 +446,11 @@ class AkshareStock(StockBase):
             """更新日线增强数据"""
             error_code_info=self.daily_pro()
             return {"message":f"daily_pro已完成,error_code_info={error_code_info}"}
+        @self.router.get("/price")
+        async def price(req:Request):
+            """更新价格数据"""
+            error_code_info=self.price()
+            return {"message":f"price已完成,error_code_info={error_code_info}"}
        
         @self.router.get("/fx1")
         async def fx1(req:Request):
@@ -451,6 +520,39 @@ class AkshareStock(StockBase):
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
+        @self.router.get("/fx3")
+        async def fx3(req:Request):
+            """fx3"""
+            try:
+                code = req.query_params.get('code')
+                zx = req.query_params.get('zx')
+                bk = req.query_params.get('bk')
+                if not code and not zx and not bk:
+                    raise Exception('必须指定code或zx或bk参数')
+                if code:
+                    codes_info = [self._get_stock_code(item) for item in code.split(',') if item]
+                    codes = [item['code'] for item in codes_info]
+                elif zx:
+                    codes_info = self._get_zx_codes(zx)
+                    codes = [item['code'] for item in codes_info]
+                elif bk:
+                    codes_info = self._get_bk_codes(bk)
+                    codes = [item['dm'] for item in codes_info]
+                sdate = req.query_params.get('sdate')
+                if not sdate:
+                    sdate = '2024-01-01'
+                lxzd = req.query_params.get('lxzd')
+                if lxzd:
+                    lxzd=int(lxzd)
+                else:
+                    lxzd=None
+                df = self.fx3(codes,sdate,{'lxzd':lxzd})
+                df = self._prepare_df(df,req)
+                content = self._to_html(df,columns=['code','mc'])
+                return HTMLResponse(content=content)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")
+        
         @self.router.get("/current")
         async def current(req:Request):
             """获取当前行情数据"""
