@@ -19,6 +19,42 @@ class AkshareStock(StockBase):
     def current(self):
         df = ak.stock_zh_a_spot_em()
         return df
+    def index_info(self):
+        df = ak.index_stock_info()
+        return df
+    def index_cons(self,name:str):
+        df = ak.index_stock_cons(name)
+        return df
+    def index_daily(self,name:str):
+        df = ak.index_zh_a_hist(name)
+        return df
+    def index_minute(self,name:str):
+        df = ak.index_zh_a_hist_min_em(name)
+        return df
+    def gnbk_info(self):
+        df = ak.stock_board_concept_name_em()
+        return df
+    def gnbk_cons(self,name:str):
+        df = ak.stock_board_concept_cons_em(name)
+        return df
+    def gnbk_daily(self,name:str):
+        df = ak.stock_board_concept_hist_em(name)
+        return df
+    def gnbk_minute(self,name:str):
+        df = ak.stock_board_concept_hist_min_em(name)
+        return df
+    def hybk_info(self):
+        df = ak.stock_board_industry_name_em()
+        return df
+    def hybk_cons(self,name:str):
+        df = ak.stock_board_industry_cons_em(name)
+        return df
+    def hybk_daily(self,name:str):
+        df = ak.stock_board_industry_hist_em(name)
+        return df
+    def hybk_minute(self,name:str):
+        df = ak.stock_board_industry_hist_min_em(name)
+        return df
     def daily_refresh(self,sdate='20220101'):
         daily_db=sqlite3.connect("daily.db")
         codes_info = self._get_bk_codes("hs_a")
@@ -567,6 +603,84 @@ class AkshareStock(StockBase):
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
+        @self.router.get("/index/{method}")
+        async def _index(method:str,req:Request):
+            """获取当前行情数据"""
+            try:
+                name = req.query_params.get('name')
+                if not name and method!='info':
+                    raise Exception(f"必须指定name参数")
+                if method=='info':
+                    df = self.index_info()
+                elif method=='cons':
+                    df = self.index_cons(name)
+                    df['name'] = name
+                elif method=='daily':
+                    df = self.index_daily(name)
+                    df['name'] = name
+                elif method=='minute':
+                    df = self.index_minute(name)
+                    df['name'] = name
+                else:
+                    raise Exception(f'错误的method:{method}')               
+                df = self._prepare_df(df,req)
+                content = self._to_html(df)
+                return HTMLResponse(content=content)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")
+            
+        @self.router.get("/gnbk/{method}")
+        async def _gnbk(method:str,req:Request):
+            """获取当前行情数据"""
+            name = req.query_params.get('name')
+            if not name and method!='info':
+                raise Exception(f"必须指定name参数")
+            try:
+                if method=='info':
+                    df = self.gnbk_info()
+                elif method=='cons':
+                    df = self.gnbk_cons(name)
+                    df['name'] = name
+                elif method=='daily':
+                    df = self.gnbk_daily(name)
+                    df['name'] = name
+                elif method=='minute':
+                    df = self.gnbk_minute(name)
+                    df['name'] = name
+                else:
+                    raise Exception(f'错误的method:{method}')               
+                df = self._prepare_df(df,req)
+                content = self._to_html(df)
+                return HTMLResponse(content=content)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")
+        
+        @self.router.get("/hybk/{method}")
+        async def _hybk(method:str,req:Request):
+            """获取当前行情数据"""
+            name = req.query_params.get('name')
+            if not name and method!='info':
+                raise Exception(f"必须指定name参数")
+            try:
+                if method=='info':
+                    df = self.hybk_info()
+                elif method=='cons':
+                    df = self.hybk_cons(name)
+                    df['name'] = name
+                elif method=='daily':
+                    df = self.hybk_daily(name)
+                    df['name'] = name
+                elif method=='minute':
+                    df = self.hybk_minute(name)
+                    df['name'] = name
+                else:
+                    raise Exception(f'错误的method:{method}')               
+                df = self._prepare_df(df,req)
+                content = self._to_html(df)
+                return HTMLResponse(content=content)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")
+
         @self.router.get("/lxslxd")
         async def lxslxd(req:Request):
             """分析连续缩量下跌信息"""
