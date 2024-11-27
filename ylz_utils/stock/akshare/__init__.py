@@ -288,10 +288,11 @@ class AkshareStock(StockBase):
                                             count += 1
                                         else:
                                             break
-                                    if df.loc[i, f"{fields[key]}{j_str}"] <= df.loc[i, f"{fields[key]}{j+1}"]:
-                                        count += 1
                                     else:
-                                        break
+                                        if df.loc[i, f"{fields[key]}{j_str}"] <= df.loc[i, f"{fields[key]}{j+1}"]:
+                                            count += 1
+                                        else:
+                                            break
                                 count = count*-1 
                             df.at[i, key] = count
                 
@@ -405,7 +406,7 @@ class AkshareStock(StockBase):
         df = df.filter(['d','code','mc','o','c','h','l','v','e','zf','zd','hs',
                         'pzd_1','pzd_2','pzd_3','pzd_4','pzd_5',
                         'c_status','v_status','lxzd','lxsf',
-                        'lxzdt','kl','dl','jl','dif','dea','macd','ma20c','ma40c',
+                        'lxzdt','zd1','zd2','zd3','zd4','kl','dl','jl','dif','dea','macd','ma20c','ma40c',
                         'prod5c','prod10c','prod20c','sum5v','sum10v','sum20v',
                         ])
         return df
