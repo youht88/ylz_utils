@@ -55,6 +55,36 @@ class AkshareStock(StockBase):
     def hybk_minute(self,name:str):
         df = ak.stock_board_industry_hist_min_em(name)
         return df
+    def bk_refresh(self):
+        # 清除代码库
+        con=sqlite3.connect(self.stock_db_name)
+        try:
+            con.execute("drop table akbk_codes")
+        except:
+            pass
+        try:
+            con.execute("drop table akbkdm")
+        except:
+            pass
+        #获取数据
+        df_res1 = ak.stock_board_industry_name_em()
+        df_res2 = ak.stock_board_concept_name_em()
+        df_hybk = df_res1[['板块名称','板块代码']].rename(columns={'板块名称':'name','板块代码':'code'})
+        df_hybk['type']='hy'
+        df_gnbk = df_res2[['板块名称','板块代码']].rename(columns={'板块名称':'name','板块代码':'code'})
+        df_gnbk['type']='gn'
+        df = pd.concat([df_hybk,df_gnbk]).reset_index()                   
+        self.akbkdm = df.to_dict(orient='records')
+        df.to_sql("akbkdm",index=False,if_exists="replace",con=con) 
+        self.akbk_codes={}
+        with tqdm(total=len(self.akbkdm)) as pbar:
+            for bk_info in self.akbkdm:
+                code = bk_info["code"]
+                print(bk_info)
+                self._get_akbk_codes(code)                
+                pbar.update(1) 
+        return {"message":"ok"}
+    
     def daily_refresh(self,sdate='20220101'):
         daily_db=sqlite3.connect("daily.db")
         codes_info = self._get_bk_codes("hs_a")
@@ -801,13 +831,14 @@ class AkshareStock(StockBase):
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
-        @self.router.get("/test")
-        async def test(req:Request):
+        @self.router.get("/bk/refresh")
+        async def _bk_refresh(req:Request):
             """分析连续下跌信息"""
             try:
                 #return self._get_akbk_code_info('BK0695')
                 #return self._get_akbk_codes('BK1027')
-                return self._get_bk_codes('chgn_700129')
+                #return self._get_bk_codes('chgn_700129')
+                return self.bk_refresh()
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
     
