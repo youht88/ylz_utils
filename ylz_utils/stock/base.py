@@ -25,6 +25,8 @@ class StockBase:
         self.gpdm = None
         self.bkdm = None
         self.bk_codes = {}
+        self.akbkdm=None
+        self.akbk_codes = {}
         self.mairui_token = Config.get('STOCK.MAIRUI.TOKEN')
         self.mairui_api_url = "http://api.mairui.club" 
         self.router = APIRouter()
@@ -80,6 +82,8 @@ class StockBase:
             if not self.bk_codes.get(code):
                 try:
                     df = pd.read_sql(f"select * from bk_codes where bk='{code}'",con=con)
+                    if df.empty:
+                        raise Exception("need retrieve from network")
                     self.bk_codes[code] = df.to_dict(orient="records")
                     data = [ item for item in self.bk_codes[code] if item['jys'] in jys]
                     df_bk.append(pd.DataFrame(data))    
@@ -98,7 +102,6 @@ class StockBase:
                     self.bk_codes[code]=data
                     data = [ item for item in data if item['jys'] in jys]
                     df_bk.append(pd.DataFrame(data))
-
             else:
                 df_bk.append(pd.DataFrame(self.bk_codes[code]))
         if intersect:
@@ -109,6 +112,94 @@ class StockBase:
         else:
             df = pd.concat(df_bk).drop_duplicates()
         return df.to_dict(orient='records')
+
+    def _get_akbk_codes(self,bk:str,intersect=True,jys=['sz','sh'])->list[dict]:    
+        codes = [item for item in bk.split(',') if item]
+        try:
+            codes_info = [self._get_akbk_code_info(code) for code in codes]
+        except Exception as e:
+            raise Exception(f"转换板块code时出错,{e}")        
+        df_bk=[]
+        con=sqlite3.connect(self.stock_db_name)
+        for code_info in codes_info:
+            code = code_info['code']
+            name = code_info['name']
+            type = code_info['type']
+            if not self.akbk_codes.get(code):
+                try:
+                    df = pd.read_sql(f"select * from akbk_codes where bk='{code}'",con=con)
+                    if df.empty:
+                        raise Exception("need retrieve from network")
+                    self.akbk_codes[code] = df.to_dict(orient="records")
+                    data = [ item for item in self.akbk_codes[code] if item['jys'] in jys]
+                    df_bk.append(pd.DataFrame(data)) 
+                except Exception as e:
+                    if type=='hy':
+                        df = ak.stock_board_industry_cons_em(name)
+                    else:
+                        df = ak.stock_board_concept_cons_em(name)                    
+                    df = df[['代码','名称']].rename(columns={'代码':'dm','名称':'mc'})
+                    df['jys']= df['dm'].apply(lambda x:'sh' if x.startswith('6') else 
+                                                       'sz' if x.startswith('0') or x.startswith('3') else 
+                                                       'bj' if x.startswith('8') else '' )
+                    data = df.to_dict(orient='records')
+                    df['bk'] = code
+                    try:
+                        df.to_sql("akbk_codes",index=False,if_exists="append",con=con)
+                        con.execute("create unique index akbk_codes_index on akbk_codes(bk,dm)")
+                    except:
+                        pass
+                    self.bk_codes[code]=data
+                    data = [ item for item in data if item['jys'] in jys]
+                    df_bk.append(pd.DataFrame(data))
+            else:
+                df_bk.append(pd.DataFrame(self.akbk_codes[code]))
+        if intersect:
+            df = df_bk[0]
+            if len(df_bk)>1:
+                for item in df_bk[1:]:
+                    df = df.merge(item)
+        else:
+            df = pd.concat(df_bk).drop_duplicates()
+        return df.to_dict(orient='records')
+
+    def _get_akbk_code_info(self,bk_name:str,force=False)->dict:
+        if not self.akbkdm:
+            try:
+                con=sqlite3.connect(self.stock_db_name)
+                try:
+                    if force:
+                        raise Exception("force to retrieve from network!")
+                    df = pd.read_sql("select * from akbkdm",con=con)
+                    self.akbkdm = df.to_dict(orient="records")
+                except Exception as e:
+                    df_res1 = ak.stock_board_industry_name_em()
+                    df_res2 = ak.stock_board_concept_name_em()
+                    df_hybk = df_res1[['板块名称','板块代码']].rename(columns={'板块名称':'name','板块代码':'code'})
+                    df_hybk['type']='hy'
+                    df_gnbk = df_res2[['板块名称','板块代码']].rename(columns={'板块名称':'name','板块代码':'code'})
+                    df_gnbk['type']='gn'
+                    df = pd.concat([df_hybk,df_gnbk]).reset_index()                   
+                    self.akbkdm = df.to_dict(orient='records')
+                    df.to_sql("akbkdm",index=False,if_exists="replace",con=con)
+            except Exception as e:
+                raise Exception(f"获取{bk_name}代码错误,{e}") 
+        code_info = list(filter(lambda item:item['code']==bk_name,self.akbkdm))
+        if code_info:
+            if len(code_info)>1:
+                code_str = '|'.join([f"name:{info['name']},code:{info['code']}" for info in code_info])
+                raise Exception(f'板块代码[{bk_name}]不唯一,[{code_str}],请重新配置!')
+            return code_info[0]
+        else:
+            code_info = list(filter(lambda item:item['name'].find(bk_name)>=0,self.akbkdm)) 
+            if code_info:
+                if len(code_info)>1:
+                    code_str = '|'.join([f"name:{info['name']},code:{info['code']}" for info in code_info])
+                    raise Exception(f'板块代码[{bk_name}]不唯一,[{code_str}],请重新配置!')
+                else:
+                    return code_info[0]
+            else:
+                raise Exception(f'没有找到[{bk_name}]相关板块!')
 
     def _get_bk_code(self,bk_name:str,force=False)->dict:
         if not self.bkdm:

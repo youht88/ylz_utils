@@ -801,5 +801,13 @@ class AkshareStock(StockBase):
                 return HTMLResponse(content=content)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"{e}")
-
+        @self.router.get("/test")
+        async def test(req:Request):
+            """分析连续下跌信息"""
+            try:
+                #return self._get_akbk_code_info('BK0695')
+                #return self._get_akbk_codes('BK1027')
+                return self._get_bk_codes('chgn_700129')
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"{e}")
     
