@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ylz-utils"
-version = "0.3.22"
+version = "0.3.25"
 description = "ylz 工具类"
 authors = ["youht88"]
 readme = "README.md"
@@ -12,7 +12,7 @@ include = "ylz_utils"
 ylz_utils = "ylz_utils.cli.main:run"
 
 [tool.poetry.dependencies]
-python = "^3.12,<=3.13"
+python = "^3.13"
 pyyaml = "^6.0.1"
 argparse = "^1.4.0"
 python-dotenv = "^1.0.1"
@@ -69,12 +69,6 @@ matplotlib = "^3.9.0"
 #torch = { version = "2.0.0", extras = ["cpu"] }
 #torch = "2.2.0"
 
-#需要vpn
-#yfinance = "^0.2.41"
-#需要SNOWBALL_TOKEN
-pysnowball = "^0.1.3"
-#需要TUSHARE_TOKEN
-tushare = "^1.4.13"
 akshare = "^1.15.22"
 
 ipfs-toolkit = "^0.5.24"

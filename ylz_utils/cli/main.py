@@ -10,7 +10,6 @@ from ylz_utils.cli.neo4j import neo4j_test
 from ylz_utils.cli.reset import reset
 from ylz_utils.cli.start import start
 from ylz_utils.cli.serve import serve
-from ylz_utils.cli.stock import stock
 
 def run():
     main()
@@ -38,11 +37,7 @@ def main():
     
     reset_parser = subparsers.add_parser("reset", help="执行初始化")
     custom_service_parser = subparsers.add_parser("custom_service", help="客服example")
-    
-    stock_parser = subparsers.add_parser("stock", help="测试stock")
-    stock_parser.add_argument("--host",type=str,help="host")
-    stock_parser.add_argument("--port",type=int,help="port")
-    
+        
     neo4j_parser = subparsers.add_parser("neo4j", help="测试neo4j")
     neo4j_parser.add_argument("--user",type=str,help="user")
     neo4j_parser.add_argument("--password",type=str,help="password")
@@ -116,8 +111,6 @@ def main():
         serve(args)
     elif args.command == "neo4j":
         neo4j_test(args)
-    elif args.command == "stock":
-        stock(args)
     elif args.command == "custom_service":
         import ylz_utils.cli.custom_service
 
