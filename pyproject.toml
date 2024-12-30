@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ylz-utils"
-version = "0.3.26"
+version = "0.3.27"
 description = "ylz 工具类"
 authors = ["youht88"]
 readme = "README.md"
@@ -87,6 +87,7 @@ trustcall = "^0.0.22"
 apscheduler = "^3.10.4"
 fastapi-cdn-host = "^0.8.2"
 torch = "2.2.1"
+numpy = "<2"
 
 
 
