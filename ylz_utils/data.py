@@ -8,6 +8,9 @@ import sys
 import time
 import itertools
 import threading
+import pandas as pd
+import torch 
+import numpy as np
 
 class Spinner():
     def __init__(self,cursor=['|', '/', '-', '\\']):
@@ -382,6 +385,23 @@ class JsonLib:
             _update_json_recursive(json_data, path, value)
         return json_data
 
+class DfLib:
+    @classmethod
+    def to_tensor(cls,df:pd.DataFrame,columns:list[str]) -> torch.Tensor:
+        df = df.filter(columns)
+        numeric_df = df.select_dtypes(include=['number'])
+        tensor_numeric = torch.from_numpy(numeric_df.values).float()
+        categorical_df = df.select_dtypes(include=['object'])
+        one_hot_df = pd.get_dummies(categorical_df)
+        tensor_categorical = torch.from_numpy(one_hot_df.values).long() 
+        combined_tensor = torch.cat((tensor_numeric,tensor_categorical),dim=1)
+        return combined_tensor       
+class TorchLib:
+    @classmethod
+    def to_df(cls,tensor:torch.Tensor,columns=[])->pd.DataFrame:
+        numpy_array = tensor.numpy()
+        df = pd.DataFrame(numpy_array,columns=columns)
+        return df
 
 if __name__ == "__main__":
     json_data = {
