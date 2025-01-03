@@ -387,55 +387,57 @@ class JsonLib:
 
 class DfLib:
     @classmethod
-    def to_tensor(cls,df:pd.DataFrame,columns:list[str]) -> torch.Tensor:
+    def to_tensor(cls,df:pd.DataFrame,columns:list[str],include_object=False) -> torch.Tensor:
         df = df.filter(columns)
         numeric_df = df.select_dtypes(include=['number'])
         tensor_numeric = torch.from_numpy(numeric_df.values).float()
-        categorical_df = df.select_dtypes(include=['object'])
-        one_hot_df = pd.get_dummies(categorical_df)
-        tensor_categorical = torch.from_numpy(one_hot_df.values).long() 
-        combined_tensor = torch.cat((tensor_numeric,tensor_categorical),dim=1)
-        return combined_tensor       
-class TorchLib:
-    @classmethod
-    def to_df(cls,tensor:torch.Tensor,columns=[])->pd.DataFrame:
-        numpy_array = tensor.numpy()
-        df = pd.DataFrame(numpy_array,columns=columns)
-        return df
-
+        if include_object:
+            categorical_df = df.select_dtypes(include=['object'])
+            one_hot_df = pd.get_dummies(categorical_df)
+            tensor_categorical = torch.from_numpy(one_hot_df.values).long() 
+            combined_tensor = torch.cat((tensor_numeric,tensor_categorical),dim=1)
+            return combined_tensor  
+        else:
+            return tensor_numeric     
+        
 if __name__ == "__main__":
-    json_data = {
-        "name": "John",
-        "age": 30,
-        "address": {
-            "street": "123 Main St",
-            "city": "Anytown",
-            "zip": "12345"
-        },
-        "p":{
-          "a":{"p":5},"b":{"p":6},"c":{"p":7}
-        },
-        "phoneNumbers": [
-            {"type": "home", "number": "555-555-1212", "city": "Hometown"},
-            {"type": "work", "number": "555-555-1213", "city": "Workcity"}
-        ],
-        "bus": [
-            {"p":888},
-            {"a": [1,3,5], "b": {"b1": [1,{"x":1}],"p":999}},
-            {"a": 2, "b": [{"bus": [3,{"y":2}]}]}
-        ]
-    }
+    # json_data = {
+    #     "name": "John",
+    #     "age": 30,
+    #     "address": {
+    #         "street": "123 Main St",
+    #         "city": "Anytown",
+    #         "zip": "12345"
+    #     },
+    #     "p":{
+    #       "a":{"p":5},"b":{"p":6},"c":{"p":7}
+    #     },
+    #     "phoneNumbers": [
+    #         {"type": "home", "number": "555-555-1212", "city": "Hometown"},
+    #         {"type": "work", "number": "555-555-1213", "city": "Workcity"}
+    #     ],
+    #     "bus": [
+    #         {"p":888},
+    #         {"a": [1,3,5], "b": {"b1": [1,{"x":1}],"p":999}},
+    #         {"a": 2, "b": [{"bus": [3,{"y":2}]}]}
+    #     ]
+    # }
     
-    # 测试用例
-    results = JsonLib.find_key_value_path(json_data, "city")
-    print(f"\n\n结果1 =====> {results}")  # 应该输出：['Anytown', ['Hometown', 'Workcity']]
+    # # 测试用例
+    # results = JsonLib.find_key_value_path(json_data, "city")
+    # print(f"\n\n结果1 =====> {results}")  # 应该输出：['Anytown', ['Hometown', 'Workcity']]
 
     
-    results = JsonLib.find_key_value_path(json_data, "*.*.p")
-    # results = JsonLib.find_key_value_path(json_data, "a",no_dict=False)
-    print(f"\n\n结果2 ===>: {results}")  
+    # results = JsonLib.find_key_value_path(json_data, "*.*.p")
+    # # results = JsonLib.find_key_value_path(json_data, "a",no_dict=False)
+    # print(f"\n\n结果2 ===>: {results}")  
 
-    # results = JsonLib.update_json_by_path(json_data,results,lambda x:x*2)
-    # print("*"*20,"\n",results)
+    # # results = JsonLib.update_json_by_path(json_data,results,lambda x:x*2)
+    # # print("*"*20,"\n",results)
 
-    
+    import pandas as pd
+    df = pd.DataFrame({"a":[1,2,3,4],"b":["a","b","b","a"],"c":[5,6,7,8]})
+    tensor = DfLib.to_tensor(df,columns=["a","b"])  
+    print(tensor) 
+    df1=TorchLib.to_df(tensor)
+    print(df1) 
