@@ -4,6 +4,7 @@ import torch.nn as nn
 import pandas as pd
 from torch.utils.data import DataLoader, TensorDataset
 import torch.optim as optim
+import numpy as np
 class TorchLib:
     @classmethod
     def to_df(cls,tensor:torch.Tensor,columns=[])->pd.DataFrame:
@@ -14,16 +15,39 @@ class TorchLib:
             df = pd.DataFrame(numpy_array)
         return df
     @classmethod
-    def get_dataloader(self,df:pd.DataFrame,source_columns:list[str],target_columns:list[str],source_seq:int,target_seq:int=1,split=0.8,batch_size=32)->tuple[DataLoader,DataLoader]:
+    def from_df(cls,df:pd.DataFrame)->torch.Tensor:
+        mapping_records = {}
+        df=df.copy()
+        columns = df.columns
+        for col in columns:
+            if df[col].dtype == 'object':
+                mapping_dict = {}
+                unique_values = df[col].unique()
+                for index, value in enumerate(unique_values):
+                    mapping_dict[value] = index
+                # 使用map函数根据映射字典进行替换
+                df[col] = df[col].map(mapping_dict)
+                mapping_records[col] = {
+                    'positions': df.columns.get_loc(col),
+                    'mapping': mapping_dict
+                }
+        tensor = torch.from_numpy(df.values).float()        
+        #print("!!!",tensor[:5])
+        return (tensor,mapping_records)
+
+    @classmethod
+    def get_dataloader(cls,df:pd.DataFrame,source_columns:list[str],target_columns:list[str],source_seq:int,target_seq:int=1,split=0.8,batch_size=32)->tuple[DataLoader,DataLoader]:
         assert(source_columns and target_columns)
         assert(source_seq and target_seq)
-        source_data = df[source_columns].values
-        target_data = df[target_columns].values
+        print("old df length=",len(df))
+        df = df[source_columns+target_columns].dropna()
+        print("no na df length=",len(df))
+        source_data,source_mapping = cls.from_df(df[source_columns])
+        target_data,target_mapping = cls.from_df(df[target_columns])
         data_len = len(df) - source_seq - target_seq + 1
-        source_seq_data = torch.tensor([source_data[i:i+source_seq] for i in range(data_len)]).float()
-        target_seq_data = torch.tensor([target_data[i+source_seq:i+source_seq+target_seq] for i in range(data_len)]).float()
+        source_seq_data = torch.stack([source_data[i:i+source_seq] for i in range(data_len)])
+        target_seq_data = torch.stack([target_data[i+source_seq:i+source_seq+target_seq] for i in range(data_len)])
         train_size = int(len(target_seq_data)*split)        
-        
         x_train,x_test = source_seq_data[:train_size],source_seq_data[train_size:]
         y_train,y_test = target_seq_data[:train_size],target_seq_data[train_size:]
 
@@ -32,9 +56,9 @@ class TorchLib:
 
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-        return (train_loader,test_loader)
+        return (train_loader,test_loader,source_mapping,target_mapping)
     @classmethod
-    def train(self,model:nn.Module,train_loader:DataLoader,test_loader:DataLoader,epochs:int=100,lr:float=0.001,):
+    def train(cls,model:nn.Module,train_loader:DataLoader,test_loader:DataLoader,source_mapping,target_mapping,epochs:int=100,lr:float=0.001,file_name:str='model.pth'):
         criterion = nn.MSELoss()
         optimizer = optim.Adam(model.parameters(),lr=lr)
         best_loss = float('inf')
@@ -45,7 +69,7 @@ class TorchLib:
                 optimizer.zero_grad()
                 # 使用前一时间步的输入作为目标序列
                 output = model(batch_x.permute(1, 0, 2), batch_y.permute(1, 0, 2))
-                train_loss = criterion(output, batch_y[1:])
+                train_loss = criterion(output, batch_y.squeeze(-1))
                 train_loss.backward()
                 optimizer.step()            
             # 验证模型
@@ -54,20 +78,47 @@ class TorchLib:
             with torch.no_grad():
                 for batch_x, batch_y in test_loader:
                     output = model(batch_x.permute(1, 0, 2), batch_y.permute(1, 0, 2))
-                    loss = criterion(output, batch_y[1:])
+                    loss = criterion(output, batch_y.squeeze(-1))
                     total_loss += loss.item()
-            if (epoch + 1) % 10 == 0: 
+            if (epoch + 1) % 1 == 0: 
                 print(f'Epoch [{epoch + 1}/{epochs}],Train Loss: {train_loss.item():.4f} , Val Loss: {total_loss / len(test_loader):.4f}')
             if total_loss < best_loss:
                 best_loss = total_loss
                 best_model = model
-                torch.save(best_model.state_dict(),"transformer.pth")  
+                torch.save({"mapping":{"source":source_mapping,"target":target_mapping},
+                            "paramers":best_model.paramers,
+                            "model":best_model.state_dict()},file_name)  
+    @classmethod
+    def load_model(cls,file_name:str="model.pth"):
+        model_dict = torch.load(file_name)
+        print(model_dict.keys())
+        print("mapping=",model_dict["mapping"])
+        print("paramers=",model_dict["paramers"])
+        paramers = model_dict["paramers"]
+        model = TransformerModel(**paramers) 
+        model.load_state_dict(model_dict["model"])
+        return model
+    @classmethod
+    def predict(cls,model:nn.Module,src,tgt):
+        model.eval()
+        src = src[-1,:,:].unsqueeze(0)
+        tgt = tgt[-1,:,:].unsqueeze(0)
+        temp = torch.zeros(1,1,1)
+        with torch.no_grad():
+            output = model(src.permute(1, 0, 2), temp.permute(1, 0, 2))
+        print("src=",src,src.shape)
+        print("tgt=",tgt,tgt.shape)
+        print("output=",output)
+        return output
 
 class TransformerModel(nn.Module):
     def __init__(self, *, source_dim:int, d_model:int, nhead:int=4, n_layers:int=6,dropout=0.1,target_dim:int=1,is_embedded:bool=False,is_positional:bool=False):
         super(TransformerModel, self).__init__()
         self.is_embedded = is_embedded
         self.is_positional = is_positional
+        self.paramers = {"source_dim":source_dim,"d_model":d_model,"target_dim":target_dim,
+                         "nhead":nhead,"n_layers":n_layers,"dropout":dropout,
+                         "is_embedded":is_embedded,"is_positional":is_positional}
         self.source_embedder = nn.Linear(source_dim, d_model)
         self.target_embedder = nn.Linear(target_dim, d_model)
         self.positional = PositionalEncoding(d_model,dropout=0)
@@ -112,12 +163,19 @@ if __name__ == '__main__':
     import sqlite3
     conn = sqlite3.connect("daily_pro.db")
     df = pd.read_sql("select * from daily where code='000001'",conn)
-    epochs = 100
+    epochs = 300
     lr = 0.001
     batch_size = 200
     source_seq = 20
     target_seq = 1
-    train_loader,test_loader = TorchLib.get_dataloader(df,['o','h','l','c','zd'],['c'],source_seq,target_seq,batch_size=batch_size)
-    model = TransformerModel(source_dim=5,target_dim=1,d_model=64)
-    TorchLib.train(model,train_loader,test_loader,epochs,lr)
+    train_loader,test_loader,source_mapping,target_mapping = TorchLib.get_dataloader(df,['o','h','l','c','v','v_status','c_status','hs','zf','ma5c','ma10c','macd'],['zd'],source_seq,target_seq,batch_size=batch_size)
+    print(source_mapping,target_mapping)
+    
+    model = TorchLib.load_model("model.pth") 
+    src,tgt=next(iter(test_loader))
+    pred = TorchLib.predict(model,src,tgt)
+    exit(1)
+    
+    model = TransformerModel(source_dim=12,target_dim=1,d_model=64)
+    TorchLib.train(model,train_loader,test_loader,source_mapping,target_mapping,epochs,lr)
         
