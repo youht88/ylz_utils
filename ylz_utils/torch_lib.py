@@ -20,7 +20,8 @@ class TorchLib:
         df=df.copy()
         columns = df.columns
         for col in columns:
-            if df[col].dtype == 'object':
+            print("???",col)
+            if df[col].dtypes == 'object':
                 mapping_dict = {}
                 unique_values = df[col].unique()
                 for index, value in enumerate(unique_values):
@@ -163,19 +164,29 @@ if __name__ == '__main__':
     import sqlite3
     conn = sqlite3.connect("daily_pro.db")
     df = pd.read_sql("select * from daily where code='000001'",conn)
-    epochs = 300
+    epochs = 50
     lr = 0.001
     batch_size = 200
-    source_seq = 20
+    source_seq = 10
     target_seq = 1
-    train_loader,test_loader,source_mapping,target_mapping = TorchLib.get_dataloader(df,['o','h','l','c','v','v_status','c_status','hs','zf','ma5c','ma10c','macd'],['zd'],source_seq,target_seq,batch_size=batch_size)
+    d_model=64
+    source_column=['o','h','l','c','v','v_status','c_status','hs','zf','ma5c','ma10c','macd']
+    source_column=['c']
+    source_dim=len(source_column)
+    target_column=['zd']
+    target_column=['zd']
+    target_dim=len(target_column)
+    df=pd.DataFrame({"c":range(300),"zd":range(300)})
+    print(df)
+    train_loader,test_loader,source_mapping,target_mapping = TorchLib.get_dataloader(
+            df,source_column,target_column,source_seq,target_seq,batch_size=batch_size)
     print(source_mapping,target_mapping)
     
-    model = TorchLib.load_model("model.pth") 
-    src,tgt=next(iter(test_loader))
-    pred = TorchLib.predict(model,src,tgt)
-    exit(1)
+    #model = TorchLib.load_model("model.pth") 
+    #src,tgt=next(iter(test_loader))
+    #pred = TorchLib.predict(model,src,tgt)
+    #exit(1)
     
-    model = TransformerModel(source_dim=12,target_dim=1,d_model=64)
+    model = TransformerModel(source_dim=source_dim,target_dim=target_dim,d_model=d_model)
     TorchLib.train(model,train_loader,test_loader,source_mapping,target_mapping,epochs,lr)
         
