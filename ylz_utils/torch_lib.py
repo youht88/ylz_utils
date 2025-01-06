@@ -131,7 +131,7 @@ class TorchLib:
         with torch.no_grad():
             for batch_x, batch_y in loader:
                 tgt = torch.zeros(batch_y.shape)
-                output = model(batch_x.permute(1, 0, 2), tgt.permute(1, 0, 2))
+                output = model(batch_x.permute(1, 0, 2), batch_y.permute(1, 0, 2))
                 print("\nbatch_y=",batch_y,"\noutput=",output)
         return output
 
@@ -193,7 +193,7 @@ if __name__ == '__main__':
     conn = sqlite3.connect("daily_pro.db")
     df = pd.read_sql("select * from daily where code='000001'",conn)
     #df=pd.DataFrame({"c":range(300),"zd":range(300)})
-    epochs = 100
+    epochs = 1000
     lr = 0.001
     batch_size = 200
     source_seq = 10
