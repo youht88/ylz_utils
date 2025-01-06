@@ -15,39 +15,65 @@ class TorchLib:
             df = pd.DataFrame(numpy_array)
         return df
     @classmethod
-    def from_df(cls,df:pd.DataFrame)->torch.Tensor:
-        mapping_records = {}
+    def encode_mapping(cls,df:pd.DataFrame,source_column,target_column,key_column)->torch.Tensor:
+        source_mapping_records = {}
+        target_mapping_records = {}
+        print("old df length=",len(df))
+        df = df[source_column+target_column+[key_column]].dropna()
+        print("no na df length=",len(df))
         df=df.copy()
         columns = df.columns
         for col in columns:
-            print("???",col)
-            if df[col].dtypes == 'object':
-                mapping_dict = {}
+            if col==key_column:
+                continue
+            if col in source_column and df[col].dtypes == 'object':
+                source_mapping_dict = {}
                 unique_values = df[col].unique()
                 for index, value in enumerate(unique_values):
-                    mapping_dict[value] = index
+                    source_mapping_dict[value] = index
                 # 使用map函数根据映射字典进行替换
-                df[col] = df[col].map(mapping_dict)
-                mapping_records[col] = {
+                df[col] = df[col].map(source_mapping_dict)
+                source_mapping_records[col] = {
                     'positions': df.columns.get_loc(col),
-                    'mapping': mapping_dict
-                }
-        tensor = torch.from_numpy(df.values).float()        
-        #print("!!!",tensor[:5])
-        return (tensor,mapping_records)
+                    'mapping': source_mapping_dict
+                }                
+            if col in target_column and df[col].dtypes == 'object':
+                if col in source_column:
+                    #col已经被编码，可以直接使用
+                    target_mapping_records[col] = source_mapping_records[col]
+                else:
+                    target_mapping_dict = {}
+                    unique_values = df[col].unique()
+                    for index, value in enumerate(unique_values):
+                        target_mapping_dict[value] = index
+                    # 使用map函数根据映射字典进行替换
+                    df[col] = df[col].map(target_mapping_dict)
+                    target_mapping_records[col] = {
+                        'positions': df.columns.get_loc(col),
+                        'mapping': target_mapping_dict
+                    }                
+        return (df,source_mapping_records,target_mapping_records)
 
     @classmethod
-    def get_dataloader(cls,df:pd.DataFrame,source_columns:list[str],target_columns:list[str],source_seq:int,target_seq:int=1,split=0.8,batch_size=32)->tuple[DataLoader,DataLoader]:
-        assert(source_columns and target_columns)
+    def get_dataloader(cls,df:pd.DataFrame,source_column:list[str],target_column:list[str],key_column:str,
+                       source_seq:int,target_seq:int=1,split:float=0.8,batch_size:int=32,filter:list[str]=[])->tuple[DataLoader,DataLoader,dict,dict]:
+        assert(source_column and target_column)
         assert(source_seq and target_seq)
-        print("old df length=",len(df))
-        df = df[source_columns+target_columns].dropna()
-        print("no na df length=",len(df))
-        source_data,source_mapping = cls.from_df(df[source_columns])
-        target_data,target_mapping = cls.from_df(df[target_columns])
+        df,source_mapping,target_mapping = cls.encode_mapping(df,source_column,target_column,key_column)
         data_len = len(df) - source_seq - target_seq + 1
-        source_seq_data = torch.stack([source_data[i:i+source_seq] for i in range(data_len)])
-        target_seq_data = torch.stack([target_data[i+source_seq:i+source_seq+target_seq] for i in range(data_len)])
+        # source_seq_data = torch.stack([source_data[i:i+source_seq] for i in range(data_len)])
+        # target_seq_data = torch.stack([target_data[i+source_seq:i+source_seq+target_seq] for i in range(data_len)])
+        if filter:
+            source_seq_data = torch.stack([torch.from_numpy(df[i:i+source_seq][source_column].values).float() 
+                                    for i in range(data_len) if eval(f"{key_column} in {filter}",{key_column:df[i:i+source_seq][key_column].iloc[-1]})])
+            target_seq_data = torch.stack([torch.from_numpy(df[i+source_seq:i+source_seq+target_seq][target_column].values).float() 
+                                    for i in range(data_len) if eval(f"{key_column} in {filter}",{key_column:df[i:i+source_seq]['date'].iloc[-1]})])
+        else:
+            source_seq_data = torch.stack([torch.from_numpy(df[i:i+source_seq][source_column].values).float() 
+                                    for i in range(data_len)])
+            target_seq_data = torch.stack([torch.from_numpy(df[i+source_seq:i+source_seq+target_seq][target_column].values).float() 
+                                    for i in range(data_len)])
+
         train_size = int(len(target_seq_data)*split)        
         x_train,x_test = source_seq_data[:train_size],source_seq_data[train_size:]
         y_train,y_test = target_seq_data[:train_size],target_seq_data[train_size:]
@@ -100,16 +126,13 @@ class TorchLib:
         model.load_state_dict(model_dict["model"])
         return model
     @classmethod
-    def predict(cls,model:nn.Module,src,tgt):
+    def predict(cls,model:nn.Module,loader:DataLoader):
         model.eval()
-        src = src[-1,:,:].unsqueeze(0)
-        tgt = tgt[-1,:,:].unsqueeze(0)
-        temp = torch.zeros(1,1,1)
         with torch.no_grad():
-            output = model(src.permute(1, 0, 2), temp.permute(1, 0, 2))
-        print("src=",src,src.shape)
-        print("tgt=",tgt,tgt.shape)
-        print("output=",output)
+            for batch_x, batch_y in loader:
+                tgt = torch.zeros(batch_y.shape)
+                output = model(batch_x.permute(1, 0, 2), tgt.permute(1, 0, 2))
+                print("\nbatch_y=",batch_y,"\noutput=",output)
         return output
 
 class TransformerModel(nn.Module):
@@ -134,7 +157,7 @@ class TransformerModel(nn.Module):
             src = self.positional(src)
             tgt = self.positional(tgt)
         output = self.transformer(src, tgt)
-        output = self.fc(output[-1, :, :])  # 取最后一个时间步的输出
+        output = self.fc(output[-1, :, :]) # 取最后一个时间步的输出
         return output
 
     
@@ -161,32 +184,38 @@ class PositionalEncoding(torch.nn.Module):
         return self.dropout(x)
 
 if __name__ == '__main__':
+    import sys
     import sqlite3
+    args = sys.argv
+    if len(args)<2:
+        print("usage: python torch_lib.py train|predict")
+        exit(1)
     conn = sqlite3.connect("daily_pro.db")
     df = pd.read_sql("select * from daily where code='000001'",conn)
-    epochs = 50
+    #df=pd.DataFrame({"c":range(300),"zd":range(300)})
+    epochs = 100
     lr = 0.001
     batch_size = 200
     source_seq = 10
     target_seq = 1
     d_model=64
-    source_column=['o','h','l','c','v','v_status','c_status','hs','zf','ma5c','ma10c','macd']
-    source_column=['c']
+    key_column='date'
+    source_column=['o','h','l','c','v','v_status','c_status','hs','zf','ma5c','ma10c','macd','szc','szv','ma5szc','ma10szc','szmacd','zljlrl']
     source_dim=len(source_column)
     target_column=['zd']
-    target_column=['zd']
     target_dim=len(target_column)
-    df=pd.DataFrame({"c":range(300),"zd":range(300)})
-    print(df)
-    train_loader,test_loader,source_mapping,target_mapping = TorchLib.get_dataloader(
-            df,source_column,target_column,source_seq,target_seq,batch_size=batch_size)
-    print(source_mapping,target_mapping)
     
-    #model = TorchLib.load_model("model.pth") 
-    #src,tgt=next(iter(test_loader))
-    #pred = TorchLib.predict(model,src,tgt)
-    #exit(1)
+    if args[1].lower()=='train':
+        train_loader,test_loader,source_mapping,target_mapping = TorchLib.get_dataloader(
+                df,source_column,target_column,key_column,source_seq=source_seq,target_seq=target_seq,batch_size=batch_size,filter=[])
+        model = TransformerModel(source_dim=source_dim,target_dim=target_dim,d_model=d_model)
+        TorchLib.train(model,train_loader,test_loader,source_mapping,target_mapping,epochs,lr)
+    else:
+        filter = ['2024-12-30','2024-12-31','2025-01-02']
+        train_loader,test_loader,source_mapping,target_mapping = TorchLib.get_dataloader(
+                df,source_column,target_column,key_column,source_seq=source_seq,target_seq=target_seq,batch_size=1,split=1,filter=filter)
+        model = TorchLib.load_model("model.pth") 
+        pred = TorchLib.predict(model,train_loader)
     
-    model = TransformerModel(source_dim=source_dim,target_dim=target_dim,d_model=d_model)
-    TorchLib.train(model,train_loader,test_loader,source_mapping,target_mapping,epochs,lr)
+    
         
