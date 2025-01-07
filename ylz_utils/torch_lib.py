@@ -5,6 +5,39 @@ import pandas as pd
 from torch.utils.data import DataLoader, TensorDataset
 import torch.optim as optim
 import numpy as np
+
+class TransformerModel(nn.Module):
+    def __init__(self, *, source_dim:int, d_model:int, nhead:int=4, n_layers:int=6,dropout=0.1,target_dim:int=1,is_embedded:bool=False,is_positional:bool=False,mapping=None):
+        super(TransformerModel, self).__init__()
+        self.mapping=mapping
+        self.is_embedded = is_embedded
+        self.is_positional = is_positional
+        self.paramers = {"source_dim":source_dim,"d_model":d_model,"target_dim":target_dim,
+                         "nhead":nhead,"n_layers":n_layers,"dropout":dropout,
+                         "is_embedded":is_embedded,"is_positional":is_positional}
+        self.source_embedder = nn.Linear(source_dim, d_model)
+        self.target_embedder = nn.Linear(target_dim, d_model)
+        self.positional_train = PositionalEncoding(d_model,dropout=dropout)
+        self.positional_eval = PositionalEncoding(d_model,dropout=0)
+        self.transformer = nn.Transformer(d_model=d_model, nhead=nhead, num_encoder_layers=n_layers,num_decoder_layers=n_layers,dropout=dropout)
+        self.fc = nn.Linear(d_model, target_dim)
+
+    def forward(self, src, tgt):
+        if not self.is_embedded:
+            src = self.source_embedder(src)
+            tgt = self.target_embedder(tgt)
+        if not self.is_positional:
+            if self.training:
+                src = self.positional_train(src)
+                tgt = self.positional_train(tgt)
+            else:
+                src = self.positional_eval(src)
+                tgt = self.positional_eval(tgt)
+
+        output = self.transformer(src,tgt)
+        output = self.fc(output)
+        return output
+
 class TorchLib:
     @classmethod
     def to_df(cls,tensor:torch.Tensor,columns=[])->pd.DataFrame:
@@ -26,32 +59,45 @@ class TorchLib:
         for col in columns:
             if col==key_column:
                 continue
-            if col in source_column and df[col].dtypes == 'object':
+            if col in source_column: 
                 source_mapping_dict = {}
-                unique_values = df[col].unique()
-                for index, value in enumerate(unique_values):
-                    source_mapping_dict[value] = index
-                # 使用map函数根据映射字典进行替换
-                df[col] = df[col].map(source_mapping_dict)
+                if df[col].dtypes == 'object':
+                    unique_values = df[col].unique()
+                    for index, value in enumerate(unique_values):
+                        source_mapping_dict[value] = index
+                    # 使用map函数根据映射字典进行替换
+                    df[col] = df[col].map(source_mapping_dict)
+                # 每列标准化
+                mean = df[col].mean()
+                std = df[col].std()
+                df[col] = (df[col] - mean)/std
                 source_mapping_records[col] = {
                     'positions': df.columns.get_loc(col),
+                    'mean':mean,'std':std,
                     'mapping': source_mapping_dict
-                }                
-            if col in target_column and df[col].dtypes == 'object':
+                }
+                
+            if col in target_column:
                 if col in source_column:
                     #col已经被编码，可以直接使用
                     target_mapping_records[col] = source_mapping_records[col]
-                else:
-                    target_mapping_dict = {}
+                    continue
+                target_mapping_dict = {}
+                if df[col].dtypes == 'object':
                     unique_values = df[col].unique()
                     for index, value in enumerate(unique_values):
                         target_mapping_dict[value] = index
                     # 使用map函数根据映射字典进行替换
                     df[col] = df[col].map(target_mapping_dict)
-                    target_mapping_records[col] = {
-                        'positions': df.columns.get_loc(col),
-                        'mapping': target_mapping_dict
-                    }                
+                # 每列标准化
+                mean = df[col].mean()
+                std = df[col].std()
+                df[col] = (df[col] - mean)/std               
+                target_mapping_records[col] = {
+                    'positions': df.columns.get_loc(col),
+                    'mean':mean,'std':std,
+                    'mapping': target_mapping_dict
+                } 
         return (df,source_mapping_records,target_mapping_records)
 
     @classmethod
@@ -85,7 +131,7 @@ class TorchLib:
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
         return (train_loader,test_loader,source_mapping,target_mapping)
     @classmethod
-    def train(cls,model:nn.Module,train_loader:DataLoader,test_loader:DataLoader,source_mapping,target_mapping,epochs:int=100,lr:float=0.001,file_name:str='model.pth'):
+    def train(cls,model:TransformerModel,train_loader:DataLoader,test_loader:DataLoader,source_mapping,target_mapping,epochs:int=100,lr:float=0.001,file_name:str='model.pth'):
         criterion = nn.MSELoss()
         optimizer = optim.Adam(model.parameters(),lr=lr)
         best_loss = float('inf')
@@ -95,7 +141,10 @@ class TorchLib:
             for batch_x, batch_y in train_loader:
                 optimizer.zero_grad()
                 # 使用前一时间步的输入作为目标序列
-                output = model(batch_x.permute(1, 0, 2), batch_y.permute(1, 0, 2))
+                src = batch_x.permute(1, 0, 2)
+                tgt = batch_y.permute(1, 0, 2)
+                tgt = torch.zeros(batch_y.shape).permute(1,0,2)
+                output = model(src,tgt)
                 train_loss = criterion(output, batch_y.squeeze(-1))
                 train_loss.backward()
                 optimizer.step()            
@@ -104,7 +153,10 @@ class TorchLib:
             total_loss = 0.0
             with torch.no_grad():
                 for batch_x, batch_y in test_loader:
-                    output = model(batch_x.permute(1, 0, 2), batch_y.permute(1, 0, 2))
+                    src = batch_x.permute(1, 0, 2)
+                    tgt = batch_y.permute(1, 0, 2)
+                    tgt = torch.zeros(batch_y.shape).permute(1,0,2)
+                    output = model(src,tgt)
                     loss = criterion(output, batch_y.squeeze(-1))
                     total_loss += loss.item()
             if (epoch + 1) % 1 == 0: 
@@ -116,50 +168,30 @@ class TorchLib:
                             "paramers":best_model.paramers,
                             "model":best_model.state_dict()},file_name)  
     @classmethod
-    def load_model(cls,file_name:str="model.pth"):
+    def load_model(cls,file_name:str="model.pth",mapping=None):
         model_dict = torch.load(file_name)
         print(model_dict.keys())
         print("mapping=",model_dict["mapping"])
         print("paramers=",model_dict["paramers"])
         paramers = model_dict["paramers"]
-        model = TransformerModel(**paramers) 
+        model = TransformerModel(**paramers,mapping=mapping) 
         model.load_state_dict(model_dict["model"])
         return model
     @classmethod
-    def predict(cls,model:nn.Module,loader:DataLoader):
+    def predict(cls,model:TransformerModel,loader:DataLoader):
         model.eval()
         with torch.no_grad():
             for batch_x, batch_y in loader:
-                tgt = torch.zeros(batch_y.shape)
-                output = model(batch_x.permute(1, 0, 2), batch_y.permute(1, 0, 2))
-                print("\nbatch_y=",batch_y,"\noutput=",output)
+                src = batch_x.permute(1,0,2)
+                tgt = torch.zeros(batch_y.shape).permute(1,0,2)
+                output = model(src, tgt)
+                if model.mapping:
+                    mean = model.mapping[1]['zd']['mean'] 
+                    std = model.mapping[1]['zd']['std'] 
+                    print("\nbatch_y=",(batch_y*std)+mean,"\noutput=",(output*std)+mean)
+                else:
+                    print("\nbatch_y=",batch_y,"\noutput=",output)
         return output
-
-class TransformerModel(nn.Module):
-    def __init__(self, *, source_dim:int, d_model:int, nhead:int=4, n_layers:int=6,dropout=0.1,target_dim:int=1,is_embedded:bool=False,is_positional:bool=False):
-        super(TransformerModel, self).__init__()
-        self.is_embedded = is_embedded
-        self.is_positional = is_positional
-        self.paramers = {"source_dim":source_dim,"d_model":d_model,"target_dim":target_dim,
-                         "nhead":nhead,"n_layers":n_layers,"dropout":dropout,
-                         "is_embedded":is_embedded,"is_positional":is_positional}
-        self.source_embedder = nn.Linear(source_dim, d_model)
-        self.target_embedder = nn.Linear(target_dim, d_model)
-        self.positional = PositionalEncoding(d_model,dropout=0)
-        self.transformer = nn.Transformer(d_model=d_model, nhead=nhead, num_encoder_layers=n_layers,num_decoder_layers=n_layers,dropout=dropout)
-        self.fc = nn.Linear(d_model, target_dim)
-
-    def forward(self, src, tgt):
-        if not self.is_embedded:
-            src = self.source_embedder(src)
-            tgt = self.target_embedder(tgt)
-        if not self.is_positional:
-            src = self.positional(src)
-            tgt = self.positional(tgt)
-        output = self.transformer(src, tgt)
-        output = self.fc(output[-1, :, :]) # 取最后一个时间步的输出
-        return output
-
     
 class PositionalEncoding(torch.nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=5000):
@@ -200,7 +232,7 @@ if __name__ == '__main__':
     target_seq = 1
     d_model=64
     key_column='date'
-    source_column=['o','h','l','c','v','v_status','c_status','hs','zf','ma5c','ma10c','macd','szc','szv','ma5szc','ma10szc','szmacd','zljlrl']
+    source_column=['o','h','l','c','v','v_status','c_status','hs','zf','ma5c','ma10c','macd','szc','szv','ma5szc','ma10szc','szmacd']
     source_dim=len(source_column)
     target_column=['zd']
     target_dim=len(target_column)
@@ -208,13 +240,15 @@ if __name__ == '__main__':
     if args[1].lower()=='train':
         train_loader,test_loader,source_mapping,target_mapping = TorchLib.get_dataloader(
                 df,source_column,target_column,key_column,source_seq=source_seq,target_seq=target_seq,batch_size=batch_size,filter=[])
+        print("source_mapping=",source_mapping)
+        print("target_mapping=",target_mapping)
         model = TransformerModel(source_dim=source_dim,target_dim=target_dim,d_model=d_model)
         TorchLib.train(model,train_loader,test_loader,source_mapping,target_mapping,epochs,lr)
     else:
         filter = ['2024-12-30','2024-12-31','2025-01-02']
         train_loader,test_loader,source_mapping,target_mapping = TorchLib.get_dataloader(
                 df,source_column,target_column,key_column,source_seq=source_seq,target_seq=target_seq,batch_size=1,split=1,filter=filter)
-        model = TorchLib.load_model("model.pth") 
+        model = TorchLib.load_model("model.pth",mapping=(source_mapping,target_mapping)) 
         pred = TorchLib.predict(model,train_loader)
     
     
