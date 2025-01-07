@@ -143,7 +143,7 @@ class TorchLib:
                 # 使用前一时间步的输入作为目标序列
                 src = batch_x.permute(1, 0, 2)
                 tgt = batch_y.permute(1, 0, 2)
-                tgt = torch.zeros(batch_y.shape).permute(1,0,2)
+                #tgt = torch.zeros(batch_y.shape).permute(1,0,2)
                 output = model(src,tgt)
                 train_loss = criterion(output, batch_y.squeeze(-1))
                 train_loss.backward()
@@ -155,7 +155,7 @@ class TorchLib:
                 for batch_x, batch_y in test_loader:
                     src = batch_x.permute(1, 0, 2)
                     tgt = batch_y.permute(1, 0, 2)
-                    tgt = torch.zeros(batch_y.shape).permute(1,0,2)
+                    #tgt = torch.zeros(batch_y.shape).permute(1,0,2)
                     output = model(src,tgt)
                     loss = criterion(output, batch_y.squeeze(-1))
                     total_loss += loss.item()
@@ -183,11 +183,12 @@ class TorchLib:
         with torch.no_grad():
             for batch_x, batch_y in loader:
                 src = batch_x.permute(1,0,2)
-                tgt = torch.zeros(batch_y.shape).permute(1,0,2)
+                tgt = torch.full(batch_y.shape,float(0)).permute(1,0,2)
+                #tgt = batch_y.permute(1,0,2)
                 output = model(src, tgt)
                 if model.mapping:
-                    mean = model.mapping[1]['zd']['mean'] 
-                    std = model.mapping[1]['zd']['std'] 
+                    mean = next(iter(model.mapping[1].values()))['mean'] 
+                    std = next(iter(model.mapping[1].values()))['std'] 
                     print("\nbatch_y=",(batch_y*std)+mean,"\noutput=",(output*std)+mean)
                 else:
                     print("\nbatch_y=",batch_y,"\noutput=",output)
@@ -225,7 +226,7 @@ if __name__ == '__main__':
     conn = sqlite3.connect("daily_pro.db")
     df = pd.read_sql("select * from daily where code='000001'",conn)
     #df=pd.DataFrame({"c":range(300),"zd":range(300)})
-    epochs = 1000
+    epochs = 100
     lr = 0.001
     batch_size = 200
     source_seq = 10
