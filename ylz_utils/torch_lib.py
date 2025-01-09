@@ -158,11 +158,11 @@ class TransformerModel(nn.Module):
             target_seq_data = torch.stack([torch.from_numpy(df[i+source_seq:i+source_seq+target_seq][target_column].values).float() 
                                     for i in range(data_len) if eval(f"{key_column} in {filter}",{key_column:df[i:i+source_seq]['date'].iloc[-1]})])
         else:
-            source_key_data = np.array([df[i:i+source_seq][key_column].values for i in range(data_len)])
+            source_key_data = [df[i:i+source_seq][key_column].to_numpy().squeeze().tolist() for i in range(data_len)]
             source_seq_data = torch.stack([torch.from_numpy(df[i:i+source_seq][source_column].values).float() 
                                     for i in range(data_len)])
-            target_key_data = np.array([df[i+source_seq:i+source_seq+target_seq][key_column].values
-                                    for i in range(data_len)])
+            target_key_data = [df[i+source_seq:i+source_seq+target_seq][key_column].to_numpy().squeeze().tolist()
+                                    for i in range(data_len)]
             target_seq_data = torch.stack([torch.from_numpy(df[i+source_seq:i+source_seq+target_seq][target_column].values).float() 
                                     for i in range(data_len)])
 
@@ -248,11 +248,12 @@ class TransformerModel(nn.Module):
                 tgt = tgt.permute(1,0,2)
                 output = self(src, tgt)
                 if self.mapping:
-                    mean = self.mapping["target"][self.target_column[0]]['mapping']['__MEAN'] 
-                    std = self.mapping["target"][self.target_column[0]]['mapping']['__STD'] 
-                    print(batch_x_key,"===>",batch_y_key,"\nbatch_y=",(batch_y*std)+mean,"\noutput=",(output*std)+mean)
-                else:
-                    print(batch_x_key,"===>",batch_y_key,"\nbatch_y=",batch_y,"\noutput=",output)
+                    if self.mapping["target"][self.target_column[0]]["type"]=="number":
+                        mean = self.mapping["target"][self.target_column[0]]['mapping']['__MEAN'] 
+                        std = self.mapping["target"][self.target_column[0]]['mapping']['__STD'] 
+                        print(batch_x_key,"===>",batch_y_key,"\nbatch_y=",(batch_y*std)+mean,"\noutput=",(output*std)+mean)
+                    else:
+                        print(batch_x_key,"===>",batch_y_key,"\nbatch_y=",batch_y,"\noutput=",output)
         return output
 
 class TorchLib:
