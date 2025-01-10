@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ylz-utils"
-version = "0.3.29"
+version = "0.3.30"
 description = "ylz 工具类"
 authors = ["youht88"]
 readme = "README.md"
@@ -89,6 +89,7 @@ fastapi-cdn-host = "^0.8.2"
 torch = "2.2.1"
 numpy = "<2"
 cryptography = "^44.0.0"
+jieba = "^0.42.1"
 
 
 

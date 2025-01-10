@@ -3,8 +3,11 @@ import torch
 import torch.nn as nn
 import pandas as pd
 from torch.utils.data import DataLoader, Dataset
+from torch.autograd import Variable
 import torch.optim as optim
 import numpy as np
+import warnings
+import jieba
 
 class TransformerModel(nn.Module):
     def __init__(self, *, source_column:list[str],target_column:list[str],key_column:str,source_seq:int,target_seq:int=1,
@@ -29,7 +32,7 @@ class TransformerModel(nn.Module):
         self.source_embedder = nn.Linear(self.source_dim, d_model)
         self.target_embedder = nn.Linear(self.target_dim, d_model)
         self.positional_train = PositionalEncoding(d_model,dropout=dropout)
-        self.positional_eval = PositionalEncoding(d_model,dropout=0)
+        self.positional_eval = PositionalEncoding(d_model,dropout=dropout)
         self.transformer = nn.Transformer(d_model=d_model, nhead=nhead, num_encoder_layers=n_layers,num_decoder_layers=n_layers,dropout=dropout)
         self.fc = nn.Linear(d_model, self.target_dim)
 
@@ -56,13 +59,29 @@ class TransformerModel(nn.Module):
             target_column = self.target_column
         if not key_column:
             key_column = self.key_column
-        assert(source_column and target_column and key_column)
-        
+        assert(source_column and target_column)
         source_mapping_records = {}
         target_mapping_records = {}
         print("old df length=",len(df))
+        if not key_column:
+            key_column = '__INDEX'
+            df[key_column] = df.index
         df = df[source_column+target_column+[key_column]].dropna()
         print("no na df length=",len(df))
+
+        # 判断是否是文本类型的训练
+        if len(source_column)==1 and len(target_column)==1 and df[source_column[0]].dtypes == 'object' and df[target_column[0]].dtypes == 'object':
+            df['source_jieba'] = df[source_column[0]].apply(lambda x:jieba.lcut(x))
+            df['target_jieba'] = df[target_column[0]].apply(lambda x:jieba.lcut(x))
+            df['source_len'] = df['source_jieba'].str.len()
+            df['target_len'] = df['target_jieba'].str.len()
+            max_source_len = df['source_len'].max().item()
+            max_target_len = df['target_len'].max().item()
+            total_token = df['source_jieba'].to_list() + df['target_jieba'].to_list()
+            print(df)
+            print(max_source_len,max_target_len)
+            print(total_token)
+
         df=df.copy()
         columns = df.columns
         for col in columns:
@@ -142,27 +161,28 @@ class TransformerModel(nn.Module):
             source_seq = self.source_seq
         if not target_seq:
             target_seq = self.target_seq
-        assert(source_column and target_column and key_column)
+        assert(source_column and target_column)
         assert(source_seq and target_seq)
         df,source_mapping,target_mapping = self.encode_mapping(df)
         data_len = len(df) - source_seq - target_seq + 1
         # source_seq_data = torch.stack([source_data[i:i+source_seq] for i in range(data_len)])
         # target_seq_data = torch.stack([target_data[i+source_seq:i+source_seq+target_seq] for i in range(data_len)])
+        if not key_column:
+            key_column = '__INDEX'
         if filter:
-            source_key_data = [df[i:i+source_seq][key_column].to_numpy().squeeze().tolist()
-                                    for i in range(data_len) if eval(f"{key_column} in {filter}",{key_column:df[i:i+source_seq][key_column].iloc[-1]})]
+            source_key_data = [df[i:i+source_seq][key_column].tolist()
+                                for i in range(data_len) if eval(f"{key_column} in {filter}",{key_column:df[i:i+source_seq][key_column].iloc[-1]})]
+            target_key_data = [df[i+source_seq:i+source_seq+target_seq][key_column].tolist()
+                                for i in range(data_len) if eval(f"{key_column} in {filter}",{key_column:df[i:i+source_seq][key_column].iloc[-1]})]
             source_seq_data = torch.stack([torch.from_numpy(df[i:i+source_seq][source_column].values).float() 
                                     for i in range(data_len) if eval(f"{key_column} in {filter}",{key_column:df[i:i+source_seq][key_column].iloc[-1]})])
-            target_key_data = [df[i+source_seq:i+source_seq+target_seq][key_column].to_numpy().squeeze().tolist()
-                                    for i in range(data_len) if eval(f"{key_column} in {filter}",{key_column:df[i:i+source_seq]['date'].iloc[-1]})]
             target_seq_data = torch.stack([torch.from_numpy(df[i+source_seq:i+source_seq+target_seq][target_column].values).float() 
-                                    for i in range(data_len) if eval(f"{key_column} in {filter}",{key_column:df[i:i+source_seq]['date'].iloc[-1]})])
+                                    for i in range(data_len) if eval(f"{key_column} in {filter}",{key_column:df[i:i+source_seq][key_column].iloc[-1]})])
         else:
-            source_key_data = [df[i:i+source_seq][key_column].to_numpy().squeeze().tolist() for i in range(data_len)]
+            source_key_data = [df[i:i+source_seq][key_column].tolist() for i in range(data_len)]
+            target_key_data = [df[i+source_seq:i+source_seq+target_seq][key_column].tolist() for i in range(data_len)]
             source_seq_data = torch.stack([torch.from_numpy(df[i:i+source_seq][source_column].values).float() 
                                     for i in range(data_len)])
-            target_key_data = [df[i+source_seq:i+source_seq+target_seq][key_column].to_numpy().squeeze().tolist()
-                                    for i in range(data_len)]
             target_seq_data = torch.stack([torch.from_numpy(df[i+source_seq:i+source_seq+target_seq][target_column].values).float() 
                                     for i in range(data_len)])
 
@@ -197,8 +217,8 @@ class TransformerModel(nn.Module):
                 optimizer.zero_grad()
                 # 使用前一时间步的输入作为目标序列
                 src = batch_x.permute(1, 0, 2)
-                tgt = batch_y.permute(1, 0, 2)
-                #tgt = torch.zeros(batch_y.shape).permute(1,0,2)
+                #tgt = batch_y.permute(1, 0, 2)
+                tgt = torch.rand(batch_y.shape).permute(1,0,2)
                 output = self(src,tgt)
                 train_loss = criterion(output, batch_y.squeeze(-1))
                 train_loss.backward()
@@ -209,13 +229,13 @@ class TransformerModel(nn.Module):
             with torch.no_grad():
                 for batch_x, batch_y,_,_ in test_loader:
                     src = batch_x.permute(1, 0, 2)
-                    tgt = batch_y.permute(1, 0, 2)
-                    #tgt = torch.zeros(batch_y.shape).permute(1,0,2)
+                    #tgt = batch_y.permute(1, 0, 2)
+                    tgt = torch.rand(batch_y.shape).permute(1,0,2)
                     output = self(src,tgt)
                     loss = criterion(output, batch_y.squeeze(-1))
                     total_loss += loss.item()
             if (epoch + 1) % 1 == 0: 
-                print(f'Epoch [{epoch + 1}/{epochs}],Train Loss: {train_loss.item():.4f} , Val Loss: {total_loss / len(test_loader):.4f}')
+                print(f'Epoch [{epoch + 1}/{epochs}],Train Loss: {train_loss.item():.4f} , Val Loss: {total_loss / len(test_loader):.4f},Best Loss: {best_loss}')
             if total_loss < best_loss:
                 best_loss = total_loss
                 best_model = self
@@ -223,11 +243,11 @@ class TransformerModel(nn.Module):
                             "model_paramers":{"source_column":self.source_column,"target_column":self.target_column,"key_column":self.key_column,
                                         "source_seq":self.source_seq,"target_seq":self.target_seq,
                                         **best_model.paramers},
-                            "model":best_model.state_dict()},file_name)  
+                            "model":best_model.state_dict()},file_name) 
+        print(f"The best val loss is {best_loss}") 
     @classmethod
     def load_model(cls,file_name:str="model.pth"):
         model_dict = torch.load(file_name)
-        print(model_dict.keys())
         mapping =model_dict["mapping"]
         model_paramers = model_dict["model_paramers"]
         model = TransformerModel(**model_paramers,mapping=mapping) 
@@ -242,10 +262,8 @@ class TransformerModel(nn.Module):
         with torch.no_grad():
             for batch_x, batch_y,batch_x_key,batch_y_key in loader:
                 src = batch_x.permute(1,0,2)
-                tgt = batch_y
-                #tgt = torch.full(batch_y.shape,float(1))
-                #tgt = torch.from_numpy(np.random.rand(*(batch_y.shape)))
-                tgt = tgt.permute(1,0,2)
+                #tgt = batch_y.permute(1,0,2)
+                tgt = torch.rand(batch_y.shape).permute(1,0,2)
                 output = self(src, tgt)
                 if self.mapping:
                     if self.mapping["target"][self.target_column[0]]["type"]=="number":
@@ -255,7 +273,11 @@ class TransformerModel(nn.Module):
                     else:
                         print(batch_x_key,"===>",batch_y_key,"\nbatch_y=",batch_y,"\noutput=",output)
         return output
-
+    def subseqent_mask(self,size):
+        attn_shape = (1,size,size)
+        mask = np.triu(np.ones(attn_shape),k=1).astype('uint8')
+        return torch.from_numpy(1 - mask)
+    
 class TorchLib:
     @classmethod
     def to_df(cls,tensor:torch.Tensor,columns=[])->pd.DataFrame:
@@ -281,7 +303,13 @@ class TensorWithKeyDataset(Dataset):
     def __getitem__(self, idx):
         # 返回字符串和对应的数值
         return self.source_seq_data[idx], self.target_seq_data[idx] ,self.source_key_data[idx],self.target_key_data[idx]
-        
+class Embedding(torch.nn.Module):
+    def __init__(self,d_model:int,vocab:int):
+        super(Embedding,self).__init__()
+        self.lut = nn.Embedding(vocab,d_model)
+        self.d_model = d_model        
+    def forward(self,x):
+        return self.lut(x) * math.sqrt(self.d_model)
 class PositionalEncoding(torch.nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=5000):
         super(PositionalEncoding, self).__init__()
@@ -309,35 +337,82 @@ if __name__ == '__main__':
     import sqlite3
     args = sys.argv
     if len(args)<2:
-        print("usage: python torch_lib.py train|predict")
+        print("usage: python torch_lib.py train|predict|test")
         exit(1)
 
 
     conn = sqlite3.connect("daily_pro.db")
     df = pd.read_sql("select * from daily where code='000001'",conn)
     #df=pd.DataFrame({"c":range(300),"zd":range(300)})
-    key_column='date'
+    key_column=None #'date'
     source_column=['o','h','l','c','v','v_status','c_status','hs','zf','ma5c','ma10c','macd','szc','szv','ma5szc','ma10szc','szmacd']
     target_column=['zd']
     source_seq = 10
     target_seq = 1
+    
+    df=pd.DataFrame({"a":np.random.rand(300),"b":np.random.rand(300)})
+    df['diff'] = df['a'] - df['b']
+    df["c"] = df['diff'].rolling(window=10).mean()
+    key_column=None #'date'
+    source_column=['a','b']
+    target_column=['c']
+    source_seq = 10
+    target_seq = 1
+    
     d_model=64
     batch_size = 200
     epochs = 100
     lr = 0.001
+    warnings.filterwarnings("ignore")
 
     if args[1].lower()=='train':
-        model = TransformerModel(source_column=source_column,target_column=target_column,key_column=key_column,
-                                 source_seq = source_seq,target_seq = target_seq,
-                                 d_model=d_model)
-        model.set_dataloader(df,batch_size=batch_size,filter=[])
-        print("mapping=",model.mapping)
-        model.model_train(epochs = epochs,lr = lr)
+        try:
+            model = TransformerModel(source_column=source_column,target_column=target_column,key_column=key_column,
+                                    source_seq = source_seq,target_seq = target_seq,
+                                    d_model=d_model)
+            model.set_dataloader(df,batch_size=batch_size,filter=[])
+            model.model_train(epochs = epochs,lr = lr)
+        except Exception as e:
+            print(f"ERROR is {e}")
+            print(f"YOU should define a pd.DataFrame with columns and seq which defined by below arguments:")
+            print(f"key_column is {model.key_column}")
+            print(f"source_column is {model.source_column} and source_seq is {model.source_seq}")
+            print(f"source_column is {model.target_column} and source_seq is {model.target_seq}")
+    elif args[1].lower()=='predict':
+        try:
+            #filter = ['2024-12-30','2024-12-31','2025-01-02','2025-01-08']
+            filter = [50,100,150,200,250]
+            model:TransformerModel = TransformerModel.load_model("model.pth") 
+            model.set_dataloader(df,batch_size=1,split=1,filter=filter)
+            pred = model.model_predict()
+        except Exception as e:
+            print(f"ERROR is {e}")
+            print(f"YOU should define a pd.DataFrame with columns and seq which defined by below arguments:")
+            print(f"key_column is {model.key_column}")
+            print(f"source_column is {model.source_column} and source_seq is {model.source_seq}")
+            print(f"source_column is {model.target_column} and source_seq is {model.target_seq}")
     else:
-        filter = ['2024-12-30','2024-12-31','2025-01-02','2025-01-08']
-        model:TransformerModel = TransformerModel.load_model("model.pth") 
-        model.set_dataloader(df,batch_size=1,split=1,filter=filter)
-        pred = model.model_predict()
-    
-    
-        
+        try:
+            df = pd.DataFrame({"input":["美国总统是谁?","厦门今天天气如何?"],"output":["特朗普","晴朗"]})
+            key_column=None #'date'
+            source_column=['input']
+            target_column=['output']
+            source_seq = 10
+            target_seq = 1
+            d_model = 512
+            
+            model = TransformerModel(source_column=source_column,target_column=target_column,key_column=key_column,
+                                    source_seq = source_seq,target_seq = target_seq,
+                                    d_model=d_model)
+            model.set_dataloader(df,batch_size=batch_size,filter=[])
+            model.model_train(epochs = epochs,lr = lr)
+
+            # input = torch.LongTensor([[0,2,0,5],[4,3,2,9]])
+            # d_model = 512
+            # vocab = 1000
+            # embedding = Embedding(d_model,vocab)
+            # emb = embedding(input)
+            # print(emb,"\n",emb.shape)
+        except Exception as e:
+            print(f"ERROR is {e}")
+            
