@@ -32,7 +32,7 @@ class TransformerModel(nn.Module):
         self.source_embedder = nn.Linear(self.source_dim, d_model)
         self.target_embedder = nn.Linear(self.target_dim, d_model)
         self.positional_train = PositionalEncoding(d_model,dropout=dropout)
-        self.positional_eval = PositionalEncoding(d_model,dropout=dropout)
+        self.positional_eval = PositionalEncoding(d_model,dropout=0)
         self.transformer = nn.Transformer(d_model=d_model, nhead=nhead, num_encoder_layers=n_layers,num_decoder_layers=n_layers,dropout=dropout)
         self.fc = nn.Linear(d_model, self.target_dim)
 
@@ -219,6 +219,7 @@ class TransformerModel(nn.Module):
                 src = batch_x.permute(1, 0, 2)
                 #tgt = batch_y.permute(1, 0, 2)
                 tgt = torch.rand(batch_y.shape).permute(1,0,2)
+                #tgt = batch_x[:,-1,-1].permute(1,0,2)
                 output = self(src,tgt)
                 train_loss = criterion(output, batch_y.squeeze(-1))
                 train_loss.backward()
@@ -231,6 +232,7 @@ class TransformerModel(nn.Module):
                     src = batch_x.permute(1, 0, 2)
                     #tgt = batch_y.permute(1, 0, 2)
                     tgt = torch.rand(batch_y.shape).permute(1,0,2)
+                    #tgt = batch_x[:,-1,-1].permute(1,0,2)
                     output = self(src,tgt)
                     loss = criterion(output, batch_y.squeeze(-1))
                     total_loss += loss.item()
@@ -263,7 +265,8 @@ class TransformerModel(nn.Module):
             for batch_x, batch_y,batch_x_key,batch_y_key in loader:
                 src = batch_x.permute(1,0,2)
                 #tgt = batch_y.permute(1,0,2)
-                tgt = torch.rand(batch_y.shape).permute(1,0,2)
+                #tgt = torch.rand(batch_y.shape).permute(1,0,2)
+                tgt = batch_x[:,-1,:-1].permute(1,0,2)
                 output = self(src, tgt)
                 if self.mapping:
                     if self.mapping["target"][self.target_column[0]]["type"]=="number":
@@ -345,26 +348,29 @@ if __name__ == '__main__':
     df = pd.read_sql("select * from daily where code='000001'",conn)
     #df=pd.DataFrame({"c":range(300),"zd":range(300)})
     key_column=None #'date'
-    source_column=['o','h','l','c','v','v_status','c_status','hs','zf','ma5c','ma10c','macd','szc','szv','ma5szc','ma10szc','szmacd']
+    source_column=['o','h','l','c','v','hs','zf','ma5c','ma10c','szc','szv','ma5szc','ma10szc']
     target_column=['zd']
     source_seq = 10
     target_seq = 1
     
-    df=pd.DataFrame({"a":np.random.rand(300),"b":np.random.rand(300)})
+    
+    df=pd.DataFrame({"a":np.random.rand(300),"b":np.random.rand(300),"c":np.random.rand(300)})
     df['diff'] = df['a'] - df['b']
-    df["c"] = df['diff'].rolling(window=10).mean()
+    df["z"] = df['diff'].shift(1).rolling(window=10).std()
     key_column=None #'date'
     source_column=['a','b']
-    target_column=['c']
-    source_seq = 10
+    target_column=['z']
+    source_seq = 10 
     target_seq = 1
-    
+   
+
     d_model=64
-    batch_size = 200
-    epochs = 100
+    batch_size = 800
+    epochs = 10000
     lr = 0.001
     warnings.filterwarnings("ignore")
 
+    print(df.head(50))
     if args[1].lower()=='train':
         try:
             model = TransformerModel(source_column=source_column,target_column=target_column,key_column=key_column,
@@ -381,7 +387,7 @@ if __name__ == '__main__':
     elif args[1].lower()=='predict':
         try:
             #filter = ['2024-12-30','2024-12-31','2025-01-02','2025-01-08']
-            filter = [50,100,150,200,250]
+            filter = [20,50,100,150,200,250]
             model:TransformerModel = TransformerModel.load_model("model.pth") 
             model.set_dataloader(df,batch_size=1,split=1,filter=filter)
             pred = model.model_predict()
