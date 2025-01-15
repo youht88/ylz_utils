@@ -12,7 +12,7 @@ import jieba
 class TransformerModel(nn.Module):
     def __init__(self, *, source_column:list[str],target_column:list[str],key_column:str,source_seq:int,target_seq:int=1,
                  d_model:int, nhead:int=4, n_layers:int=6,dropout=0.1,
-                 is_embedded:bool=False,is_positional:bool=False,mapping=None):
+                 is_embedded:bool=False,is_positional:bool=False,norm_type=None,mapping=None):
         super(TransformerModel, self).__init__()
         self.mapping=mapping
         self.source_column = source_column
@@ -24,11 +24,12 @@ class TransformerModel(nn.Module):
         self.target_seq = target_seq
         self.is_embedded = is_embedded
         self.is_positional = is_positional
+        self.norm_type = norm_type
         
         self.paramers = {"source_column":source_column,"target_column":target_column,"key_column":key_column,
                          "source_seq":source_seq,"target_seq":target_seq,
                          "d_model":d_model,"nhead":nhead,"n_layers":n_layers,"dropout":dropout,
-                         "is_embedded":is_embedded,"is_positional":is_positional}
+                         "is_embedded":is_embedded,"is_positional":is_positional,"norm_type":norm_type}
         self.source_embedder = nn.Linear(self.source_dim, d_model)
         self.target_embedder = nn.Linear(self.target_dim, d_model)
         self.positional_train = PositionalEncoding(d_model,dropout=dropout)
@@ -103,12 +104,14 @@ class TransformerModel(nn.Module):
                         df[col] = df[col].map(source_mapping_dict)
                 else:
                     col_type = 'number'
-                    # 每列数值型进行标准化
-                    mean = df[col].mean()
-                    std = df[col].std()
-                    df[col] = (df[col] - mean)/std
-                    source_mapping_dict["__MEAN"] = mean
-                    source_mapping_dict["__STD"] = std
+                    source_mapping_dict["__NORM_TYPE"] = self.norm_type
+                    if self.norm_type == 'std':
+                        # 每列数值型进行标准化
+                        mean = df[col].mean()
+                        std = df[col].std()
+                        df[col] = (df[col] - mean)/std
+                        source_mapping_dict["__MEAN"] = mean
+                        source_mapping_dict["__STD"] = std       
                 source_mapping_records[col] = {
                     'positions': df.columns.get_loc(col),
                     'type':col_type,
@@ -135,12 +138,14 @@ class TransformerModel(nn.Module):
                         df[col] = df[col].map(target_mapping_dict)
                 else:
                     col_type = 'number'
-                    # 每列数值型标准化
-                    mean = df[col].mean()
-                    std = df[col].std()
-                    df[col] = (df[col] - mean)/std               
-                    target_mapping_dict["__MEAN"] = mean
-                    target_mapping_dict["__STD"] = std
+                    target_mapping_dict["__NORM_TYPE"] = self.norm_type
+                    if self.norm_type == 'std':
+                        # 每列数值型标准化
+                        mean = df[col].mean()
+                        std = df[col].std()
+                        df[col] = (df[col] - mean)/std               
+                        target_mapping_dict["__MEAN"] = mean
+                        target_mapping_dict["__STD"] = std
                 target_mapping_records[col] = {
                     'positions': df.columns.get_loc(col),
                     'type':col_type,
@@ -172,18 +177,18 @@ class TransformerModel(nn.Module):
         if filter:
             source_key_data = [df[i:i+source_seq][key_column].tolist()
                                 for i in range(data_len) if eval(f"{key_column} in {filter}",{key_column:df[i:i+source_seq][key_column].iloc[-1]})]
-            target_key_data = [df[i+source_seq:i+source_seq+target_seq][key_column].tolist()
+            target_key_data = [df[i+target_seq:i+source_seq+target_seq][key_column].tolist()
                                 for i in range(data_len) if eval(f"{key_column} in {filter}",{key_column:df[i:i+source_seq][key_column].iloc[-1]})]
             source_seq_data = torch.stack([torch.from_numpy(df[i:i+source_seq][source_column].values).float() 
                                     for i in range(data_len) if eval(f"{key_column} in {filter}",{key_column:df[i:i+source_seq][key_column].iloc[-1]})])
-            target_seq_data = torch.stack([torch.from_numpy(df[i+source_seq:i+source_seq+target_seq][target_column].values).float() 
+            target_seq_data = torch.stack([torch.from_numpy(df[i+target_seq:i+source_seq+target_seq][target_column].values).float() 
                                     for i in range(data_len) if eval(f"{key_column} in {filter}",{key_column:df[i:i+source_seq][key_column].iloc[-1]})])
         else:
             source_key_data = [df[i:i+source_seq][key_column].tolist() for i in range(data_len)]
-            target_key_data = [df[i+source_seq:i+source_seq+target_seq][key_column].tolist() for i in range(data_len)]
+            target_key_data = [df[i+target_seq:i+source_seq+target_seq][key_column].tolist() for i in range(data_len)]
             source_seq_data = torch.stack([torch.from_numpy(df[i:i+source_seq][source_column].values).float() 
                                     for i in range(data_len)])
-            target_seq_data = torch.stack([torch.from_numpy(df[i+source_seq:i+source_seq+target_seq][target_column].values).float() 
+            target_seq_data = torch.stack([torch.from_numpy(df[i+target_seq:i+source_seq+target_seq][target_column].values).float() 
                                     for i in range(data_len)])
 
         train_size = int(len(source_seq_data)*split)        
@@ -209,6 +214,8 @@ class TransformerModel(nn.Module):
         assert(train_loader and test_loader)
         criterion = nn.MSELoss()
         optimizer = optim.Adam(self.parameters(),lr=lr)
+        # 学习率调度器
+        #scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)                         
         best_loss = float('inf')
         for epoch in range(epochs):
             # 训练模型
@@ -218,12 +225,14 @@ class TransformerModel(nn.Module):
                 # 使用前一时间步的输入作为目标序列
                 src = batch_x.permute(1, 0, 2)
                 #tgt = batch_y.permute(1, 0, 2)
-                tgt = torch.rand(batch_y.shape).permute(1,0,2)
+                #tgt = torch.rand(batch_y.shape).permute(1,0,2)
                 #tgt = batch_x[:,-1,-1].permute(1,0,2)
+                tgt = torch.cat([batch_y[:,:-1,:],torch.rand(batch_y.size(0),1,batch_y.size(2))],dim=1).permute(1,0,2)
                 output = self(src,tgt)
-                train_loss = criterion(output, batch_y.squeeze(-1))
+                train_loss = criterion(output[-1,:], batch_y.squeeze(-1))
                 train_loss.backward()
-                optimizer.step()            
+                optimizer.step()
+                #scheduler.step() 
             # 验证模型
             self.eval()
             total_loss = 0.0
@@ -231,13 +240,14 @@ class TransformerModel(nn.Module):
                 for batch_x, batch_y,_,_ in test_loader:
                     src = batch_x.permute(1, 0, 2)
                     #tgt = batch_y.permute(1, 0, 2)
-                    tgt = torch.rand(batch_y.shape).permute(1,0,2)
+                    #tgt = torch.rand(batch_y.shape).permute(1,0,2)
                     #tgt = batch_x[:,-1,-1].permute(1,0,2)
+                    tgt = torch.cat([batch_y[:,:-1,:],torch.rand(batch_y.size(0),1,batch_y.size(2))],dim=1).permute(1,0,2)
                     output = self(src,tgt)
-                    loss = criterion(output, batch_y.squeeze(-1))
+                    loss = criterion(output[-1,:], batch_y.squeeze(-1))
                     total_loss += loss.item()
             if (epoch + 1) % 1 == 0: 
-                print(f'Epoch [{epoch + 1}/{epochs}],Train Loss: {train_loss.item():.4f} , Val Loss: {total_loss / len(test_loader):.4f},Best Loss: {best_loss}')
+                print(f'Epoch [{epoch + 1}/{epochs}],Train Loss: {train_loss.item():.4f} , Val Loss: {total_loss / len(test_loader):.4f} , Best Loss: {best_loss}')
             if total_loss < best_loss:
                 best_loss = total_loss
                 best_model = self
@@ -265,16 +275,16 @@ class TransformerModel(nn.Module):
             for batch_x, batch_y,batch_x_key,batch_y_key in loader:
                 src = batch_x.permute(1,0,2)
                 #tgt = batch_y.permute(1,0,2)
-                #tgt = torch.rand(batch_y.shape).permute(1,0,2)
-                tgt = batch_x[:,-1,:-1].permute(1,0,2)
+                tgt = torch.cat([batch_y[:,:-1,:],torch.rand(batch_y.size(0),1,batch_y.size(2))],dim=1).permute(1,0,2)
+                #tgt = batch_x[:,-1,:-1].permute(1,0,2)
                 output = self(src, tgt)
                 if self.mapping:
-                    if self.mapping["target"][self.target_column[0]]["type"]=="number":
+                    if self.mapping["target"][self.target_column[0]]["type"]=="number" and self.mapping["target"][self.target_column[0]]["mapping"]['__NORM_TYPE']=="std":
                         mean = self.mapping["target"][self.target_column[0]]['mapping']['__MEAN'] 
                         std = self.mapping["target"][self.target_column[0]]['mapping']['__STD'] 
-                        print(batch_x_key,"===>",batch_y_key,"\nbatch_y=",(batch_y*std)+mean,"\noutput=",(output*std)+mean)
+                        print(batch_x_key,"1===>",batch_y_key,"\nbatch_y=",((batch_y*std)+mean)[:,:],"\noutput=",((output*std)+mean)[-1])
                     else:
-                        print(batch_x_key,"===>",batch_y_key,"\nbatch_y=",batch_y,"\noutput=",output)
+                        print(batch_x_key,"2===>",batch_y_key,"\nbatch_y=",batch_y[:,-1],"\noutput=",output[-1])
         return output
     def subseqent_mask(self,size):
         attn_shape = (1,size,size)
@@ -354,7 +364,7 @@ if __name__ == '__main__':
     target_seq = 1
     
     
-    df=pd.DataFrame({"a":np.random.rand(300),"b":np.random.rand(300),"c":np.random.rand(300)})
+    df=pd.DataFrame({"a":np.random.rand(300)*1000,"b":np.random.rand(300)*1000,"c":np.random.rand(300)*1000})
     df['diff'] = df['a'] - df['b']
     df["z"] = df['diff'].shift(1).rolling(window=10).std()
     key_column=None #'date'
@@ -365,8 +375,11 @@ if __name__ == '__main__':
    
 
     d_model=64
+    nhead = 4
+    n_layers = 6
+    norm_type = 'std'
     batch_size = 800
-    epochs = 10000
+    epochs = 50
     lr = 0.001
     warnings.filterwarnings("ignore")
 
@@ -375,7 +388,8 @@ if __name__ == '__main__':
         try:
             model = TransformerModel(source_column=source_column,target_column=target_column,key_column=key_column,
                                     source_seq = source_seq,target_seq = target_seq,
-                                    d_model=d_model)
+                                    nhead=nhead,n_layers=n_layers,
+                                    d_model=d_model,norm_type=norm_type)
             model.set_dataloader(df,batch_size=batch_size,filter=[])
             model.model_train(epochs = epochs,lr = lr)
         except Exception as e:

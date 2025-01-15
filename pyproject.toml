@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ylz-utils"
-version = "0.3.30"
+version = "0.3.31"
 description = "ylz 工具类"
 authors = ["youht88"]
 readme = "README.md"
@@ -90,6 +90,7 @@ torch = "2.2.1"
 numpy = "<2"
 cryptography = "^44.0.0"
 jieba = "^0.42.1"
+scikit-learn = "^1.6.1"
 
 
 
