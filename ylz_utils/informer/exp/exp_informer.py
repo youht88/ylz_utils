@@ -60,17 +60,21 @@ class Exp_Informer(Exp_Basic):
     def _get_data(self, flag):
         args = self.args
 
-        data_dict = {
-            'ETTh1':Dataset_ETT_hour,
-            'ETTh2':Dataset_ETT_hour,
-            'ETTm1':Dataset_ETT_minute,
-            'ETTm2':Dataset_ETT_minute,
-            'WTH':Dataset_Custom,
-            'ECL':Dataset_Custom,
-            'Solar':Dataset_Custom,
-            'custom':Dataset_Custom,
-        }
-        Data = data_dict[self.args.data]
+        if args.data:
+            data_dict = {
+                'ETTh1':Dataset_ETT_hour,
+                'ETTh2':Dataset_ETT_hour,
+                'ETTm1':Dataset_ETT_minute,
+                'ETTm2':Dataset_ETT_minute,
+                'WTH':Dataset_Custom,
+                'ECL':Dataset_Custom,
+                'Solar':Dataset_Custom,
+                'custom':Dataset_Custom,
+            }
+            Data = data_dict[self.args.data]
+        else:
+            Data = Dataset_Custom
+
         timeenc = 0 if args.embed!='timeF' else 1
 
         if flag == 'test':
@@ -83,14 +87,16 @@ class Exp_Informer(Exp_Basic):
         data_set = Data(
             root_path=args.root_path,
             data_path=args.data_path,
+            sql = args.sql,
             flag=flag,
             size=[args.seq_len, args.label_len, args.pred_len],
             features=args.features,
+            key = args.key,
+            cols=args.cols,
             target=args.target,
             inverse=args.inverse,
             timeenc=timeenc,
-            freq=freq,
-            cols=args.cols
+            freq=freq
         )
         print(flag, len(data_set))
         data_loader = DataLoader(

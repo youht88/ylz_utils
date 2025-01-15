@@ -1,4 +1,5 @@
 import os
+import sqlite3
 import numpy as np
 import pandas as pd
 
@@ -187,7 +188,7 @@ class Dataset_ETT_minute(Dataset):
 
 class Dataset_Custom(Dataset):
     def __init__(self, root_path, flag='train', size=None, 
-                 features='S', data_path='ETTh1.csv', 
+                 features='S', data_path='ETTh1.csv', sql = None,key='date',
                  target='OT', scale=True, inverse=False, timeenc=0, freq='h', cols=None):
         # size [seq_len, label_len, pred_len]
         # info
@@ -213,12 +214,19 @@ class Dataset_Custom(Dataset):
         self.cols=cols
         self.root_path = root_path
         self.data_path = data_path
+        self.sql = sql
+        self.key = key
         self.__read_data__()
 
     def __read_data__(self):
         self.scaler = StandardScaler()
-        df_raw = pd.read_csv(os.path.join(self.root_path,
-                                          self.data_path))
+        if self.sql:
+            conn = sqlite3.connect(os.path.join(self.root_path,
+                                            self.data_path))
+            df_raw = pd.read_sql(self.sql,conn)
+        else:
+            df_raw = pd.read_csv(os.path.join(self.root_path,
+                                            self.data_path))
         '''
         df_raw.columns: ['date', ...(other features), target feature]
         '''
@@ -227,12 +235,14 @@ class Dataset_Custom(Dataset):
             cols=self.cols.copy()
             cols.remove(self.target)
         else:
-            cols = list(df_raw.columns); cols.remove(self.target); cols.remove('date')
-        df_raw = df_raw[['date']+cols+[self.target]]
-
+            cols = list(df_raw.columns); cols.remove(self.target); cols.remove(self.key)
+        df_raw = df_raw[[self.key]+cols+[self.target]]
+        print("????",df_raw)
         num_train = int(len(df_raw)*0.7)
         num_test = int(len(df_raw)*0.2)
         num_vali = len(df_raw) - num_train - num_test
+        print("????",num_train,num_test,num_vali)
+        
         border1s = [0, num_train-self.seq_len, len(df_raw)-num_test-self.seq_len]
         border2s = [num_train, num_train+num_vali, len(df_raw)]
         border1 = border1s[self.set_type]
@@ -251,8 +261,8 @@ class Dataset_Custom(Dataset):
         else:
             data = df_data.values
             
-        df_stamp = df_raw[['date']][border1:border2]
-        df_stamp['date'] = pd.to_datetime(df_stamp.date)
+        df_stamp = df_raw[[self.key]][border1:border2]
+        df_stamp[self.key] = pd.to_datetime(df_stamp.date)
         data_stamp = time_features(df_stamp, timeenc=self.timeenc, freq=self.freq)
 
         self.data_x = data[border1:border2]

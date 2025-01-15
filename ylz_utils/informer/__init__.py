@@ -9,11 +9,15 @@ if __name__ == '__main__':
 
     parser.add_argument('--model', type=str, required=True, default='informer',help='model of experiment, options: [informer, informerstack, informerlight(TBD)]')
 
-    parser.add_argument('--data', type=str, required=True, default='ETTh1', help='data')
-    parser.add_argument('--root_path', type=str, default='./data/ETT/', help='root path of the data file')
-    parser.add_argument('--data_path', type=str, default='ETTh1.csv', help='data file')    
+    parser.add_argument('--data', type=str, help='data')
+    parser.add_argument('--sql',type=str, help='sql of fetch data from db')
+    parser.add_argument('--root_path', type=str, default='./', help='root path of the data file')
+    parser.add_argument('--data_path', type=str, help='data csv file or sqlite3 db file') 
+       
     parser.add_argument('--features', type=str, default='M', help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
-    parser.add_argument('--target', type=str, default='OT', help='target feature in S or MS task')
+    parser.add_argument('--cols', type=str, help='certain cols from the data files as the input features')
+    parser.add_argument('--key', type=str, default='date', help='certain key from the data files as the date column')
+    parser.add_argument('--target', type=str, help='target feature in S or MS task')
     parser.add_argument('--freq', type=str, default='h', help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
     parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
 
@@ -41,7 +45,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_attention', action='store_true', help='whether to output attention in ecoder')
     parser.add_argument('--do_predict', action='store_true', help='whether to predict unseen future data')
     parser.add_argument('--mix', action='store_false', help='use mix attention in generative decoder', default=True)
-    parser.add_argument('--cols', type=str, nargs='+', help='certain cols from the data files as the input features')
+    
     parser.add_argument('--num_workers', type=int, default=0, help='data loader num workers')
     parser.add_argument('--itr', type=int, default=2, help='experiments times')
     parser.add_argument('--train_epochs', type=int, default=6, help='train epochs')
@@ -68,7 +72,8 @@ if __name__ == '__main__':
         device_ids = args.devices.split(',')
         args.device_ids = [int(id_) for id_ in device_ids]
         args.gpu = args.device_ids[0]
-
+    assert (args.data and not args.sql) or (not args.data and args.sql), "must define args one of --data or --sql"
+    
     data_parser = {
         'ETTh1':{'data':'ETTh1.csv','T':'OT','M':[7,7,7],'S':[1,1,1],'MS':[7,7,1]},
         'ETTh2':{'data':'ETTh2.csv','T':'OT','M':[7,7,7],'S':[1,1,1],'MS':[7,7,1]},
@@ -78,12 +83,29 @@ if __name__ == '__main__':
         'ECL':{'data':'ECL.csv','T':'MT_320','M':[321,321,321],'S':[1,1,1],'MS':[321,321,1]},
         'Solar':{'data':'solar_AL.csv','T':'POWER_136','M':[137,137,137],'S':[1,1,1],'MS':[137,137,1]},
     }
+    if args.cols:
+        args.cols = [item.strip() for item in args.cols.replace(' ','').split(',')]
     if args.data in data_parser.keys():
         data_info = data_parser[args.data]
         args.data_path = data_info['data']
         args.target = data_info['T']
         args.enc_in, args.dec_in, args.c_out = data_info[args.features]
-
+    elif args.sql:
+        assert ( args.key and args.cols and args.target ),"must define args of --key,--cols,--target. this default --key is 'date'"
+        assert ( args.data_path ) , "must define args of --data_path ,such as 'daily_pro.db'"
+        args.cols.append(args.key)
+        args.cols.append(args.target)
+        cols_len = len(args.cols)        
+        if cols_len==2:            
+            args.features = 'S'
+            args.enc_in, args.dec_in, args.c_out = [1,1,1]
+        else:
+            if args.features == 'M':
+                args.enc_in, args.dec_in, args.c_out = [cols_len,cols_len,cols_len+1]
+            elif args.features == 'MS':
+                args.enc_in, args.dec_in, args.c_out = [cols_len,cols_len,1]
+            else:
+                raise Exception("--features=='S' and length of --cols !=1 are not allowed!")
     args.s_layers = [int(s_l) for s_l in args.s_layers.replace(' ','').split(',')]
     args.detail_freq = args.freq
     args.freq = args.freq[-1:]
