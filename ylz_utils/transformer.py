@@ -20,8 +20,10 @@ class TransformerModel(nn.Module):
         self.target_column = target_column
         self.target_dim = len(target_column)
         self.key_column = key_column
+        self.all_dim = self.source_dim + self.target_dim
         self.source_seq = source_seq
         self.target_seq = target_seq
+        self.d_model = d_model
         self.is_embedded = is_embedded
         self.is_positional = is_positional
         self.norm_type = norm_type
@@ -34,13 +36,16 @@ class TransformerModel(nn.Module):
         self.target_embedder = nn.Linear(self.target_dim, d_model)
         self.positional_train = PositionalEncoding(d_model,dropout=dropout)
         self.positional_eval = PositionalEncoding(d_model,dropout=0)
+        self.layerNorm = nn.LayerNorm(self.d_model)
         self.transformer = nn.Transformer(d_model=d_model, nhead=nhead, num_encoder_layers=n_layers,num_decoder_layers=n_layers,dropout=dropout)
         self.fc = nn.Linear(d_model, self.target_dim)
 
     def forward(self, src, tgt):
+        # 嵌入
         if not self.is_embedded:
             src = self.source_embedder(src)
             tgt = self.target_embedder(tgt)
+        #位置编码
         if not self.is_positional:
             if self.training:
                 src = self.positional_train(src)
@@ -48,6 +53,9 @@ class TransformerModel(nn.Module):
             else:
                 src = self.positional_eval(src)
                 tgt = self.positional_eval(tgt)
+        #Layer Norm
+        src = self.layerNorm(src)
+        tgt = self.layerNorm(tgt)
 
         output = self.transformer(src,tgt)
         output = self.fc(output)
