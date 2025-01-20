@@ -2,7 +2,7 @@ import argparse
 import os
 import torch
 
-from ylz_utils.informer.exp.exp_informer import Exp_Informer
+from ylz_utils.torch.informer.exp.exp_informer import Exp_Informer
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='[Informer] Long Sequences Forecasting')
