@@ -1,3 +1,5 @@
+python -u ylz_utils/torch/informer/__init__.py --model informer --data WTH --features M --attn prob --d_layers 2 --e_layers 3 --itr 3 --label_len 168 --pred_len 24 --seq_len 168 --des 'Exp'
+
 ### M
 python -u main_informer.py --model informer --data WTH --features M --attn prob --d_layers 2 --e_layers 3 --itr 3 --label_len 168 --pred_len 24 --seq_len 168 --des 'Exp'
 

@@ -69,6 +69,12 @@ LLM:
             - ${DASHSCOPE_API_KEY}
         BASE_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
         MODEL: ${DASHSCOPE_LLM_MODEL}
+    MODELSCOPE:
+        API_KEYS: 
+            - ${MODELSCOPE_API_KEYS}
+            - ${MODELSCOPE_API_KEY}
+        BASE_URL: https://api-inference.modelscope.cn/v1/
+        MODEL: ${MODELSCOPE_LLM_MODEL}
     ZHIPU:
         API_KEYS: 
             - ${ZHIPU_API_KEYS}

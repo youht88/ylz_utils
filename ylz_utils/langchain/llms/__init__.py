@@ -264,7 +264,9 @@ class LLMLib():
                     "LLM.FREE":
                         {"model":"gpt-4o-mini","temperature":0},
                     "LLM.X":
-                        {"model":"grok-beta","temperature":0}
+                        {"model":"grok-beta","temperature":0},
+                    "LLM.MODELSCOPE":
+                        {"model":"Qwen/Qwen2.5-VL-32B-Instruct","temperature":0}
                     }
         for key in defaults:
             default = defaults[key]
