@@ -3,6 +3,8 @@ from ylz_utils.data import Spinner, StringLib
 
 from langchain_core.messages import HumanMessage
 
+from ylz_utils.langchain.messages import HumanMessageWithImage
+
 def input_with_readline(prompt):
     try:
         return input(prompt)
@@ -55,7 +57,7 @@ def start_chat(langchainLib:LangchainLib,args):
         if message.lower().startswith('/m'):
             image_url = message.split(" ")[1]
             if image_url:
-                images.append({"image":image_url})
+                images.append(image_url)
             message = ""
             continue
         if message.lower().startswith('/flux'):
@@ -70,16 +72,16 @@ def start_chat(langchainLib:LangchainLib,args):
             message = ""
             continue
         if images:
-            humanMessage = HumanMessage(content = images + [{"text":message}])
+            humanMessage = HumanMessageWithImage(content = message ,image = images)
+            print("???",humanMessage)
             res = llm.stream([humanMessage],{'configurable': {'user_id': user_id,'conversation_id': conversation_id}})
             print("AI: ",end="")
             try:
                 for chunk in res:
-                    print(chunk.content[0]['text'],end="")
-            except:
-                print("error!!!!")
-                print(type(chunk))
-                print(chunk)
+                    # chunk type is AIMessageChunk
+                    print(chunk.content,end="")
+            except Exception as e:
+                print(f"原始数据类型:{type(chunk)}原始数据:{chunk},错误原因:{e}")
             images = []
             message = ""
             print("\n")        
@@ -89,6 +91,7 @@ def start_chat(langchainLib:LangchainLib,args):
             message = ""
             print("AI: ",end="")
             for chunk in res:
+                # chunk type is str
                 print(chunk,end="")
             print("\n")
     print("\n",langchainLib.get_llm(full=True))

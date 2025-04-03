@@ -22,6 +22,7 @@ except:
 from langchain_community.chat_models import QianfanChatEndpoint
 from langchain_community.chat_models import ChatTongyi
 from langchain_ollama import ChatOllama
+from langchain_modelscope import ModelScopeChatEndpoint
 
 try:
     from langchain_huggingface import HuggingFaceEndpoint,HuggingFacePipeline,ChatHuggingFace
@@ -117,7 +118,7 @@ class LLMLib():
         )
 
     def get_llm(self,key=None, model=None, temperature=None, full=False, delay=10) -> \
-              Union[ChatOpenAI, ChatOllama , ChatTongyi]:
+              Union[ChatOpenAI, ChatOllama , ChatTongyi,ModelScopeChatEndpoint]:
         if full:
             return self.llms
         if self.llms:
@@ -216,6 +217,13 @@ class LLMLib():
                                 llm['llm'] = ChatHuggingFace(llm=hf_endpoint)
                             except:
                                 raise Exception(f"请确保{llm_type}_API_KEYS环境变量被正确设置")                                
+                        elif llm_type == 'LLM.MODELSCOPE':
+                            llm['llm'] = ModelScopeChatEndpoint(
+                                base_url = llm.get('base_url'),
+                                api_key = llm.get('api_key'),
+                                model = llm.get('model'),
+                                temperature= temperature or llm.get('temperature')
+                            )
                         else:
                             try:
                                 llm['llm'] = ChatOpenAI(
