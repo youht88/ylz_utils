@@ -35,6 +35,10 @@ async def gemini_25_graph():
             "command": "python",
             "args": ["/Users/youht/source/python/mcp_test/src/server/math_server.py"],
             "transport": "stdio"
+        },
+        "weather":{
+            "url": "http://localhost:8000/sse",
+            "transport": "sse"
         }
     }) as client:
         llm = langchainLib.get_llm(model="google/gemini-2.5-pro-exp-03-25:free")
@@ -48,6 +52,10 @@ async def deepseek_v3_graph():
             "command": "python",
             "args": ["/Users/youht/source/python/mcp_test/src/server/math_server.py"],
             "transport": "stdio"
+        },
+        "weather":{
+            "url": "http://localhost:8000/sse",
+            "transport": "sse"
         }
     }) as client:
         llm = langchainLib.get_llm(model="deepseek/deepseek-chat-v3-0324:free")
