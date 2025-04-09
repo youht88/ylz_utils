@@ -4,10 +4,10 @@ import logging
 import argparse
 from argparse import Namespace
 
-from ylz_utils.cli.init import init
+from ylz_utils.cli.set_logger import set_logger
 
 from ylz_utils.cli.neo4j import neo4j_test
-from ylz_utils.cli.reset import reset
+from ylz_utils.cli.init import init
 from ylz_utils.cli.start import start
 from ylz_utils.cli.serve import serve
 
@@ -35,7 +35,7 @@ def main():
     
     subparsers = parser.add_subparsers(dest="command", required=True, help="可以使用的子命令")
     
-    reset_parser = subparsers.add_parser("reset", help="执行初始化")
+    init_parser = subparsers.add_parser("init", help="执行初始化")
     custom_service_parser = subparsers.add_parser("custom_service", help="客服example")
 
     neo4j_parser = subparsers.add_parser("neo4j", help="测试neo4j")
@@ -99,11 +99,11 @@ def main():
 
     #print("args====>",args)
 
-    if args.command =="reset":
-        reset(args)
+    if args.command =="init":
+        init(args)
         return
     
-    init(args)
+    set_logger(args)
    
     if args.command == "start":
         start(args)

@@ -4,6 +4,10 @@ from ylz_utils.langchain import LangchainLib
 from ylz_utils.langchain.graph.life_graph import LifeGraph
 from ylz_utils.langchain.graph.test_graph import TestGraph
 
+from contextlib import asynccontextmanager
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langgraph.prebuilt import create_react_agent
+
 Config.init('ylz_utils')
 langchainLib = LangchainLib()
 
@@ -24,5 +28,31 @@ def get_test_graph():
     graph = testGraph.get_graph()
     return graph
 
-life_graph = get_life_graph()
-test_graph = get_test_graph()
+@asynccontextmanager
+async def gemini_25_graph():
+    async with MultiServerMCPClient({
+        "math":{
+            "command": "python",
+            "args": ["/Users/youht/source/python/mcp_test/src/server/math_server.py"],
+            "transport": "stdio"
+        }
+    }) as client:
+        llm = langchainLib.get_llm(model="google/gemini-2.5-pro-exp-03-25:free")
+        agent = create_react_agent(llm,client.get_tools())
+        yield agent
+
+@asynccontextmanager
+async def deepseek_v3_graph():
+    async with MultiServerMCPClient({
+        "math":{
+            "command": "python",
+            "args": ["/Users/youht/source/python/mcp_test/src/server/math_server.py"],
+            "transport": "stdio"
+        }
+    }) as client:
+        llm = langchainLib.get_llm(model="deepseek/deepseek-chat-v3-0324:free")
+        agent = create_react_agent(llm,client.get_tools())
+        yield agent
+
+#life_graph = get_life_graph()
+#test_graph = get_test_graph()

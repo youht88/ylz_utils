@@ -1,8 +1,8 @@
 {
     "dependencies": ["."],
     "graphs": {
-      "life": "./graph_cloud.py:life_graph",
-      "test": "./graph_cloud.py:test_graph"
+      "gemini": "./graph_cloud.py:gemini_25_graph",
+      "deepseek": "./graph_cloud.py:deepseek_v3_graph"
     },
     "dockerfile_lines": [
       "RUN apt-get update",

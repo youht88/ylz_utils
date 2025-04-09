@@ -1,32 +1,23 @@
 import logging
-from logging.handlers import TimedRotatingFileHandler
+import os
+import shutil
 
-from ylz_utils import Config
-from ylz_utils import StringLib
+def copy_config(args):
+    config_name = args.config_name
+    project_name = args.project_name
+    current_path = os.path.abspath(__file__)
+    config_dir = os.path.dirname(current_path)
+    config_file = os.path.join(config_dir,"..",config_name)
+    dest_dir = os.path.join(os.path.expanduser("~"), f".{project_name}")
+    if not os.path.exists(dest_dir):
+        os.makedirs(dest_dir)
+    target_file = os.path.join(dest_dir, config_name)
+    if not os.path.exists(target_file):
+        shutil.copy(config_file, dest_dir)
+    else:
+        logging.info(f"已存在的{config_name}将被覆盖.")
+        os.remove(target_file)
+        shutil.copy(config_file, dest_dir)
 
 def init(args):
-    project_name = args.project_name
-    # 设置logger
-    log_level = logging.INFO if args.log_level=="INFO" else logging.DEBUG
-    log_file = args.log_name if args.log_name else f"{project_name}.log"
-
-    logger = logging.getLogger()
-    logger.setLevel(log_level)
-
-    file_handler = TimedRotatingFileHandler(
-        filename= log_file,
-        when="midnight",  # 每天午夜滚动
-        interval=1,  # 滚动间隔为 1 天
-        backupCount=7,  # 保留 7 天的日志文件
-        encoding='utf-8'
-    )
-    #file_handler = logging.FileHandler("task.log")
-    #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    formatter = logging.Formatter('%(asctime)s %(name)s [pid:%(process)d] [%(threadName)s] [%(levelname)s] %(message)s')
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-    # looging
-    StringLib.logging_in_box(str(args),"*")
-
-    #设置config
-    Config.init(project_name) 
+    copy_config(args)

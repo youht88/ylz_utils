@@ -219,8 +219,8 @@ class LLMLib():
                                 raise Exception(f"请确保{llm_type}_API_KEYS环境变量被正确设置")                                
                         elif llm_type == 'LLM.MODELSCOPE':
                             llm['llm'] = ModelScopeChatEndpoint(
-                                base_url = llm.get('base_url'),
-                                api_key = llm.get('api_key'),
+                                #base_url = llm.get('base_url'),
+                                modelscope_sdk_token = llm.get('api_key'),
                                 model = llm.get('model'),
                                 temperature= temperature or llm.get('temperature')
                             )
@@ -274,7 +274,9 @@ class LLMLib():
                     "LLM.X":
                         {"model":"grok-beta","temperature":0},
                     "LLM.MODELSCOPE":
-                        {"model":"Qwen/Qwen2.5-VL-32B-Instruct","temperature":0}
+                        {"model":"Qwen/Qwen2.5-VL-32B-Instruct","temperature":0},
+                    "LLM.OPENROUTER":
+                        {"model":"google/gemini-2.5-pro-exp-03-25:free","temperature":0},
                     }
         for key in defaults:
             default = defaults[key]

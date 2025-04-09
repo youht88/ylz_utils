@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ylz_utils.langchain.graph.life_graph import LifeGraph
 
-import jionlp
 import time
 import datetime
 
@@ -15,6 +14,7 @@ class Node():
             print(msg)
         
     def parse_time(self,sdt,edt,duration):
+        import jionlp
         parse_sdt=None
         parse_edt=None
         try:

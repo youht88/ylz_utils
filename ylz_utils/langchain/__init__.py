@@ -47,7 +47,7 @@ class LangchainLib():
     neo4jLib =None
     def __init__(self,trace=True):    
         self.config = Config.get()
-        if not os.environ["HF_ENDPOINT"]:
+        if not os.environ.get("HF_ENDPOINT"):
             os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
         os.environ["LANGCHAIN_PROJECT"] = Config.project_name
         langsmith_trace = os.environ.get("LANGSMITH_TRACING_V2")

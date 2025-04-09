@@ -6,7 +6,6 @@ from torch.utils.data import DataLoader, Dataset
 from torch.autograd import Variable
 import torch.optim as optim
 import numpy as np
-import jieba
 
 class TransformerModel(nn.Module):
     def __init__(self, *, source_column:list[str],target_column:list[str],key_column:str,source_seq:int,target_seq:int=1,
@@ -78,17 +77,18 @@ class TransformerModel(nn.Module):
         print("no na df length=",len(df))
 
         # 判断是否是文本类型的训练
-        if len(source_column)==1 and len(target_column)==1 and df[source_column[0]].dtypes == 'object' and df[target_column[0]].dtypes == 'object':
-            df['source_jieba'] = df[source_column[0]].apply(lambda x:jieba.lcut(x))
-            df['target_jieba'] = df[target_column[0]].apply(lambda x:jieba.lcut(x))
-            df['source_len'] = df['source_jieba'].str.len()
-            df['target_len'] = df['target_jieba'].str.len()
-            max_source_len = df['source_len'].max().item()
-            max_target_len = df['target_len'].max().item()
-            total_token = df['source_jieba'].to_list() + df['target_jieba'].to_list()
-            print(df)
-            print(max_source_len,max_target_len)
-            print(total_token)
+        # 是否需要jieba，20250409
+        # if len(source_column)==1 and len(target_column)==1 and df[source_column[0]].dtypes == 'object' and df[target_column[0]].dtypes == 'object':
+        #     df['source_jieba'] = df[source_column[0]].apply(lambda x:jieba.lcut(x))
+        #     df['target_jieba'] = df[target_column[0]].apply(lambda x:jieba.lcut(x))
+        #     df['source_len'] = df['source_jieba'].str.len()
+        #     df['target_len'] = df['target_jieba'].str.len()
+        #     max_source_len = df['source_len'].max().item()
+        #     max_target_len = df['target_len'].max().item()
+        #     total_token = df['source_jieba'].to_list() + df['target_jieba'].to_list()
+        #     print(df)
+        #     print(max_source_len,max_target_len)
+        #     print(total_token)
 
         df=df.copy()
         columns = df.columns
