@@ -7,9 +7,13 @@ from ylz_utils.langchain.graph.test_graph import TestGraph
 from contextlib import asynccontextmanager
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.prebuilt import create_react_agent
+import json
 
 Config.init('ylz_utils')
 langchainLib = LangchainLib()
+
+with open("mcp_server.json","r") as f:
+    mcp_server_config = json.load(f)
 
 def get_life_graph():
     print("graph_cloud:life")
@@ -30,34 +34,14 @@ def get_test_graph():
 
 @asynccontextmanager
 async def gemini_25_graph():
-    async with MultiServerMCPClient({
-        "math":{
-            "command": "python",
-            "args": ["/Users/youht/source/python/mcp_test/src/server/math_server.py"],
-            "transport": "stdio"
-        },
-        "weather":{
-            "url": "http://localhost:8000/sse",
-            "transport": "sse"
-        }
-    }) as client:
+    async with MultiServerMCPClient(mcp_server_config) as client:
         llm = langchainLib.get_llm(model="google/gemini-2.5-pro-exp-03-25:free")
         agent = create_react_agent(llm,client.get_tools())
         yield agent
 
 @asynccontextmanager
 async def deepseek_v3_graph():
-    async with MultiServerMCPClient({
-        "math":{
-            "command": "python",
-            "args": ["/Users/youht/source/python/mcp_test/src/server/math_server.py"],
-            "transport": "stdio"
-        },
-        "weather":{
-            "url": "http://localhost:8000/sse",
-            "transport": "sse"
-        }
-    }) as client:
+    async with MultiServerMCPClient(mcp_server_config) as client:
         llm = langchainLib.get_llm(model="deepseek/deepseek-chat-v3-0324:free")
         agent = create_react_agent(llm,client.get_tools())
         yield agent

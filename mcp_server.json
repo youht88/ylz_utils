@@ -1,0 +1,11 @@
+{
+    "math":{
+        "command": "python",
+        "args": ["/Users/youht/source/python/mcp_test/src/server/math_server.py"],
+        "transport": "stdio"
+    },
+    "weather":{
+        "url": "http://localhost:8000/sse",
+        "transport": "sse"
+    }
+}
