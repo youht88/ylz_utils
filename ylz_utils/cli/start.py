@@ -19,9 +19,9 @@ from ylz_utils.cli.graph import start_graph
 from ylz_utils.cli.rag import start_loader,start_rag
 
 def __agent(langchainLib:LangchainLib,args):
-    llm_key = args.llm_key
-    llm_model = args.llm_model
-    message = args.message if args.message else "厦门今天天气怎么样?"
+    llm_key = args["llm_key"]
+    llm_model = args["llm_model"]
+    message = args["message"] if args["message"] else "厦门今天天气怎么样?"
     llm = langchainLib.get_llm(llm_key,llm_model)
     prompt = langchainLib.get_prompt()
     tools = []
@@ -41,17 +41,17 @@ def __agent(langchainLib:LangchainLib,args):
 
 
 def __llm_test(langchainLib:LangchainLib,args):
-    llm_key = args.llm_key
-    llm_model = args.llm_model
-    message = args.message
+    llm_key = args["llm_key"]
+    llm_model = args["llm_model"]
+    message = args["message"]
     llm = langchainLib.get_llm(llm_key,llm_model)
     res = llm.invoke(message)
     print("res:",res)
     print("llms:",[(item["type"],item["api_key"],item["used"]) for item in langchainLib.get_llm(full=True)])
 
 def __outputParser_test(langchainLib:LangchainLib,args):
-    message = args.message
-    llm_key = args.llm_key
+    message = args["message"]
+    llm_key = args["llm_key"]
     class Food(BaseModel):
         name: str = Field(description="name of the food")
         place: str = Field(defualt="未指定",description="where to eat food?",examples=["家","公司","体育馆"])
@@ -125,8 +125,8 @@ def __runnalble_test(langchainLib:LangchainLib):
     print("\nrunnalbe:",res)
 
 def __prompt_test(langchainLib:LangchainLib,args):
-    llm_key = args.llm_key
-    llm_model = args.llm_model
+    llm_key = args["llm_key"]
+    llm_model = args["llm_model"]
     prompt = langchainLib.get_prompt(f"你对日历时间非常精通",human_keys={"context":"关联的上下文","question":"问题是"},use_chat = False)
     prompt.partial(context="我的名字叫小美")   # 这个为什么不起作用?
     print("!!!!",langchainLib.llmLib.default_llm_key,llm_key)
@@ -206,40 +206,42 @@ print(3+2)
 def start(args):
     langchainLib = LangchainLib()
     #langchainLib.add_plugins()
-    if args.mode == "llm":
+    if args["mode"] == "llm":
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试llm {Color.RESET}")
         __llm_test(langchainLib,args)
-    elif args.mode == "prompt":
+    elif args["mode"] == "prompt":
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试prompt {Color.RESET}")
         __prompt_test(langchainLib,args)    
-    elif args.mode == 'loader':    
+    elif args["mode"] == 'loader':    
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试loader {Color.RESET}")
         start_loader(langchainLib,args)    
-    elif args.mode == 'runnable':
+    elif args["mode"] == 'runnable':
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试runnable {Color.RESET}")
         __runnalble_test(langchainLib)
-    elif args.mode == 'outputParser':    
+    elif args["mode"] == 'outputParser':    
         StringLib.logging_in_box(f"{Color.YELLOW} 测试outputParser {Color.RESET}")
         __outputParser_test(langchainLib,args)
-    elif args.mode == 'rag':    
+    elif args["mode"] == 'rag':    
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试rag {Color.RESET}")
-        start_rag(langchainLib,args)
-    elif args.mode == 'tools':
+        import asyncio
+        asyncio.run(start_rag(langchainLib,args))
+    elif args["mode"] == 'tools':
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试tools {Color.RESET}")
         __tools_test(langchainLib,args)
-    elif args.mode == 'graph':
+    elif args["mode"] == 'graph':
         StringLib.logging_in_box(f"\n{Color.YELLOW} 测试graph {Color.RESET}")
-        start_graph(langchainLib,args)
-    elif args.mode == 'chat':
+        import asyncio
+        asyncio.run(start_graph(langchainLib,args))
+    elif args["mode"] == 'chat':
         start_chat(langchainLib,args)
-    elif args.mode == 'agent':
+    elif args["mode"] == 'agent':
         __agent(langchainLib,args)
     else:
         print(StringLib.yellow("args="),args)
         print(StringLib.yellow("llms--->:"),[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_llm(full=True)])
         print(StringLib.yellow("embeddings---->:"),[(item["type"],item["api_key"],item["model"],item["used"]) for item in langchainLib.get_embedding(full=True)])
         #return
-        agent = langchainLib.agentLib.get_full_agent(llm_key=args.llm_key,llm_model=args.llm_model)
+        agent = langchainLib.agentLib.get_full_agent(llm_key=args["llm_key"],llm_model=args["llm_model"])
         res = agent.invoke("今年的奥运会中国获得多少金牌？")
         return
         #langchainLib.ttsLib.tts_save("你好呀","tts.wav")
@@ -280,7 +282,7 @@ def start(args):
 
         return 
 
-        loader = langchainLib.documentLib.pptx.newer("test.pptx")
+        loader = langchainLib.get_documentLib("pdf").newer("test.pdf")
         loader.add_slide(0).set_title("Hello World","gogogo").add_text("youht",10,10,60,40)
         tab = [{"name":"youht","age":20},{"name":"jinli","age":10}] 
         tx = loader.add_slide(1).set_title("你好","step1").add_text("Step1",10,10,100,40)

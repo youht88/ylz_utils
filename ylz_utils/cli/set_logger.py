@@ -5,10 +5,10 @@ from ylz_utils import Config
 from ylz_utils import StringLib
 
 def set_logger(args):
-    project_name = args.project_name
+    project_name = args["project_name"]
     # 设置logger
-    log_level = logging.INFO if args.log_level=="INFO" else logging.DEBUG
-    log_file = args.log_name if args.log_name else f"{project_name}.log"
+    log_level = logging.INFO if args["log_level"]=="INFO" else logging.DEBUG
+    log_file = args["log_name"] if args["log_name"] else f"{project_name}.log"
 
     logger = logging.getLogger()
     logger.setLevel(log_level)

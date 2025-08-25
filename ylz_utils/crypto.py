@@ -6,14 +6,20 @@ import base64
 
 class HashLib():
     @classmethod
-    def md5(cls,string):
+    def md5(cls,obj:str|bytes):
         m = hashlib.md5()
-        m.update(string.encode('utf-8'))
+        if isinstance(obj,bytes):
+            m.update(obj)
+        else:
+            m.update(obj.encode('utf-8'))   
         return m.hexdigest()
     @classmethod
-    def sha256(cls,string):
+    def sha256(cls,obj:str|bytes):
         m = hashlib.sha256()
-        m.update(string.encode('utf-8'))
+        if isinstance(obj,bytes):
+            m.update(obj)
+        else:
+            m.update(obj.encode('utf-8'))
         return m.hexdigest()
 
 class CryptoLib():

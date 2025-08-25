@@ -4,6 +4,7 @@ import json
 import os
 from datetime import datetime
 
+import elasticsearch
 from langchain_openai import ChatOpenAI
 
 from langchain_ollama import ChatOllama
@@ -24,20 +25,18 @@ from operator import itemgetter
 from langgraph.graph import START,END,MessageGraph,StateGraph
 from langgraph.prebuilt import ToolNode
 
-from ylz_utils.database.neo4j import Neo4jLib
+#from ylz_utils.database.neo4j import Neo4jLib
 from ylz_utils.langchain.agents import AgentLib
 from ylz_utils.langchain.flux import FluxLib
-from ylz_utils.langchain.graph import GraphLib
+#from ylz_utils.langchain.graph import GraphLib
 from ylz_utils.langchain.llms import LLMLib
 from ylz_utils.langchain.embeddings import EmbeddingLib
-from ylz_utils.langchain.documents import DocumentLib
 from ylz_utils.langchain.memory import MemoryLib
 from ylz_utils.langchain.prompts import PromptLib
 from ylz_utils.langchain.output_parsers import OutputParserLib
 from ylz_utils.langchain.splitters import SplitterLib
 from ylz_utils.langchain.tools import ToolLib
 from ylz_utils.langchain.tts import TTSLib
-from ylz_utils.langchain.vectorstores import VectorstoreLib
 
 from ylz_utils.file import FileLib
 from ylz_utils.config import Config
@@ -46,6 +45,7 @@ from ylz_utils.data import StringLib,Color
 class LangchainLib():
     neo4jLib =None
     def __init__(self,trace=True):    
+        from ylz_utils.langchain.vectorstores import VectorstoreLib
         self.config = Config.get()
         if not os.environ.get("HF_ENDPOINT"):
             os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
@@ -79,7 +79,7 @@ class LangchainLib():
         self.promptLib = PromptLib()
         self.get_prompt = self.promptLib.get_prompt
 
-        self.outputParserLib = OutputParserLib()
+        self.outputParserLib = OutputParserLib(self)
         self.get_outputParser = self.outputParserLib.get_outputParser
         
         self.vectorstoreLib = VectorstoreLib(self)
@@ -93,16 +93,50 @@ class LangchainLib():
         self.get_textsplitter = self.splitterLib.get_textsplitter
         self.split_markdown_docs = self.splitterLib.split_markdown_docs
 
-        self.documentLib = DocumentLib(self)
-        self.load_url_and_split_markdown = self.documentLib.url.load_and_split_markdown
-
         self.agentLib = AgentLib(self)
         self.get_agent = self.agentLib.get_agent
         
         self.ttsLib = TTSLib(self)
         self.fluxLib = FluxLib(self)
 
-    def init_neo4j(self,neo4jLib:Neo4jLib):
+    def get_vectorstoreLib(self,provider=None,host=None,port=None,db_file=None,user=None,password=None):
+        if not provider:
+            provider = self.config.get("VECTORSTORE.DEFAULT")
+        if provider=='chroma':
+            from ylz_utils.langchain.vectorstores.chroma import ChromaLib
+            self.vectorstoreLib =  ChromaLib(self,host,port,db_file)
+        elif provider=='faiss':
+            from ylz_utils.langchain.vectorstores.faiss import FaissLib
+            self.vectorstoreLib =  FaissLib(self,db_file)
+        elif provider=='es':
+            from ylz_utils.langchain.vectorstores.elasticsearch import ESLib
+            self.vectorstoreLib = ESLib(self,host,user,password) 
+        elif provider=='pg':
+            from ylz_utils.langchain.vectorstores.postgres import PostgresLib
+            self.vectorstoreLib = PostgresLib(self,host,user,password) 
+        else:
+            raise Exception(f"vectorestore lib provider:{provider} not support") 
+        return self.vectorstoreLib
+
+    def get_documentLib(self,doc_type=None):
+        if doc_type=='docx':
+            from ylz_utils.langchain.documents.docx import DocxLib
+            return DocxLib(self)
+        elif doc_type=='pptx':
+            from ylz_utils.langchain.documents.pptx import PptxLib
+            return PptxLib(self)
+        elif doc_type=='pdf':
+            from ylz_utils.langchain.documents.pdf import PdfLib
+            return PdfLib(self)
+        elif doc_type=='txt':
+            from ylz_utils.langchain.documents.text import TextLib
+            return TextLib(self)
+        elif doc_type=='url':
+            from ylz_utils.langchain.documents.url import UrlLib
+            return UrlLib(self)
+        else:
+            raise Exception(f"document lib type:{doc_type} not support")
+    def init_neo4j(self,neo4jLib):
         self.neo4jLib = neo4jLib     
     
     def add_plugins(self,debug=False):

@@ -13,6 +13,7 @@ import time
 import random
 import logging
 from langchain_openai import ChatOpenAI
+from langchain_cloudflare import ChatCloudflareWorkersAI
 
 try:
     from langchain_google_genai import ChatGoogleGenerativeAI
@@ -201,7 +202,7 @@ class LLMLib():
                                             model_id= llm.get('model'),
                                             task="text-generation",
                                             pipeline_kwargs = dict(
-                                                max_new_tokens=512,
+                                                max_new_tokens=4096,
                                                 do_sample=False,
                                                 repetition_penalty=1.03),
                                             model_kwargs= model_kwargs
@@ -210,7 +211,7 @@ class LLMLib():
                                     hf_endpoint = HuggingFaceEndpoint(
                                             repo_id= llm.get('model'),
                                             task="text-generation",
-                                            max_new_tokens=512,
+                                            max_new_tokens=4096,
                                             do_sample=False,
                                             repetition_penalty=1.03,
                                         )
@@ -222,8 +223,16 @@ class LLMLib():
                                 #base_url = llm.get('base_url'),
                                 modelscope_sdk_token = llm.get('api_key'),
                                 model = llm.get('model'),
-                                temperature= temperature or llm.get('temperature')
+                                temperature= temperature or llm.get('temperature'),
+                                max_tokens= 4096
                             )
+                        elif llm_type == 'LLM.CLOUDFLARE':
+                            llm['llm'] = ChatCloudflareWorkersAI(
+                                cloudflare_account_id = llm.get('account_id'),
+                                cloudflare_api_token = llm.get('api_key'),
+                                model= llm.get('model'),
+                                temperature= temperature or llm.get('temperature')
+                                )
                         else:
                             try:
                                 llm['llm'] = ChatOpenAI(
@@ -258,7 +267,7 @@ class LLMLib():
                     "LLM.QIANFAN":
                       {"model":"Yi-34B-Chat","temperature":0.7},
                     "LLM.OLLAMA":
-                      {"model":"llama3.1","temperature":0.7},
+                      {"model":"qwen3:14b","temperature":0.7},
                     "LLM.MOONSHOT":
                       {"model":"moonshot-v1-8k","temperature":0.3},
                     "LLM.DEEPBRICKS":
@@ -277,6 +286,8 @@ class LLMLib():
                         {"model":"Qwen/Qwen2.5-VL-32B-Instruct","temperature":0},
                     "LLM.OPENROUTER":
                         {"model":"google/gemini-2.5-pro-exp-03-25:free","temperature":0},
+                    "LLM.CLOUDFLARE":
+                        {"model":"@cf/deepseek-ai/deepseek-r1-distill-qwen-32b","temperature":0},
                     }
         for key in defaults:
             default = defaults[key]
@@ -286,12 +297,11 @@ class LLMLib():
             base_url = llm.get("BASE_URL")
             keep_alive = llm.get("KEEP_ALIVE")
             pipeline = llm.get("PIPELINE",False)
-            
             api_keys = llm.get("API_KEYS")
             api_keys = self.langchainLib.split_keys(api_keys)
             sec_keys = llm.get("SEC_KEYS")
             sec_keys = self.langchainLib.split_keys(sec_keys)
-            
+            account_id = llm.get("ACCOUNT_ID")
             model= llm.get("MODEL") if llm.get("MODEL") else default['model']
             temperature = llm.get("TEMPERATURE") if llm.get("TEMPERATURE") else default['temperature']
             for idx, api_key in enumerate(api_keys):
@@ -303,6 +313,7 @@ class LLMLib():
                     "llm": None,
                     "type": key,
                     "base_url":base_url,
+                    "account_id":account_id,
                     "api_key":api_key,
                     "sec_key": sec_key,
                     "default_model": model,

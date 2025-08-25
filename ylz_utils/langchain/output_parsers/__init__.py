@@ -10,11 +10,10 @@ from langchain.output_parsers import RetryOutputParser
 
 from langchain_core.prompts import PromptTemplate
 
-from pydantic import BaseModel, Field
-from typing import List,Literal
-
 class OutputParserLib():
-   def get_outputParser(self,pydantic_object=None,fix=False,llm=None,retry=1):
+    def __init__(self,langchainLib:LangchainLib):
+        self.langchainLib = langchainLib
+    def get_outputParser(self,pydantic_object=None,fix=False,llm=None,retry=1):
         NAIVE_FIX = """Instructions:
             --------------
             {instructions}
@@ -40,7 +39,7 @@ class OutputParserLib():
             parser = StrOutputParser()
         if fix:
             if not llm:
-                llm = self.get_llm()
+                llm = self.langchainLib.get_llm()
             OutputFixingParser.legacy = False
             parser =  OutputFixingParser.from_llm(
                 llm = llm,

@@ -1,11 +1,7 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from ylz_utils.langchain import LangchainLib
-
+from ylz_utils.langchain.documents import DocumentLib
+from ylz_utils.langchain import LangchainLib
 #from langchain_community.document_loaders import UnstructuredPowerPointLoader
 from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 import pptx 
 from pptx.slide import Slide,SlideLayout,SlideShapes
 from pptx.presentation import Presentation
@@ -18,12 +14,14 @@ from pptx.enum.chart import XL_CHART_TYPE
 from pptx.enum.chart import XL_LEGEND_POSITION
 from pptx.enum.text import PP_ALIGN
 from pptx.util import Inches,Cm,Pt
-class PptxLib():
+
+class PptxLib(DocumentLib):
+    langchainLib:LangchainLib = None
     ppt: Presentation  = None
     slides: List[Slide] = []
     unit = None
     def __init__(self,langchainLib:LangchainLib):
-        self.langchainLib = langchainLib
+        super().__init__(langchainLib)
         self.unit = Pt
     def set_default_unit(self,unit):
         if unit.lower()=="inches":
@@ -52,10 +50,10 @@ class PptxLib():
         self.ppt = pptx.Presentation()
         self.filename = filename
         return self
-    def loader(self, filename: str):
+    def loader(self, file_name: str):
         #"./example_data/fake-power-point.pptx"
-        self.ppt = pptx.Presentation(filename)
-        self.filename = filename
+        self.ppt = pptx.Presentation(file_name)
+        self.filename = file_name
         return self
     def lazy_load(self):
         if not self.ppt:
@@ -72,13 +70,7 @@ class PptxLib():
         for doc in self.lazy_load():
             docs.append(doc)
         return docs
-
-    def load_and_split(self, docx_file, chunk_size=1000,chunk_overlap=0):
-        loader = self.loader(docx_file)
-        docs = loader.load()
-        spliter:RecursiveCharacterTextSplitter = self.langchainLib.get_textsplitter(chunk_size=chunk_size,chunk_overlap=chunk_overlap)
-        splited_docs = spliter.split_documents(docs)
-        return splited_docs
+        
     def add_slide(self,slide_layout=None):
         if not slide_layout:
             slide_layout = self.ppt.slide_layouts[1]

@@ -3,8 +3,8 @@ import os
 import shutil
 
 def copy_config(args):
-    config_name = args.config_name
-    project_name = args.project_name
+    config_name = args["config_name"]
+    project_name = args["project_name"]
     current_path = os.path.abspath(__file__)
     config_dir = os.path.dirname(current_path)
     config_file = os.path.join(config_dir,"..",config_name)

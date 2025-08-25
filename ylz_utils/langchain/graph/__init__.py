@@ -1,27 +1,42 @@
 from __future__ import annotations
+
+import re
+from abc import ABC,abstractmethod
+from operator import itemgetter
+from typing import Literal,List,Annotated
 from typing import TYPE_CHECKING,Optional
+from pydantic import BaseModel
+from typing_extensions import TypedDict
+
+from langchain_core.messages import (SystemMessage,
+                                    HumanMessage,
+                                    AIMessage,
+                                    BaseMessage,
+                                    ToolMessage,
+                                    RemoveMessage)
+
+from langchain_core.tools import tool,Tool
+from langchain_core.runnables import (RunnablePassthrough,
+                                      RunnableLambda,
+                                      RunnableParallel,
+                                      RunnableConfig)
+
+
+from langgraph.graph import START,END,StateGraph,MessagesState
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.postgres import PostgresSaver
+from langgraph.store.postgres import AsyncPostgresStore
+from langgraph.graph.state import CompiledStateGraph
+from langgraph.prebuilt import ToolNode, tools_condition,create_react_agent
+from langgraph.types import Command, interrupt
+
+from ylz_utils.file import FileLib, IOLib
+from ylz_utils.data import StringLib,Color
+
 
 if TYPE_CHECKING:
     from ylz_utils.langchain import LangchainLib
 
-import re
-from abc import ABC,abstractmethod
-
-from operator import itemgetter
-from typing import Literal,List,Annotated
-from langchain_core.messages import SystemMessage,HumanMessage,AIMessage,BaseMessage,ToolMessage,RemoveMessage
-from pydantic import BaseModel
-from typing_extensions import TypedDict
-from langchain_core.tools import tool,Tool
-from langchain_core.runnables import RunnablePassthrough,RunnableLambda,RunnableParallel,RunnableConfig
-from langgraph.graph import START,END,StateGraph,MessagesState
-from langgraph.checkpoint.memory import MemorySaver
-#from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from langgraph.prebuilt import ToolExecutor,ToolInvocation, tools_condition
-from langgraph.graph.state import CompiledStateGraph
-
-from ylz_utils.file import FileLib, IOLib
-from ylz_utils.data import StringLib,Color
 
 class GraphLib(ABC):
     def __init__(self,langchainLib:LangchainLib):
@@ -33,14 +48,14 @@ class GraphLib(ABC):
         self.websearch_tool = None
         self.ragsearch_tool = None
         self.python_repl_tool = langchainLib.get_python_repl_tool()
-        self.chat_db_name = ":memory:"
+        self.chat_dbname = ":memory:"
         self.memory = MemorySaver()
         #self.memory = SqliteSaver.from_conn_string(self.chat_db_name)
         #self.amemory = AsyncSqliteSaver.from_conn_string(self.chat_db_name)
         self.query_dbname = None
-        self.tools=[]
-        self.tools_executor = None
-    
+        self.tools=[self.human_assistance]
+        self.graph = None
+
     class ConfigSchema(TypedDict):
         useSummary:bool
         thread_id:str
@@ -49,9 +64,8 @@ class GraphLib(ABC):
         llm_key: Optional[str]
         llm_model: Optional[str]
         
-
     def set_chat_dbname(self,dbname):
-        # "checkpoint.sqlite"
+        # "store postgres"
         self.chat_dbname = dbname
         self.memory = SqliteSaver.from_conn_string(dbname)
     def set_query_dbname(self,dbname):
@@ -73,11 +87,6 @@ class GraphLib(ABC):
                 tools.append(self.ragsearch_tool)
         self.tools = tools
         return self.tools    
-    def set_tools_executor(self,tools):
-        if not isinstance(tools,(list,tuple)):
-            tools = [tools]
-        self.tools_executor = ToolExecutor(tools) 
-        return self.tools_executor
        
     def create_tool_message(self, response: str, ai_message: AIMessage):
         return ToolMessage(
@@ -92,7 +101,11 @@ class GraphLib(ABC):
             llm_key = config.get('configurable',{}).get('llm_key')
             llm_model = config.get('configurable',{}).get('llm_model')
         return self.langchainLib.get_llm(llm_key,llm_model)
-    def get_embedding(self,embedding_key=None,embedding_model=None):
+
+    def get_embedding(self,embedding_key=None,embedding_model=None,config:Optional[RunnableConfig]=None):
+        if config:
+            embedding_key = config.get('configurable',{}).get('embedding_key')
+            embedding_model = config.get('configurable',{}).get('embedding_model')
         return self.langchainLib.get_embedding(embedding_key,embedding_model)
     
     @DeprecationWarning
@@ -123,31 +136,13 @@ class GraphLib(ABC):
         finally:
             #print("llm=",llm.model_name,llm.openai_api_base)
             return llm
+
     @DeprecationWarning
     def set_thread(self,user_id="default",conversation_id="default"):
         self.user_id = user_id
         self.conversation_id = conversation_id
         self.thread_id = f"{user_id}-{conversation_id}"
 
-    def tools_execute(self,tools,state):
-        if not tools_executor:
-            raise Exception("please call set_tools_executor(tools) first!")
-        messages = state["messages"]
-        last_message = messages[-1]
-        tool_messages = []
-        for tool_call in last_message.tool_calls: 
-            action = ToolInvocation(
-                tool = tool_call["name"],
-                tool_input = tool_call["args"]
-            )  
-            response = self.tools_executor.invoke(action)
-            tool_message = ToolMessage(
-                content = str(response),
-                name = action.tool,
-                tool_call_id = tool_call["id"]
-            )
-            tool_messages.append(tool_message)
-        return {"messages":tool_messages}
     def get_safe_response(self,responseMessage:BaseMessage):
         safeResponseMessage = responseMessage.model_copy()
         if isinstance(responseMessage,AIMessage):
@@ -156,6 +151,7 @@ class GraphLib(ABC):
                 names = list(set([tool_call["name"] for tool_call in responseMessage.tool_calls]))
                 safeResponseMessage.content = f"我要使用`{','.join(names)}`等工具"
         return safeResponseMessage
+
     def get_class_instance_tools(self,classInstance)->list:
         '''获取类实例的所有函数，用于批量构成tools'''
         _exports = getattr(classInstance,"_exports")
@@ -198,30 +194,42 @@ class GraphLib(ABC):
             return {"summary": response.content, "messages": delete_messages }
         else:
             return {"messages":state["messages"]}
-    @abstractmethod
+
+    def init_graph(self,graph=None) -> CompiledStateGraph:
+        if graph:
+            self.graph = graph
+            return self.graph
     def get_graph(self) -> CompiledStateGraph:
-        pass
-    @abstractmethod
-    def human_action(self,graph,config=None,thread_id=None) -> bool:
+        if self.graph is None:
+            self.graph = self.init_graph()
+        return self.graph
+
+    def human_action(self,config=None,thread_id=None) -> bool:
         return False
     
-    def graph_test(self,graph:CompiledStateGraph,message,config=None,thread_id=None,stream_mode="values",subgraphs=False):
+    @tool
+    def human_assistance(self,query: str) -> str:
+        """Request assistance from a human."""
+        human_response = interrupt({"query": query})
+        return human_response["data"]
+
+    async def test(self,message,config=None,thread_id=None,stream_mode="values",subgraphs=False):
         if not config:
             if not thread_id:
                 thread_id = self.thread_id
             config = {"configurable":{"thread_id":thread_id}}
-        print("graph_test====>","config=",config)
+        print("graph_test====>","message",message,"config=",config)
         while True:
             if message=="/q":
                 break
-            self.graph_stream(graph,message,config,stream_mode=stream_mode,subgraphs=subgraphs)
-            human_turn = self.human_action(graph,config)
+            await self.astream(message,config,stream_mode=stream_mode,subgraphs=subgraphs)
+            human_turn = self.human_action(config,thread_id)
             if human_turn:
                 message = None
             else:
                 message = IOLib.input_with_history(f"{StringLib.green('User: ')}") 
 
-    def graph_stream(self,graph:CompiledStateGraph,message,config=None,thread_id=None,stream_mode="values",subgraphs=False): 
+    async def astream(self,message,config=None,thread_id=None,stream_mode="values",subgraphs=False): 
         if not config:
             if not thread_id:
                 thread_id = self.thread_id
@@ -232,12 +240,12 @@ class GraphLib(ABC):
             input = {"messages":messages}          
         else:
             input = None
-        events = graph.stream(  input,
+        events = self.graph.astream(  input,
                                 config = config,
                                 stream_mode = stream_mode,
                                 subgraphs = subgraphs)
         _print_set = set()
-        for event in events:
+        async for event in events:
             self._print_event(event,_print_set)
 
     def _print_event(self, event: dict, _printed: set, max_length=1500):
@@ -258,42 +266,46 @@ class GraphLib(ABC):
                             print(f"{Color.LBLUE}AI:{Color.RESET}",f'使用{Color.GREEN}{tool_call["name"]}{Color.RESET},调用参数:{Color.GREEN}{tool_call["args"]}{Color.RESET}')
                     else:
                         response_metadata = message.response_metadata 
-                        print(f"{Color.LBLUE}AI:{Color.RESET}",msg_repr,
-                            f'[model:{Color.LYELLOW}{message.response_metadata.get("model_name")}{Color.RESET},token:{Color.LYELLOW}{message.response_metadata.get("token_usage",{}).get("total_tokens")}{Color.RESET}]')
+                        if msg_repr:
+                            print(f"{Color.LBLUE}AI:{Color.RESET}",msg_repr,
+                                f'[model:{Color.LYELLOW}{response_metadata.get("model_name")}{Color.RESET},token:{Color.LYELLOW}{response_metadata.get("token_usage",{}).get("total_tokens")}{Color.RESET}]')
+                        else:
+                            print(f"\n{Color.LBLUE}AI:{Color.RESET}",
+                                f'[model:{Color.LYELLOW}{response_metadata.get("model_name")}{Color.RESET},token:{Color.LYELLOW}{response_metadata.get("token_usage",{}).get("total_tokens")}{Color.RESET}]')   
                 elif isinstance(message,ToolMessage):
                     print(f"    {Color.BLUE}Tool:{Color.RESET}",msg_repr)
                 elif isinstance(message,HumanMessage):
                     print(f"{Color.BLUE}User:{Color.RESET} {msg_repr}")
                 _printed.add(message.id)
                 
-    def graph_get_state_history(self,graph:CompiledStateGraph,config=None,thread_id=None):
+    def get_state_history(self,config=None,thread_id=None):
         if not config:
             if not thread_id:
                 thread_id = self.thread_id
             config = {"configurable":{"thread_id":thread_id}}
-        state_history = graph.get_state_history(config = config )
+        state_history = self.graph.get_state_history(config = config )
         for state in state_history:
             print("Num Messages: ", len(state.values["messages"]), "Next: ", state.next)
             print("-" * 80)
         return state_history
     
-    def graph_get_state(self,graph:CompiledStateGraph,config=None,thread_id=None,subgraphs=False):
+    def get_state(self,config=None,thread_id=None,subgraphs=False):
         if not config:
             if not thread_id:
                 thread_id = self.thread_id
             config = {"configurable":{"thread_id":thread_id}}
-        state = graph.get_state(config = config, subgraphs=subgraphs )
+        state = self.graph.get_state(config = config, subgraphs=subgraphs )
         return state
     
-    def graph_update_state(self,graph:CompiledStateGraph,values,config=None,thread_id=None,as_node = None):
+    def update_state(self,values,config=None,thread_id=None,as_node = None):
         if not config:
             if not thread_id:
                 thread_id = self.thread_id
             config = {"configurable":{"thread_id":thread_id}}
         print("graph_update_state===>","as_node:",as_node,"thread_id:",thread_id,"values",values,"config:",config)
-        graph.update_state(config = config,values=values,as_node=as_node)
+        self.graph.update_state(config = config,values=values,as_node=as_node)
     
-    def graph_export(self,graph:CompiledStateGraph):
-        FileLib.writeFile("graph.png",graph.get_graph(xray=1).draw_mermaid_png(),mode="wb")  
+    def export(self):
+        FileLib.writeFile("graph.png",self.graph.get_graph(xray=1).draw_mermaid_png(),mode="wb")  
 
     

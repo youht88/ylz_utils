@@ -2,14 +2,11 @@ import json
 import re
 from ylz_utils.file import IOLib
 from typing import Literal
-from ylz_utils.database.neo4j import Neo4jLib
 from ylz_utils.data import StringLib,Spinner
 from ylz_utils.langchain import LangchainLib
 from langchain_core.messages import AIMessage,HumanMessage
-from ylz_utils.langchain.graph.life_graph import LifeGraph
-from ylz_utils.langchain.graph.stand_graph import StandGraph
 
-def query_neo4j(neo4jLib:Neo4jLib,vars,query):
+def query_neo4j(neo4jLib,vars,query):
     spinner = Spinner()
     try:
         query_variables =re.findall(r"\$(.+?)\s",query)
@@ -26,16 +23,20 @@ def query_neo4j(neo4jLib:Neo4jLib,vars,query):
         raise e
     
 def neo4j_test(args):
-    user = args.user
-    password = args.password
-    host = args.host
-    user_id = args.user_id or 'default'
-    conversation_id = args.conversation_id or 'default'
+    from ylz_utils.database.neo4j import Neo4jLib
+    from ylz_utils.langchain.graph.life_graph import LifeGraph
+    from ylz_utils.langchain.graph.stand_graph import StandGraph
+
+    user = args["user"]
+    password = args["password"]
+    host = args["host"]
+    user_id = args["user_id"] or 'default'
+    conversation_id = args["conversation_id"] or 'default'
     thread_id = f"{user_id}-{conversation_id}"
-    dbname = args.chat_dbname or 'chat.sqlite'
-    llm_key = args.llm_key
-    llm_model =args.llm_model
-    embedding_key = args.embedding_key
+    dbname = args["chat_dbname"] or 'chat.sqlite'
+    llm_key = args["llm_key"]
+    llm_model =args["llm_model"]
+    embedding_key = args["embedding_key"]
     langchainLib = LangchainLib()
     llm = langchainLib.get_llm(llm_key)
     embedding = langchainLib.get_embedding(embedding_key)

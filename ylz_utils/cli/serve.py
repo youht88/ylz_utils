@@ -6,12 +6,11 @@ from langchain_core.messages import HumanMessage,AIMessage,SystemMessage
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 
-from ylz_utils.database.neo4j import Neo4jLib
 from ylz_utils.langchain import LangchainLib
-from ylz_utils.langchain.graph.life_graph import LifeGraph
-from ylz_utils.langchain.graph.test_graph.function import FunctionGraph,State
-from ylz_utils.langchain.graph.test_graph import TestGraph,State as TestState
-from ylz_utils.langchain.graph.stock_graph import StockGraph,NewState
+from ylz_utils.cli.graph.life_graph import LifeGraph
+from ylz_utils.cli.graph.test_graph.function import FunctionGraph,State
+from ylz_utils.cli.graph.test_graph import TestGraph,State as TestState
+from ylz_utils.cli.graph.stock_graph import StockGraph,NewState
 from langgraph.graph import MessagesState
 
 class InputChat(BaseModel):
@@ -26,13 +25,13 @@ def serve(args):
     print("args:",args)
     langchainLib: LangchainLib = LangchainLib()
     #langchainLib.add_plugins()    
-    path = args.path
-    host = args.host
-    port = args.port
-    llm_key = args.llm_key
-    llm_model = args.llm_model
-    embedding_key = args.embedding_key
-    embedding_model = args.embedding_model
+    path = args["path"]
+    host = args["host"]
+    port = args["port"]
+    llm_key = args["llm_key"]
+    llm_model = args["llm_model"]
+    embedding_key = args["embedding_key"]
+    embedding_model = args["embedding_model"]
     langchainLib.llmLib.set_default_llm_key(llm_key or "LLM.DEEPBRICKS")
     langchainLib.embeddingLib.set_default_embedding_key(embedding_key or "EMBEDDING.DASHSCOPE")
     llm = langchainLib.get_llm(llm_key)

@@ -1,17 +1,13 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from ylz_utils.langchain import LangchainLib
 
 from langchain_community.document_loaders import RecursiveUrlLoader
 from langchain_community.document_transformers import MarkdownifyTransformer
 from langchain_core.documents import Document
 
-class UrlLib():
-    def __init__(self,langchainLib:LangchainLib):
-        self.langchainLib = langchainLib
+from ylz_utils.langchain.documents import DocumentLib
+from ylz_utils.crypto import HashLib
+
+class UrlLib(DocumentLib):
     def loader(self, url, max_depth=2, extractor=None, metadata_extractor=None):
-        #"./example_data/fake.docx"
         loader = RecursiveUrlLoader(
             url = url,
             max_depth= max_depth,
@@ -26,16 +22,25 @@ class UrlLib():
             # base_url=None,
         )
         return loader
+    def load(self, url, max_depth=2, extractor=None, metadata_extractor=None,metadata=None):
+        loader = self.loader(url, max_depth=max_depth, extractor=extractor, metadata_extractor=metadata_extractor)
+        docs = loader.load()
+        for doc in  docs:
+            file_hash = HashLib.sha256(doc.page_content)
+            doc.metadata.update({"source_sha256":file_hash})
+            if metadata:
+                doc.metadata.update(metadata)  
+        return docs
 
     def load_and_split_markdown(self, 
                                 url,
+                                metadata=None,
                                 max_depth=2,
                                 extractor=None, 
                                 metadata_extractor=None, 
                                 chunk_size=1000,
                                 chunk_overlap=0) -> list[dict[str,any]]:
-        loader = self.loader(url,max_depth=max_depth,extractor=extractor,metadata_extractor=metadata_extractor)
-        docs = loader.load()
+        docs = self.load(url,max_depth,extractor,metadata_extractor,metadata)
         transformer = MarkdownifyTransformer()
         converted_docs = transformer.transform_documents(docs)
         result = []
@@ -44,12 +49,12 @@ class UrlLib():
             result.append({"doc":doc,"blocks":splited_docs,"metadata":doc.metadata})
         return result
     
-    def load_and_split(self,url,max_depth=2, 
+    def load_and_split(self,url,metadata=None,max_depth=2, 
                        extractor=None, 
                        metadata_extractor=None, 
                        chunk_size=1000,
                        chunk_overlap=0) -> list[Document]:
-        res = self.load_and_split_markdown(url,max_depth=max_depth,
+        res = self.load_and_split_markdown(url,metadata=metadata,max_depth=max_depth,
                                            extractor=extractor,
                                            metadata_extractor=metadata_extractor,
                                            chunk_size = chunk_size,

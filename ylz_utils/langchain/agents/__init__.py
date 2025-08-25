@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ylz_utils.langchain import LangchainLib
 
-from langgraph.prebuilt import chat_agent_executor
+from langgraph.prebuilt import create_react_agent
 from langchain.agents import AgentType, initialize_agent
 from langchain_community.tools.yahoo_finance_news import YahooFinanceNewsTool
 from langchain_community.tools import TavilySearchResults
@@ -11,8 +11,10 @@ from langchain_community.tools import TavilySearchResults
 class AgentLib():
     def __init__(self,langchainLib:LangchainLib):
         self.langchainLib = langchainLib
-    def get_agent(self,llm,tools):
-        return chat_agent_executor.create_function_calling_executor(llm,tools)
+    def get_agent(self,llm=None,tools=[]):
+        if not llm:
+            llm = self.langchainLib.get_llm()
+        return create_react_agent(llm,tools)
     def get_full_agent(self,*,llm=None,llm_key=None,llm_model=None):
         if not llm:
             llm = self.langchainLib.get_llm(llm_key,llm_model)    

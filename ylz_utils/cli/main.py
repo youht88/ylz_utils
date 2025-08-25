@@ -1,118 +1,93 @@
-
-import asyncio
-import logging
-import argparse
-from argparse import Namespace
+import click
+import json
+from typing import Optional
+from datetime import datetime
 
 from ylz_utils.cli.set_logger import set_logger
 
-from ylz_utils.cli.neo4j import neo4j_test
-from ylz_utils.cli.init import init
-from ylz_utils.cli.start import start
-from ylz_utils.cli.serve import serve
+from ylz_utils.cli.neo4j import neo4j_test as click_neo4j_test
+from ylz_utils.cli.init import init as click_init
+from ylz_utils.cli.start import start as click_start
+from ylz_utils.cli.serve import serve as click_serve
+
+def validate_json(ctx, param, value):
+    if value:
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            raise click.BadParameter(f"必须是有效的JSON格式")
+    return None
 
 def run():
     main()
 
-def main():
-    usage= \
-"""
-    examples:
-        # 初始化配置信息 
-        ylz_utils reset 
+@click.group()
+@click.option("--project_name",type=str,default="ylz_utils",help="project名称")
+@click.option("--config_name",type=str,default="config.yaml",help="config名称")
+@click.option("--log_level",default="INFO",type=click.Choice(["INFO","DEBUG"]),help="日志级别,默认:INFO")
+@click.option("--log_name",type=str,default="ylz_utils.log",help="日志文件名称")
+@click.pass_context
+def main(ctx,**kwargs):
+    """ylz_utils命令行工具"""
+    ctx.obj = kwargs
+    set_logger(ctx.obj)
 
-        # 启动大语言模型对话
-        ylz_utils start --mode chat
-        
-        # 测试neo4j
-        ylz_utils neo4j 
-"""
-    parser = argparse.ArgumentParser(description = "测试工具",usage=usage)
-    parser.add_argument("--project_name",type=str,default="ylz_utils",help="project名称")
-    parser.add_argument("--config_name",type=str,default="config.yaml",help="config名称")
-    parser.add_argument("--log_level",type=str,default="INFO",choices=["INFO","DEBUG"],help="日志级别,默认:INFO")
-    parser.add_argument("--log_name",type=str,default="ylz_utils.log",help="日志文件名称")
-    
-    subparsers = parser.add_subparsers(dest="command", required=True, help="可以使用的子命令")
-    
-    init_parser = subparsers.add_parser("init", help="执行初始化")
-    custom_service_parser = subparsers.add_parser("custom_service", help="客服example")
+@main.command()
+@click.pass_context
+def init(ctx):
+    """初始化配置信息"""
+    click_init(ctx.obj)
 
-    neo4j_parser = subparsers.add_parser("neo4j", help="测试neo4j")
-    neo4j_parser.add_argument("--user",type=str,help="user")
-    neo4j_parser.add_argument("--password",type=str,help="password")
-    neo4j_parser.add_argument("--host",type=str,help="host")
-    neo4j_parser.add_argument("--llm_key",type=str,help="llm_key")
-    neo4j_parser.add_argument("--llm_model",type=str,help="llm_model")
-    neo4j_parser.add_argument("--embedding_key",type=str,help="embedding_key")
-    neo4j_parser.add_argument("--user_id",type=str,help="user_id,example: alice")
-    neo4j_parser.add_argument("--conversation_id",type=str,help="conversation_id,example: 123") 
-    neo4j_parser.add_argument("--chat_dbname",type=str,help="保存的对话数据库") 
+@main.command()
+@click.option("--mode",
+                required=True,
+                type=click.Choice(["llm","chat","prompt","loader","runnable","tools","rag","outputParser","graph","agent","info"]),
+                help="测试内容")
+@click.option("--llm_key",type=str,help="语言模型标识，例如：LLM.DEEPSEEK")
+@click.option("--embedding_key",type=str,help="嵌入模型标识，例如：EMBEDDING.TOGETHER")
+@click.option("--llm_model",type=str,help="语言模型model")
+@click.option("--embedding_model",type=str,help="嵌入模型model")
+@click.option("--message",type=str,help="input message")
+@click.option("--user_id",type=str,help="user_id,example: alice")    
+@click.option("--conversation_id",type=str,help="conversation_id,example: 123") 
+@click.option("--url",type=str,help="仅rag,loader使用,下载的URL地址")    
+@click.option("--depth",type=int,default=1,help="仅rag使用,下载的深度，默认为1")
+@click.option("--rag_key",type=click.Choice(["es","faiss","chroma","pg"]),help="向量数据库") 
+@click.option("--rag_indexname",type=str,help="保存的向量索引表,格式为indexname") 
+@click.option("--rag_metadata",type=str,callback=validate_json,help="保存rag文档的metadata,格式为json") 
+@click.option("--rag_method",type=click.Choice(["replace","skip","add"]),default="skip",help="添加相同的rag文档时的处理方式,默认skip") 
+@click.option("--rag_filter",type=str,callback=validate_json,help="查询rag文档的filter,格式为json") 
+@click.option("--rag_size",type=int,default=512,help="文档分隔的size,默认512字节") 
+@click.option("--chat_dbname",type=str,help="保存的对话数据库") 
+@click.option("--query_dbname",default='Chinook.db',type=str,help="测试查询的数据库，默认Chinook.db") 
+@click.option("--docx",type=str,help="docx文档文件名") 
+@click.option("--pptx",type=str,help="pptx文档文件名") 
+@click.option("--pdf",type=str,help="pdf文档文件名") 
+@click.option("--txt",type=str,help="txt文档文件名") 
+@click.option("--glob",type=str,help="当前目录下的glob匹配的文件")
+@click.option("--websearch",type=click.Choice(["tavily","duckduckgo","serpapi"]),help="websearch的工具")   
+@click.option("--graph",type=click.Choice(["stand","life","engineer","db","selfrag","test","stock"]),help="内置graph的类型") 
+@click.option("--fake_size",type=int,help="使用fake embeding的size，当fake_size>0是使用fake embeding，并且维度为fake_size") 
+@click.option("--batch",type=int,default=10,help="使用生成embeding时的以batch为度量显示进度，默认分隔为10批") 
 
-    start_parser = subparsers.add_parser("start", help="启动测试")
-    start_parser.add_argument("--mode",type=str,
-                              required=True,
-                              choices=["llm","chat","prompt","loader","runnable","tools","rag","outputParser","graph","agent","info"],
-                              help="测试内容")
-    start_parser.add_argument("--llm_key",type=str,help="语言模型标识，例如：LLM.DEEPSEEK")
-    start_parser.add_argument("--embedding_key",type=str,help="嵌入模型标识，例如：EMBEDDING.TOGETHER")
-    start_parser.add_argument("--llm_model",type=str,help="语言模型model")
-    start_parser.add_argument("--embedding_model",type=str,help="嵌入模型model")
-    start_parser.add_argument("--message",type=str,help="input message")
-    start_parser.add_argument("--user_id",type=str,help="user_id,example: alice")    
-    start_parser.add_argument("--conversation_id",type=str,help="conversation_id,example: 123") 
-    start_parser.add_argument("--url",type=str,help="仅rag,loader使用,下载的URL地址")    
-    start_parser.add_argument("--depth",type=int,default=1,help="仅rag使用,下载的深度，默认为1")
-    start_parser.add_argument("--rag_indexname",type=str,help="保存的向量索引表,格式为<es|faiss|chroma>:<indexname>") 
-    start_parser.add_argument("--chat_dbname",type=str,help="保存的对话数据库") 
-    start_parser.add_argument("--query_dbname",default='Chinook.db',type=str,help="测试查询的数据库，默认Chinook.db") 
-    start_parser.add_argument("--docx",type=str,help="docx文档文件名") 
-    start_parser.add_argument("--pptx",type=str,help="pptx文档文件名") 
-    start_parser.add_argument("--pdf",type=str,help="pdf文档文件名") 
-    start_parser.add_argument("--glob",type=str,help="当前目录下的glob匹配的文件")
-    start_parser.add_argument("--websearch",type=str,choices=["tavily","duckduckgo","serpapi"],help="websearch的工具")
-     
-    
-    start_parser.add_argument("--size",type=int,help="文档分隔的size") 
-    start_parser.add_argument("--graph",type=str,choices=["stand","life","engineer","db","selfrag","test","stock"],help="内置graph的类型") 
-    start_parser.add_argument("--fake_size",type=int,help="使用fake embeding的size，当fake_size>0是使用fake embeding，并且维度为fake_size") 
-    start_parser.add_argument("--batch",type=int,default=10,help="使用生成embeding时的以batch为度量显示进度，默认分隔为10批") 
-     
+@click.pass_context
+def start(ctx, **kwargs):
+    click_start(kwargs)
+             
+@main.command()
+@click.option("--host",type=str,default="0.0.0.0",help="bind host,default:0.0.0.0")
+@click.option("--port",type=int,default=8000,help="listen port,default::8000")
+@click.option("--path",type=str,default="/test",help="path,default:: /test")
+@click.option("--llm_key",type=str,help="llm provider,example: LLM.DEEPSEEK")    
+@click.option("--llm_model",type=str,help="llm model,example: deepseek-chat") 
+@click.option("--embedding_key",type=str,help="embedding provider,example: LLM.DASHSCOPE")    
+@click.option("--embedding_model",type=str,help="embedding model,example: deepseek-chat") 
+@click.option("--user_id",type=str,help="user_id,example: alice")    
+@click.option("--conversation_id",type=str,help="conversation_id,example: 123") 
+@click.option("--rag_indexname",type=str,help="保存的向量索引表,格式为<es|faiss|chroma>:<indexname>") 
+@click.pass_context
+def serve(ctx,**kwargs):
+    click_serve(kwargs)
 
-    # start_parser.add_argument("--only_download",type=bool,default=False,help="仅下载网页html,不进行翻译。默认:False (json模式该参数不起作用)")
-    # start_parser.add_argument("-s","--size",type=int,default=1500,help="切分文件的字节大小,默认:1500")
-    # start_parser.add_argument("-c","--clear_error",action="store_true",help="清除task.json文件中的错误信息,默认:False")
-
-    serve_parser = subparsers.add_parser("serve", help="启动langserve")
-    serve_parser.add_argument("--host",type=str,default="0.0.0.0",help="bind host,default:0.0.0.0")
-    serve_parser.add_argument("--port",type=int,default=8000,help="listen port,default::8000")
-    serve_parser.add_argument("--path",type=str,default="/test",help="path,default:: /test")
-    serve_parser.add_argument("--llm_key",type=str,help="llm provider,example: LLM.DEEPSEEK")    
-    serve_parser.add_argument("--llm_model",type=str,help="llm model,example: deepseek-chat") 
-    serve_parser.add_argument("--embedding_key",type=str,help="embedding provider,example: LLM.DASHSCOPE")    
-    serve_parser.add_argument("--embedding_model",type=str,help="embedding model,example: deepseek-chat") 
-    serve_parser.add_argument("--user_id",type=str,help="user_id,example: alice")    
-    serve_parser.add_argument("--conversation_id",type=str,help="conversation_id,example: 123") 
-    serve_parser.add_argument("--rag_indexname",type=str,help="保存的向量索引表,格式为<es|faiss|chroma>:<indexname>") 
-           
-    args:Namespace = parser.parse_args()
-
-    #print("args====>",args)
-
-    if args.command =="init":
-        init(args)
-        return
-    
-    set_logger(args)
-   
-    if args.command == "start":
-        start(args)
-    elif args.command == "serve":
-        serve(args)
-    elif args.command == "neo4j":
-        neo4j_test(args)
-    elif args.command == "custom_service":
-        import ylz_utils.cli.custom_service
-
-if __name__ == "__main__":
-   main()
+if __name__ == '__main__':
+    main()

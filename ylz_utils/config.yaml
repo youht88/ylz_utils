@@ -4,7 +4,7 @@ LANGSMITH:
         - ${LANGSMITH_API_KEYS}
         - ${LANGSMITH_API_KEY}
 LLM:
-    DEFAULT: "LLM.OPENROUTER"
+    DEFAULT: "LLM.OLLAMA"
     SILICONFLOW:
         API_KEYS: 
             - ${SILICONFLOW_API_KEYS}
@@ -62,7 +62,7 @@ LLM:
             - ${HF_API_KEYS}
             - ${HF_API_KEY}
         MODEL: ${HF_LLM_MODEL}
-        PIPELINE: false
+        PIPELINE: ${HF_PIPELINE}
     DASHSCOPE:
         API_KEYS: 
             - ${DASHSCOPE_API_KEYS}
@@ -99,8 +99,14 @@ LLM:
             - ${OPENROUTER_API_KEY}
         BASE_URL: https://openrouter.ai/api/v1
         MODEL: ${OPENROUTER_LLM_MODEL}
+    CLOUDFLARE:
+        API_KEYS: 
+            - ${CLOUDFLARE_API_KEYS}
+            - ${CLOUDFLARE_API_KEY}
+        MODEL: ${CLOUDFLARE_LLM_MODEL}
+        ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID}
 EMBEDDING:
-    DEFAULT: EMBEDDING.FREE
+    DEFAULT: EMBEDDING.OLLAMA
     TOGETHER: 
         API_KEYS: 
             - ${TOGETHER_API_KEYS}
@@ -122,7 +128,7 @@ EMBEDDING:
             - ${HF_API_KEYS}
             - ${HF_API_KEY}
         MODEL: ${HF_EMBEDDING_MODEL}
-        PIPELINE: false
+        PIPELINE: ${HF_PIPELINE}
     DASHSCOPE:
         API_KEYS: 
             - ${DASHSCOPE_API_KEYS}
@@ -133,6 +139,12 @@ EMBEDDING:
             - ${FREE_API_KEYS}
             - ${FREE_API_KEY}
         MODEL: ${FREE_EMBEDDING_MODEL}
+    CLOUDFLARE:
+        API_KEYS: 
+            - ${CLOUDFLARE_API_KEYS}
+            - ${CLOUDFLARE_API_KEY}
+        MODEL: ${CLOUDFLARE_EMBEDDING_MODEL} 
+        ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID}   
 TTS:
     DASHSCOPE:
         API_KEYS: 
@@ -169,10 +181,16 @@ VECTORSTORE:
         HOST: ${ES_HOST}
         USER: elastic
         PASSWORD: ${ES_PASSWORD}
+    PG:
+        HOST: ${PG_HOST}
+        PORT: ${PG_PORT}
+        USER: ${PG_USER}
+        PASSWORD: ${PG_PASSWORD}
+        DATABASE: ${PG_DATABASE}
     CHROMA:
-        SERVER: false
+        USE_SERVER: ${CHROMA_USE_SERVER}
         HOST: ${CHROMA_HOST}
-        PORT: 8089
+        PORT: ${CHROMA_PORT}
         DB_FILE: rag.chroma
 NEO4J:
     #HOST: neo4j+s://f0ada9b2.databases.neo4j.io

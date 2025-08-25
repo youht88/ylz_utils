@@ -19,6 +19,7 @@ except:
 
 from langchain_ollama import OllamaEmbeddings
 from langchain_community.embeddings.dashscope import DashScopeEmbeddings
+from langchain_cloudflare import CloudflareWorkersAIEmbeddings
 
 try:
     from langchain_huggingface.embeddings import HuggingFaceEndpointEmbeddings,HuggingFaceEmbeddings
@@ -107,7 +108,13 @@ class EmbeddingLib():
                     elif embed_type == 'EMBEDDING.FREE':
                         embedding['embedding'] = OpenAIEmbeddings(
                             api_key = embedding.get('api_key'),model=embedding.get('model'),base_url=embedding.get('base_url'))
-                        print(embedding)
+                    elif embed_type == 'EMBEDDING.CLOUDFLARE':
+                        embedding['embedding'] = CloudflareWorkersAIEmbeddings(
+                            account_id=embedding.get('account_id'),
+                            api_token=embedding.get('api_key'),
+                            model_name=embedding.get('model'),
+                        )
+                        print("CLOUDFLARE embedding --->",embedding)
                     else:
                         raise Exception(f"目前不支持{embedding['type']}嵌入模型")
                 embedding['used'] = embedding.get('used',0) + 1 
@@ -127,7 +134,8 @@ class EmbeddingLib():
                       "EMBEDDING.OLLAMA": {"model":"mxbai-embed-large"},
                       "EMBEDDING.HF": {"model":"Alibaba-NLP/gte-large-en-v1.5"},  #"sentence-transformers/all-mpnet-base-v2" #"BAAI/bge-large-en"
                       "EMBEDDING.DASHSCOPE": {"model":"text-embedding-v2"},
-                      "EMBEDDING.FREE": {"model":"text-embedding-3-small"}    
+                      "EMBEDDING.FREE": {"model":"text-embedding-3-small"},
+                      "EMBEDDING.CLOUDFLARE": {"model":"@cf/baai/bge-m3"},    
                   }
         for key in defaults:
             default = defaults[key]
@@ -137,7 +145,7 @@ class EmbeddingLib():
             base_url = embed.get("BASE_URL")
             api_keys = embed.get("API_KEYS")
             api_keys = self.langchainLib.split_keys(api_keys)
-
+            account_id = embed.get("ACCOUNT_ID")
             model= embed.get("MODEL") if embed.get("MODEL") else default['model']
             pipeline = embed.get("PIPELINE")
             for api_key in api_keys:
@@ -146,6 +154,7 @@ class EmbeddingLib():
                     "type": key,
                     "base_url": base_url,
                     "api_key":api_key,
+                    "account_id":account_id,
                     "model":model,
                     "default_model":model,
                     "pipeline":pipeline,
